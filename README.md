@@ -25,9 +25,9 @@
 - **Soporte dedicado** 💻: Nuestro equipo de soporte está siempre listo para ayudarte. Contás con nosotros en cada paso del camino.
 ## Tech Stack
 
-**Cliente:** [![My Skills](https://skillicons.dev/icons?i=react,javascript,html,css,tailwind)]
+**Cliente:** ![My Skills](https://skillicons.dev/icons?i=react,javascript,html,css,tailwind)
 
-**Server:** [![My Skills](https://skillicons.dev/icons?i=nodejs,express,mysql)]
+**Server:** ![My Skills](https://skillicons.dev/icons?i=nodejs,express,mysql)
 
 ## Autores
 
