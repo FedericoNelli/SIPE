@@ -57,6 +57,8 @@ module.exports = {
           "white": "#F9F6EE",
           "orange-dark": "#A35139",
           "orange-light": "#FFB162",
+          "orange-light-variant": "#FFA04D",
+          "orange-dark-variant": "#7B3E2A",
         },
       },
       borderRadius: {
