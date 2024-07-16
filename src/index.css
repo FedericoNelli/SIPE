@@ -6,6 +6,7 @@
 
 root, html, body{
   font-family: 'Outfit', sans-serif;
+  font-size: 16px;
 }
 
 @layer base {
@@ -41,8 +42,11 @@ root, html, body{
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
   body {
     @apply bg-background text-foreground;
+    margin: 0;
+    padding: 0;
   }
 }
