@@ -1,10 +1,15 @@
-import Card from "../cards/card"
-
+import CardMd from "@/components/cards/cardMd";
+import CardLg from "@/components/cards/cardLg";
 
 function MainDashboard() {
     return (
         <>
-            <Card />
+            <CardMd />
+            <CardMd />
+            <CardLg />
+            <CardLg />
+            <CardMd />
+            <CardMd />
         </>
     )
 }

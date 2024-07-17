@@ -1,7 +1,7 @@
 import Navbar from "./components/navbar/navbar"
 import Dashboard from "./pages/dashboard/dashboard"
 import Login from "./pages/login/login"
-import Card from "./components/cards/card"
+import Card from "./components/cards/cardLg"
 import RecoveryPassword from "./pages/recoveryPassword/recoveryPassword"
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 
