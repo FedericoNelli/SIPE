@@ -11,7 +11,6 @@ function Dashboard() {
             <div className="w-full flex flex-col">
                 <Navbar />
                 <hr />
-                
                     <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
                         <MainDashboard />
                     </div>
