@@ -6,7 +6,7 @@ import { Link } from "react-router-dom"
 
 function LoginInput() {
     return (
-        <div className="mx-auto w-full max-w-md space-y-4">
+        <div className="mx-auto w-full md:w-40 lg:w-80 space-y-4">
             <div className="space-y-2">
                 <h1 className="font-bold text-sipe-white text-4xl">Bienvenido a SIPE</h1>
                 <p className="font-thin text-sipe-white">Por favor, entrá con tu cuenta</p>

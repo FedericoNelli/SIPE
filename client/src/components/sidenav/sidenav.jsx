@@ -3,7 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 function Sidenav() {
 
     return (
-        <aside className="bg-sipe-blue-light text-sipe-white min-h-screen pl-12 py-8">
+        <aside className="bg-sipe-blue-light text-sipe-white min-h-full pl-12 py-8">
             <div className="">
                 <Link to="/">
                 <img className="w-48 mb-12 mr-20" src="src/assets/images/logo/LogoSIPE.png" alt="SIPE" />
