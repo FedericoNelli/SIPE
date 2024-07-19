@@ -13,7 +13,7 @@ function CardLg() {
                     <p className="font-light">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Inventore in, hic ipsa, magnam exercitationem provident, necessitatibus delectus dignissimos ipsum veritatis mollitia.</p>
                 </div>
                 <div className="mt-8 flex justify-center ">
-                    <Link to="/materiales">
+                    <Link to="/mtls">
                         <Button variant="sipebutton" size="sipebutton" type="submit">
                             Ir a Materiales
                         </Button>

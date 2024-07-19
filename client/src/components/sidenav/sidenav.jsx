@@ -5,7 +5,7 @@ function Sidenav() {
     return (
         <aside className="bg-sipe-blue-light text-sipe-white min-h-full pl-12 py-8">
             <div className="">
-                <Link to="/">
+                <Link to="/login">
                 <img className="w-48 mb-12 mr-20" src="src/assets/images/logo/LogoSIPE.png" alt="SIPE" />
                 </Link>
                 <section className='flex flex-col items-start'>
@@ -31,7 +31,7 @@ function Sidenav() {
 
 const sections = [
     { name: 'Dashboard', label: 'Dashboard', icon: 'src/assets/images/icons/Dashboard.png', path: '/dshb' },
-    { name: 'Materiales', label: 'Materiales', icon: 'src/assets/images/icons/Materiales.png', path: '/materiales' },
+    { name: 'Materiales', label: 'Materiales', icon: 'src/assets/images/icons/Materiales.png', path: '/mtls' },
     { name: 'Informes', label: 'Informes', icon: 'src/assets/images/icons/Informes.png', path: '/informes' },
     { name: 'Depositos', label: 'Depositos', icon: 'src/assets/images/icons/Depositos.png', path: '/depositos' },
     { name: 'Movimientos', label: 'Movimientos', icon: 'src/assets/images/icons/Dashboard.png', path: '/movimientos' },

@@ -14,8 +14,6 @@ function Dashboard() {
                     <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5">
                         <MainDashboard />
                     </div>
-                
-                
             </div>
         </section>
     )

@@ -14,7 +14,7 @@ function CardMd() {
                     <span className="font-light text-4xl">649 materiales</span>
                 </div>
                 <div className="mt-8 flex justify-center">
-                    <Link to="/materiales">
+                    <Link to="/mtls">
                         <Button variant="sipebutton" size="sipebutton" type="submit">
                             Ir a Materiales
                         </Button>
