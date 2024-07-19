@@ -1,4 +1,4 @@
-function Card() {
+function CardSm() {
     return (
         <>
             <article className="flex flex-col shadow-xl mx-auto max-w-xs bg-sipe-white bg-opacity-10 backdrop-blur-md py-8 px-12 transform duration-500 hover:-translate-y-2 cursor-pointer max-h-48 rounded-2xl">
@@ -12,4 +12,4 @@ function Card() {
     )
 }
 
-export default Card
+export default CardSm
