@@ -19,7 +19,8 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         sipebutton: "w-full text-sipe-white bg-sipe-orange-light text-4xl font-bold p-9 hover:bg-sipe-orange-light-variant",
-        sipebuttonalt: "w-full text-sipe-white bg-sipe-orange-dark text-4xl font-bold p-9 hover:bg-sipe-orange-dark-variant"
+        sipebuttonalt: "w-full text-sipe-white bg-sipe-orange-dark text-4xl font-bold p-9 hover:bg-sipe-orange-dark-variant",
+        sipehover:"hover:bg-sipe-orange-light hover:text-accent-foreground"
       },
       size: {
         default: "h-10 px-4 py-2",

@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../dropdown/dropdown-menu";
+import { Button } from "../button/button";
+import { ChevronDown } from "lucide-react";
+
 
 function Navbar() {
 
@@ -22,8 +26,17 @@ function Navbar() {
                         <li>{currentDate}</li>
                         <li className="bg-sipe-blue-dark rounded-full p-2"><img src="src\assets\images\icons\Notificaciones.png" alt="" /></li>
                         <div className="flex flex-row justify-center items-center">
-                            <li className="bg-sipe-blue-dark p-2 rounded-s-lg">User</li>
-                            <li className="bg-sipe-orange-light p-2 rounded-e-lg">-</li>
+                            <DropdownMenu>
+                            <li className=" p-2 rounded-lg"> 
+                                <DropdownMenuTrigger className="bg-sipe-blue-dark rounded-lg">
+                                    <Button variant="sipehover" className="rounded-lg">F <ChevronDown /></Button>
+                                    </DropdownMenuTrigger> 
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem>Cambiar Contraseña</DropdownMenuItem> 
+                                    <DropdownMenuItem>Cerrar Sesión</DropdownMenuItem> 
+                                </DropdownMenuContent>
+                            </li>
+                            </DropdownMenu>
                         </div>
                     </ul>
                 </div>
