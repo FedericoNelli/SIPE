@@ -63,6 +63,12 @@ module.exports = {
           "orange-light-variant": "#FFA04D",
           "orange-dark-variant": "#7B3E2A",
         },
+        sipeBadges: {
+          "disponible":"#88B04B",
+          "en-uso":"#5D8AA8",
+          "sin-stock":"#D9534F",
+          "bajo-stock":"#FF8C42"
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
