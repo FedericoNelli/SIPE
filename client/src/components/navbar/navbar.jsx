@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../dropdown/dropdown-menu";
 import { Button } from "../button/button";
 import { ChevronDown } from "lucide-react";
@@ -16,11 +16,37 @@ function Navbar() {
     }
 
     const [currentDate, setCurrentDate] = useState(getDate());
+    const [userName, setUserName] = useState('Usuario');
+    const [initial, setInitial] = useState('');
+
+    useEffect(() => {
+        const storedUserName = localStorage.getItem('userName');
+        if (storedUserName) {
+            setUserName(storedUserName);
+            setInitial(storedUserName.charAt(0).toUpperCase());
+        }
+    }, []);
+
+    const handleLogout = async () => {
+        try {
+            await fetch('http://localhost:8081/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        } catch (error) {
+            console.error('Error al cerrar sesión', error);
+        }
+    };
 
     return (
         <>
             <div className="flex justify-between items-center text-sipe-white font-light p-8 px-10">
-                <h1 className="text-4xl font-bold">Buen día, Usuario!</h1>
+                <h1 className="text-4xl font-bold">Buen día, {userName}!</h1>
                 <div>
                     <ul className="flex flex-row justify-center items-center gap-6 text-lg">
                         <li>{currentDate}</li>
@@ -29,11 +55,11 @@ function Navbar() {
                             <DropdownMenu>
                             <li className=" p-2 rounded-lg"> 
                                 <DropdownMenuTrigger className="bg-sipe-blue-dark rounded-lg">
-                                    <Button variant="sipehover" className="rounded-lg">F <ChevronDown /></Button>
+                                    <Button variant="sipehover" className="rounded-lg">{initial}<ChevronDown /></Button>
                                     </DropdownMenuTrigger> 
                                 <DropdownMenuContent>
                                     <DropdownMenuItem>Cambiar Contraseña</DropdownMenuItem> 
-                                    <DropdownMenuItem>Cerrar Sesión</DropdownMenuItem> 
+                                    <DropdownMenuItem onClick={handleLogout}>Cerrar Sesión</DropdownMenuItem> 
                                 </DropdownMenuContent>
                             </li>
                             </DropdownMenu>

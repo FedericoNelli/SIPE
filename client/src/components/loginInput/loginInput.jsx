@@ -18,6 +18,7 @@ function LoginInput() {
             const res = await axios.post('http://localhost:8081/login', { user, password });
             if (res.data.token) {
                 localStorage.setItem('token', res.data.token);
+                localStorage.setItem('userName', res.data.nombre);
                 navigate('/dshb');  
             } else {
                 console.log(res.data);
