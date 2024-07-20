@@ -1,152 +1,97 @@
-import { Input } from "../input/input"
-import { Label } from "../label/label"
-import { Button } from "@/components/button/button"
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/table/table"
-import { Badge } from "@/components/badge/badge"
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Input } from "../input/input";
+import { Button } from "@/components/button/button";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/table/table";
+import { Badge } from "@/components/badge/badge";
+import { Search } from 'lucide-react';
+import { Filter } from 'lucide-react';
 
 
 function Material() {
+    const [materials, setMaterials] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    useEffect(() => {
+        axios.get('http://localhost:8081/materials')
+            .then(response => {
+                setMaterials(response.data);
+            })
+            .catch(error => {
+                console.error('Error fetching materials:', error);
+            });
+    }, []);
+
+    const handleSearch = (e) => {
+        const query = e.target.value;
+        setSearchQuery(query);
+
+        if (query) {
+            axios.get(`http://localhost:8081/materials/search?query=${query}`)
+                .then(response => {
+                    setSearchResults(response.data);
+                })
+                .catch(error => {
+                    console.error('Error searching materials:', error);
+                });
+        } else {
+            setSearchResults([]);
+        }
+    };
+
+    const openModal = () => {
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+    };
+
     return (
-        <>
+        <div className="bg-sipe-blue-dark p-10 rounded-3xl backdrop-opacity-10 backdrop-invert bg-sipe-white/0">
             <div className="flex justify-between w-full text-sipe-white font-bold">
-                <div className="flex flex-col">
+                <div className="flex flex-col mb-5">
                     <h1 className="text-3xl font-bold">Materiales</h1>
                     <h3 className="text-md font-light">Listado completo de materiales</h3>
                 </div>
                 <div className="flex flex-row gap-4 text-sipe-white">
-                    <Button className="bg-sipe-orange-light font-semibold px-4 py-2 rounded">+ NUEVO</Button>
-                    <Button className="bg-gray-700 text-sipe-white font-semibold px-2 py-2 flex items-center"> <img src="src/assets/images/icons/Filter.png" alt="" /> Filtrar </Button>
-                    <Label>
-                        <Input className="size-fit" id="search" placeholder="Buscar" required type="text" />
-                    </Label>
+                    <Button className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
+                    <Button variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2 "> <Filter /> <span className="font-light"> Filtrar </span> </Button>
+                    <Button onClick={openModal} variant="secondary" className="bg-transparent border-sipe-white border text-sipe-white font-semibold px-2 py-2 flex items-center gap-2"> <Search /> <span className='font-light'>Buscar</span> </Button>
                 </div>
             </div>
             <Table className="w-full text-white">
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="text-left">Nombre</TableHead>
-                        <TableHead className="text-left">ID</TableHead>
-                        <TableHead className="text-left">Depósito</TableHead>
-                        <TableHead className="text-left">Estado</TableHead>
-                        <TableHead className="text-left">Cantidad</TableHead>
-                        <TableHead className="text-left">Ubicación</TableHead>
-                        <TableHead className="text-left">Matrícula</TableHead>
-                        <TableHead className="text-left">Categoría</TableHead>
+                        <TableHead className="text-center text-sipe-white/45">Nombre</TableHead>
+                        <TableHead className="text-center text-sipe-white/45">ID</TableHead>
+                        <TableHead className="text-center text-sipe-white/45">Depósito</TableHead>
+                        <TableHead className="text-center text-sipe-white/45">Estado</TableHead>
+                        <TableHead className="text-center text-sipe-white/45">Cantidad</TableHead>
+                        <TableHead className="text-center text-sipe-white/45">Ubicación</TableHead>
+                        <TableHead className="text-center text-sipe-white/45">Matrícula</TableHead>
+                        <TableHead className="text-center text-sipe-white/45">Categoría</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    <TableRow>
-                        <TableCell>Cable FTP</TableCell>
-                        <TableCell>322</TableCell>
-                        <TableCell>Depósito 1</TableCell>
-                        <TableCell>
-                            <Badge variant="default" className="bg-sipeBadges-disponible text-white">
-                                Disponible
-                            </Badge>
-                        </TableCell>
-                        <TableCell>3 unidades</TableCell>
-                        <TableCell>P1D01E03E05</TableCell>
-                        <TableCell>M00180</TableCell>
-                        <TableCell>Cables</TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>Fuente Ubiquiti</TableCell>
-                        <TableCell>125</TableCell>
-                        <TableCell>Depósito 2</TableCell>
-                        <TableCell>
-                            <Badge variant="default" className="bg-sipeBadges-bajo-stock text-white">
-                                Bajo stock
-                            </Badge>
-                        </TableCell>
-                        <TableCell>5 unidades</TableCell>
-                        <TableCell>P2D03E02E02</TableCell>
-                        <TableCell>P12294</TableCell>
-                        <TableCell>Enlace</TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>Batería 12v100ah</TableCell>
-                        <TableCell>52</TableCell>
-                        <TableCell>Depósito 1</TableCell>
-                        <TableCell>
-                            <Badge variant="default" className="bg-sipeBadges-en-uso text-white">
-                                En uso
-                            </Badge>
-                        </TableCell>
-                        <TableCell>4 unidades</TableCell>
-                        <TableCell>P1D05E03E01</TableCell>
-                        <TableCell>M12223</TableCell>
-                        <TableCell>Baterías</TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>Switch Aruba</TableCell>
-                        <TableCell>79</TableCell>
-                        <TableCell>Depósito 1</TableCell>
-                        <TableCell>
-                            <Badge variant="default" className="bg-sipeBadges-sin-stock text-white">
-                                Sin stock
-                            </Badge>
-                        </TableCell>
-                        <TableCell>0 unidades</TableCell>
-                        <TableCell>P4D04E01E01</TableCell>
-                        <TableCell>F33215</TableCell>
-                        <TableCell>Switch</TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>RJ 45 metálico</TableCell>
-                        <TableCell>166</TableCell>
-                        <TableCell>Depósito 1</TableCell>
-                        <TableCell>
-                            <Badge variant="default" className="bg-sipeBadges-sin-stock text-white">
-                                Sin stock
-                            </Badge>
-                        </TableCell>
-                        <TableCell>0 unidades</TableCell>
-                        <TableCell>P2D01E01E04</TableCell>
-                        <TableCell>M10089</TableCell>
-                        <TableCell>Fichas</TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>Cablecanal 100x50</TableCell>
-                        <TableCell>43</TableCell>
-                        <TableCell>Depósito 2</TableCell>
-                        <TableCell>
-                            <Badge variant="default" className="bg-sipeBadges-disponible text-white">
-                                Disponible
-                            </Badge>
-                        </TableCell>
-                        <TableCell>5 unidades</TableCell>
-                        <TableCell>P1D01E02E02</TableCell>
-                        <TableCell>N33302</TableCell>
-                        <TableCell>Cableado</TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>Batería 12v45ah</TableCell>
-                        <TableCell>53</TableCell>
-                        <TableCell>Depósito 1</TableCell>
-                        <TableCell>
-                            <Badge variant="default" className="bg-sipeBadges-en-uso text-white">
-                                En uso
-                            </Badge>
-                        </TableCell>
-                        <TableCell>4 unidades</TableCell>
-                        <TableCell>P3D02E02E04</TableCell>
-                        <TableCell>K14553</TableCell>
-                        <TableCell>Baterías</TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>RX Plessey</TableCell>
-                        <TableCell>32</TableCell>
-                        <TableCell>Depósito 1</TableCell>
-                        <TableCell>
-                            <Badge variant="default" className="bg-sipeBadges-sin-stock text-white">
-                                Sin stock
-                            </Badge>
-                        </TableCell>
-                        <TableCell>0 unidades</TableCell>
-                        <TableCell>P1D05E05E01</TableCell>
-                        <TableCell>M10003</TableCell>
-                        <TableCell>Enlace</TableCell>
-                    </TableRow>
+                    {materials.map(material => (
+                        <TableRow key={material.id}>
+                            <TableCell className="text-center font-light">{material.nombre}</TableCell>
+                            <TableCell className="text-center font-light">{material.id}</TableCell>
+                            <TableCell className="text-center font-light">{material.depositoNombre}</TableCell>
+                            <TableCell className="text-center font-light">
+                                <Badge variant="default" className={`bg-sipeBadges-${material.estadoDescripcion.toLowerCase().replace(' ', '-')} p-2 rounded-md font-light w-20 justify-center`} >
+                                    {material.estadoDescripcion}
+                                </Badge>
+                            </TableCell >
+                            <TableCell className="text-center font-light">{material.cantidad} unidades</TableCell>
+                            <TableCell className="text-center font-light">{material.ubicacionNombre}</TableCell>
+                            <TableCell className="text-center font-light">{material.matricula}</TableCell>
+                            <TableCell className="text-center font-light">{material.categoriaDescripcion}</TableCell>
+                        </TableRow>
+                    ))}
                 </TableBody>
             </Table>
             <div className="flex justify-center p-4">
@@ -160,8 +105,50 @@ function Material() {
                     3
                 </Button>
             </div>
-        </>
-    )
+
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-sipe-blue-dark rounded-lg p-6 w-full max-w-4xl">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-lg font-bold text-sipe-white">Buscar material</h2>
+                            <button onClick={closeModal} className="text-gray-300">&times;</button>
+                        </div>
+                        <Input 
+                            type="text"
+                            value={searchQuery}
+                            onChange={handleSearch}
+                            placeholder="Buscar..."
+                            className="w-full p-2 border- rounded mt-4"
+                        />
+                        <ul className="mt-4">
+                            {searchResults.map((result, index) => (
+                                <li key={index} className="p-2 border-b border-gray-500 text-sipe-white">
+                                    {result.nombre}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
 
-export default Material
+export default Material;
+
+
+// const getBadgeClass = (estado) => {
+    //     if (!estado) return '';
+    //     switch (estado.toLowerCase()) {
+    //         case 'Disponible':
+    //             return 'bg-sipeBadges-disponible';
+    //         case 'En uso':
+    //             return 'bg-sipeBadges-en-uso';
+    //         case 'Bajo stock':
+    //             return 'bg-sipeBadges-bajo-stock';
+    //         case 'Sin stock':
+    //             return 'bg-sipeBadges-sin-stock';
+    //         default:
+    //             return '';
+    //     }
+    // }; NO BORRAR POR LAS DUDAS, HAY QUE TESTEAR

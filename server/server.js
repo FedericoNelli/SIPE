@@ -43,8 +43,13 @@ app.post('/login', (req, res) => {
 
         // Generar y devolver el token JWT
         const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '1h' });
-        res.json({ token });
+        res.json({ token, nombre:user.nombre });
     });
+});
+
+app.post('/logout', (req, res) => {
+    // No es necesario hacer nada en el servidor para logout con JWT.
+    res.status(200).send('Logout exitoso');
 });
 
 // Endpoint para agregar usuarios
@@ -76,6 +81,68 @@ app.post('/addUser', (req, res) => {
             console.log(err);
             return res.status(500).send("Error al crear el usuario");
         } res.status(201).send('Usuario creado');
+    });
+});
+
+app.get('/materials', (req, res) => {
+    const query = `
+        SELECT 
+            m.id, m.nombre, m.cantidad, m.imagen, m.matricula, m.fechaUltimoEstado, 
+            m.mapa, m.bajoStock, m.estadoId, m.idEspacio, m.ultimoUsuarioId, 
+            m.idCategoria, m.idDeposito, 
+            d.nombre AS depositoNombre, 
+            u.nombre AS ubicacionNombre, 
+            es.descripcion AS estadoDescripcion, 
+            c.descripcion AS categoriaDescripcion
+        FROM 
+            Material m
+        LEFT JOIN 
+            Deposito d ON m.idDeposito = d.id
+        LEFT JOIN 
+            Ubicacion u ON d.idUbicacion = u.id
+        LEFT JOIN 
+            Estado es ON m.estadoId = es.id
+        LEFT JOIN 
+            Categoria c ON m.idCategoria = c.id
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+app.get('/materials/search', (req, res) => {
+    const query = req.query.query;
+
+    const searchQuery = `
+        SELECT 
+            m.id, m.nombre, m.cantidad, m.imagen, m.matricula, m.fechaUltimoEstado, 
+            m.mapa, m.bajoStock, m.estadoId, m.idEspacio, m.ultimoUsuarioId, 
+            m.idCategoria, m.idDeposito, 
+            d.nombre AS depositoNombre, 
+            u.nombre AS ubicacionNombre, 
+            es.descripcion AS estadoDescripcion, 
+            c.descripcion AS categoriaDescripcion
+        FROM 
+            Material m
+        LEFT JOIN 
+            Deposito d ON m.idDeposito = d.id
+        LEFT JOIN 
+            Ubicacion u ON d.idUbicacion = u.id
+        LEFT JOIN 
+            Estado es ON m.estadoId = es.id
+        LEFT JOIN 
+            Categoria c ON m.idCategoria = c.id
+        WHERE 
+            m.nombre LIKE ?
+    `;
+
+    const likeQuery = `${query}%`;
+
+    db.query(searchQuery, [likeQuery], (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
     });
 });
 
