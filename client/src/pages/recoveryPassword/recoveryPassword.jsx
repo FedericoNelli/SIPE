@@ -26,7 +26,7 @@ function RecoveryPassword() {
                             <Button className="mb-5" variant="sipebutton" size="sipebutton" type="submit">
                                 Enviar contraseña
                             </Button>
-                            <Link to="/login">
+                            <Link to="/">
                                 <Button variant="sipebuttonalt" size="sipebutton" type="submit">
                                     Cancelar
                                 </Button>

@@ -146,6 +146,32 @@ app.get('/materials/search', (req, res) => {
     });
 });
 
+// Endpoint para agregar usuarios
+app.post('/addMaterial', (req, res) => {
+    const { nombre, apellido, legajo, nombre_usuario, contrasenia, email, rol } = req.body;
+
+    // Verificar si el usuario actual es administrador
+    const token = req.headers.authorization.split(' ')[1];
+    let decoded;
+    try {
+        decoded = jwt.verify(token, SECRET_KEY);
+    } catch(err){
+        return res.status(401).send("Token invalido");
+    }
+    if (decoded.rol !== 'Administrador') {
+        return res.status(403).send('Permiso denegado');
+    }
+
+    // Insertar el usuario en la base de datos
+    const query = 'INSERT INTO usuario SET ?';
+    db.query(query, user, (err, result) => {
+        if (err){
+            console.log(err);
+            return res.status(500).send("Error al crear el usuario");
+        } res.status(201).send('Usuario creado');
+    });
+});
+
 app.listen(8081, () => {
     console.log(`Servidor corriendo en el puerto 8081`);
 });

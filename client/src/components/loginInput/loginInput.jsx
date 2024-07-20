@@ -29,13 +29,13 @@ function LoginInput() {
     }
 
     return (
-        <div className="mx-auto w-full md:w-40 lg:w-80 space-y-4">
+        <div className="mx-auto w-full md:w-40 lg:w-80 xl:w-8/12 space-y-4">
             <div className="space-y-2">
                 <h1 className="font-bold text-sipe-white text-4xl">Bienvenido a SIPE</h1>
                 <p className="font-thin text-sipe-white">Por favor, entrá con tu cuenta</p>
             </div>
-            <div className="space-y-4">
-                <form onSubmit={handleSubmit} className="space-y-2">
+            <div className="space-y-4 ">
+                <form onSubmit={handleSubmit} className="space-y-4 ">
                     <div className="space-y-2">
                         <Label htmlFor="user">
                             <Input id="user" placeholder="Usuario" required type="text" onChange={u => setUser(u.target.value)} />

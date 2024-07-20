@@ -11,7 +11,7 @@ const sections = [
     { name: 'Control de stock', label: 'Control de stock', icon: <BarChart />, path: '/control-de-stock' },
 ];
 
-function Sidenav() {
+function Aside() {
     return (
         <aside className="bg-sipe-blue-light text-sipe-white min-h-full pl-12 py-8">
             <div>
@@ -39,4 +39,4 @@ function Sidenav() {
     );
 }
 
-export default Sidenav;
+export default Aside;
