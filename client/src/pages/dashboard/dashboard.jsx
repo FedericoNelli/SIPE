@@ -1,12 +1,12 @@
 import MainDashboard from "@/components/mainDashboard/mainDashboard"
 import Navbar from "@/components/navbar/navbar"
-import Sidenav from "@/components/sidenav/sidenav"
+import Aside from "@/components/aside/aside"
 
 function Dashboard() {
     return (
         <section className="min-h-screen flex bg-sipe-gradient">
             <div>
-                <Sidenav />
+                <Aside />
             </div>
             <div className="w-full flex flex-col">
                 <Navbar />
