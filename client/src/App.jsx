@@ -7,7 +7,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom"
 import Materials from "./pages/Materials/Materials"
 import PrivateRoute from "./routes/routes"
 import AddUser from "./pages/AddUser/AddUser"
-import Testing from "./pages/Testing/Testing"
+import Testing from "./pages/testing/Testing"
 
 function App() {
   return (
