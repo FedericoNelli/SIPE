@@ -4,15 +4,15 @@ import { Input } from "../Input/Input";
 import { Button } from "@/components/Button/Button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Table/Table";
 import { Badge } from "@/components/Badge/Badge";
-import { Search } from 'lucide-react';
-import { Filter } from 'lucide-react';
-
+import { Search, Filter } from 'lucide-react';
+import FormMaterial from '@/components/FormMaterial/FormMaterial'; // Importa FormMaterial
 
 function Material() {
     const [materials, setMaterials] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isFormModalOpen, setIsFormModalOpen] = useState(false); // Agrega estado para el modal del formulario
 
     useEffect(() => {
         axios.get('http://localhost:8081/materials')
@@ -49,6 +49,14 @@ function Material() {
         setIsModalOpen(false);
     };
 
+    const openFormModal = () => {
+        setIsFormModalOpen(true); 
+    };
+
+    const closeFormModal = () => {
+        setIsFormModalOpen(false); 
+    };
+
     return (
         <div className="">
             <div className="flex justify-between w-full text-sipe-white font-bold">
@@ -57,7 +65,7 @@ function Material() {
                     <h3 className="text-md font-light">Listado completo de materiales</h3>
                 </div>
                 <div className="flex flex-row gap-4 text-sipe-white">
-                    <Button className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
+                    <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button> {/* Cambia la función del botón */}
                     <Button variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2 "> <Filter /> <span className="font-light"> Filtrar </span> </Button>
                     <Button onClick={openModal} variant="secondary" className="bg-transparent border-sipe-white border text-sipe-white font-semibold px-2 py-2 flex items-center gap-2"> <Search /> <span className='font-light'>Buscar</span> </Button>
                 </div>
@@ -118,7 +126,7 @@ function Material() {
                             value={searchQuery}
                             onChange={handleSearch}
                             placeholder="Buscar..."
-                            className="w-full p-2 rounded mt-4"
+                            className="w-full p-2 mt-4 border-b"
                         />
                         <ul className="mt-4">
                             {searchResults.map((result, index) => (
@@ -130,25 +138,14 @@ function Material() {
                     </div>
                 </div>
             )}
+
+            {isFormModalOpen && (
+                <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <FormMaterial onClose={closeFormModal} /> 
+                </div>
+            )}
         </div>
     );
 }
 
 export default Material;
-
-
-// const getBadgeClass = (estado) => {
-    //     if (!estado) return '';
-    //     switch (estado.toLowerCase()) {
-    //         case 'Disponible':
-    //             return 'bg-sipeBadges-disponible';
-    //         case 'En uso':
-    //             return 'bg-sipeBadges-en-uso';
-    //         case 'Bajo stock':
-    //             return 'bg-sipeBadges-bajo-stock';
-    //         case 'Sin stock':
-    //             return 'bg-sipeBadges-sin-stock';
-    //         default:
-    //             return '';
-    //     }
-    // }; NO BORRAR POR LAS DUDAS, HAY QUE TESTEAR
