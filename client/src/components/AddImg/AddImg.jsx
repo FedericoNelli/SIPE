@@ -18,13 +18,13 @@ const AddImg = () => {
     };
 
     return (
-        <div className="border-2 border-sipe-white rounded-xl flex justify-center text-sipe-white w-4/6 h-96">
+        <div className="border-2 border-sipe-white rounded-xl flex justify-center text-sipe-white w-[420px] h-[420px]">
             <label className="flex justify-center" htmlFor="file-input">
                 {selectedImage ? (
                     <img src={selectedImage} alt="Selected" className="" />
                 ) : (
                     <div className="flex flex-col justify-center items-center">
-                        <span>+</span>
+                        <span className="text-4xl">+</span>
                         <span>Agregar imagen</span>
                         </div>
                 )}

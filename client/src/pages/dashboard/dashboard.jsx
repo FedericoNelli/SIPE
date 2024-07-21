@@ -1,6 +1,6 @@
-import MainDashboard from "@/components/mainDashboard/mainDashboard"
-import Navbar from "@/components/navbar/navbar"
-import Aside from "@/components/aside/aside"
+import MainDashboard from "@/components/MainDashboard/MainDashboard"
+import Navbar from "@/components/Navbar/Navbar"
+import Aside from "@/components/Aside/Aside"
 
 function Dashboard() {
     return (

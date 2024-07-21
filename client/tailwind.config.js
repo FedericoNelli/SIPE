@@ -62,6 +62,7 @@ module.exports = {
           "orange-light": "#FFB162",
           "orange-light-variant": "#FFA04D",
           "orange-dark-variant": "#7B3E2A",
+          "gray": "#959DA6",
         },
         sipeBadges: {
           "disponible":"#88B04B",

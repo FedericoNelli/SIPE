@@ -24,7 +24,7 @@ function Aside() {
                             key={index}
                             to={section.path}
                             className={({ isActive }) =>
-                                `w-full text-left font-light text-sipe-white hover:bg-sipe-orange-dark hover:text-sipe-white rounded-l-lg px-3 py-3 transition ease-in-out duration-300 ${isActive ? 'bg-sipe-orange-dark text-sipe-white' : 'text-zinc-400'}`
+                                `w-full text-left font-light text-sipe-white hover:bg-sipe-orange-dark hover:text-sipe-white rounded-l-lg px-3 py-3 mb-2 transition ease-in-out duration-300 ${isActive ? 'bg-sipe-orange-dark text-sipe-white' : 'text-zinc-400'}`
                             }
                         >
                             <span className='flex flex-row gap-2 items-center'>

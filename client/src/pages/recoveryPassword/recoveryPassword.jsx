@@ -1,6 +1,6 @@
-import { Label } from '../../components/label/label';
-import { Input } from '../../components/input/input';
-import { Button } from '../../components/button/button';
+import { Label } from '../../components/Label/Label';
+import { Input } from '../../components/Input/Input';
+import { Button } from '../../components/Button/Button';
 import { Link } from 'react-router-dom';
 
 function RecoveryPassword() {

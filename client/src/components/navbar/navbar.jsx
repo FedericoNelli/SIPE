@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../dropdown/dropdown-menu";
-import { Button } from "../button/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../Dropdown/Dropdown-menu";
+import { Button } from "../Button/Button";
 import { ChevronDown } from "lucide-react";
 
 
@@ -54,8 +54,8 @@ function Navbar() {
                         <div className="flex flex-row justify-center items-center">
                             <DropdownMenu>
                             <li className=" p-2 rounded-lg"> 
-                                <DropdownMenuTrigger className="bg-sipe-blue-dark rounded-lg">
-                                    <Button variant="sipehover" className="rounded-lg">{initial}<ChevronDown /></Button>
+                                <DropdownMenuTrigger className="bg-sipe-blue-dark rounded-xl">
+                                    <Button variant="sipehover" className="rounded-lg gap-2 px-3">{initial}<ChevronDown /></Button>
                                     </DropdownMenuTrigger> 
                                 <DropdownMenuContent>
                                     <DropdownMenuItem>Cambiar Contraseña</DropdownMenuItem> 

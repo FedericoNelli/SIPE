@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Input } from "../input/input";
-import { Button } from "@/components/button/button";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/table/table";
-import { Badge } from "@/components/badge/badge";
+import { Input } from "../Input/Input";
+import { Button } from "@/components/Button/Button";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Table/Table";
+import { Badge } from "@/components/Badge/Badge";
 import { Search } from 'lucide-react';
 import { Filter } from 'lucide-react';
 
@@ -50,7 +50,7 @@ function Material() {
     };
 
     return (
-        <div className="bg-sipe-blue-dark p-10 rounded-3xl backdrop-opacity-10 backdrop-invert bg-sipe-white/0">
+        <div className="">
             <div className="flex justify-between w-full text-sipe-white font-bold">
                 <div className="flex flex-col mb-5">
                     <h1 className="text-3xl font-bold">Materiales</h1>
@@ -118,7 +118,7 @@ function Material() {
                             value={searchQuery}
                             onChange={handleSearch}
                             placeholder="Buscar..."
-                            className="w-full p-2 border- rounded mt-4"
+                            className="w-full p-2 rounded mt-4"
                         />
                         <ul className="mt-4">
                             {searchResults.map((result, index) => (

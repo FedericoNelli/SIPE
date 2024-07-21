@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { Button } from "../button/button"
+import { Button } from "../Button/Button"
 
 function CardLg() {
     return (
