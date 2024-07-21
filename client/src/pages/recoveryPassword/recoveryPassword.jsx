@@ -1,6 +1,6 @@
-import { Label } from '../../components/label/label';
-import { Input } from '../../components/input/input';
-import { Button } from '../../components/button/button';
+import { Label } from '../../components/Label/Label';
+import { Input } from '../../components/Input/Input';
+import { Button } from '../../components/Button/Button';
 import { Link } from 'react-router-dom';
 
 function RecoveryPassword() {
@@ -26,7 +26,7 @@ function RecoveryPassword() {
                             <Button className="mb-5" variant="sipebutton" size="sipebutton" type="submit">
                                 Enviar contraseña
                             </Button>
-                            <Link to="/login">
+                            <Link to="/">
                                 <Button variant="sipebuttonalt" size="sipebutton" type="submit">
                                     Cancelar
                                 </Button>

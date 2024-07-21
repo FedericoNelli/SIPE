@@ -1,5 +1,5 @@
-import CardMd from "@/components/cards/cardMd";
-import CardLg from "@/components/cards/cardLg";
+import CardMd from "@/components/Cards/CardMd";
+import CardLg from "@/components/Cards/CardLg";
 
 function MainDashboard() {
     return (

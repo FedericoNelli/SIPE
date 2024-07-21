@@ -1,20 +1,25 @@
-import Navbar from "./components/navbar/navbar"
-import Dashboard from "./pages/dashboard/dashboard"
-import Login from "./pages/login/login"
-import Card from "./components/cards/cardLg"
-import RecoveryPassword from "./pages/recoveryPassword/recoveryPassword"
+import Navbar from "./components/Navbar/Navbar"
+import Dashboard from "./pages/Dashboard/Dashboard"
+import Login from "./pages/Login/Login"
+import Card from "./components/Cards/CardLg"
+import RecoveryPassword from "./pages/RecoveryPassword/RecoveryPassword"
 import { BrowserRouter, Route, Routes } from "react-router-dom"
-import Materials from "./pages/materials/materials"
+import Materials from "./pages/Materials/Materials"
 import PrivateRoute from "./routes/routes"
-import AddUser from "./pages/addUser/addUser"
+import AddUser from "./pages/AddUser/AddUser"
+import Testing from "./pages/testing/Testing"
 
 function App() {
   return (
     <>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} /> 
+          <Route path="/" element={<Login />} /> 
           <Route path="/rPsw" element={<RecoveryPassword />} />
+          <Route path="/testing" element={<Testing />} />
+          <Route path="/nbr" element={<Navbar />} />
+          <Route path="/card" element={<Card />} />
+          <Route path="/mtls" element={<Materials />} />
           <Route 
                     path="/dshb" 
                     element={
@@ -23,9 +28,6 @@ function App() {
                         </PrivateRoute>
                     } 
                 />
-          <Route path="/nbr" element={<Navbar />} />
-          <Route path="/card" element={<Card />} />
-          <Route path="/mtls" element={<Materials />} />
           <Route 
                     path="/add" 
                     element={
