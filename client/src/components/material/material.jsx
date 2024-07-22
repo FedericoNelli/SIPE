@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Input } from "../Input/Input";
-import { Button } from "@/components/Button/Button";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Table/Table";
-import { Badge } from "@/components/Badge/Badge";
+import { Input } from "../input/Input";
+import { Button } from "@/components/button/Button";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/table/Table";
+import { Badge } from "@/components/badge/Badge";
 import { Search, Filter } from 'lucide-react';
 import FormMaterial from '@/components/FormMaterial/FormMaterial'; // Importa FormMaterial
 
@@ -47,6 +47,8 @@ function Material() {
 
     const closeModal = () => {
         setIsModalOpen(false);
+        setSearchQuery(''); // Restablece el texto de búsqueda
+        setSearchResults([]); // Restablece los resultados de búsqueda
     };
 
     const openFormModal = () => {
