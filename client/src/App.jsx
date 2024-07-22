@@ -1,14 +1,13 @@
-import Navbar from "./components/navbar/Navbar"
-import Dashboard from "./pages/dashboard/Dashboard"
-import Login from "./pages/login/Login"
-import Card from "./components/cards/CardLg"
-import RecoveryPassword from "./pages/recoveryPassword/RecoveryPassword"
+import Navbar from "./components/Navbar/Navbar"
+import Dashboard from "./pages/Dashboard/Dashboard"
+import Login from "./pages/Login/Login"
+import Card from "./components/Cards/CardLg"
+import RecoveryPassword from "./pages/RecoveryPassword/RecoveryPassword"
 import { BrowserRouter, Route, Routes } from "react-router-dom"
-import Materials from "./pages/materials/Materials"
+import Materials from "./pages/Materials/Materials"
 import { PrivateRoute, PublicRoute } from "./routes/routes"
-
-import AddUser from "./pages/addUser/AddUser"
-import Testing from "./pages/testing/Testing"
+import AddUser from "./pages/AddUser/AddUser"
+import Testing from "./pages/Testing/Testing"
 
 function App() {
   return (
