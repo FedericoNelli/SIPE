@@ -6,7 +6,6 @@ import RecoveryPassword from "./pages/RecoveryPassword/RecoveryPassword"
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 import Materials from "./pages/Materials/Materials"
 import { PrivateRoute, PublicRoute } from "./routes/routes"
-
 import AddUser from "./pages/AddUser/AddUser"
 import Testing from "./pages/Testing/Testing"
 
