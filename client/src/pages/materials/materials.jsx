@@ -1,6 +1,6 @@
-import Material from "@/components/material/Material"
-import Navbar from "@/components/navbar/Navbar"
-import Aside from "@/components/aside/Aside"
+import Material from "@/components/Material/Material"
+import Navbar from "@/components/Navbar/Navbar"
+import Aside from "@/components/Aside/Aside"
 
 function Materials() {
     return (

@@ -1,7 +1,7 @@
-import { Button } from "@/components/button/Button";
-import { Input } from "@/components/input/Input";
-import { Checkbox } from "@/components/checkbox/Checkbox";
-import { Label } from "@/components/label/Label";
+import { Button } from "@/components/Button/Button";
+import { Input } from "@/components/Input/Input";
+import { Checkbox } from "@/components/Checkbox/Checkbox";
+import { Label } from "@/components/Label/Label";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";

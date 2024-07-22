@@ -1,8 +1,8 @@
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/cards/Card"
-import { Label } from "@/components/label/Label"
-import { Input } from "@/components/input/Input"
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Cards/Card"
+import { Label } from "@/components/Label/Label"
+import { Input } from "@/components/Input/Input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Select/Select"
-import { Button } from "@/components/button/Button"
+import { Button } from "@/components/Button/Button"
 
 function FormMaterial( {onClose }) {
 
