@@ -8,7 +8,7 @@ const AddUser = () => {
     const [contrasenia, setContrasenia] = useState('');
     const [email, setEmail] = useState('');
     const [nombre_usuario, setNombreUsuario] = useState('');
-    const [rol, setRol] = useState('Usuario');
+    const [rol, setRol] = useState('Colaborador');
 
     const handleAddUser = async (e) => {
         e.preventDefault();
@@ -81,7 +81,7 @@ const AddUser = () => {
                 required
             />
             <select value={rol} onChange={(e) => setRol(e.target.value)}>
-                <option value="Usuario">Usuario</option>
+                <option value="Colaborador">Colaborador</option>
                 <option value="Administrador">Administrador</option>
             </select>
             <button type="submit">Agregar Usuario</button>

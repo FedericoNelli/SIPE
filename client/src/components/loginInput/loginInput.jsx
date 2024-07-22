@@ -19,6 +19,7 @@ function LoginInput() {
             if (res.data.token) {
                 localStorage.setItem('token', res.data.token);
                 localStorage.setItem('userName', res.data.nombre);
+                localStorage.setItem('rol', res.data.rol);
                 navigate('/dshb');  
             } else {
                 console.log(res.data);

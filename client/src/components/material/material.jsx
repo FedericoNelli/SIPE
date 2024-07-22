@@ -5,14 +5,14 @@ import { Button } from "@/components/Button/Button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Table/Table";
 import { Badge } from "@/components/Badge/Badge";
 import { Search, Filter } from 'lucide-react';
-import FormMaterial from '@/components/FormMaterial/FormMaterial'; // Importa FormMaterial
+import FormMaterial from '@/components/FormMaterial/FormMaterial'; 
 
 function Material() {
     const [materials, setMaterials] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isFormModalOpen, setIsFormModalOpen] = useState(false); // Agrega estado para el modal del formulario
+    const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 
     useEffect(() => {
         axios.get('http://localhost:8081/materials')
@@ -75,14 +75,14 @@ function Material() {
             <Table className="w-full text-white">
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="text-center text-sipe-white/45">Nombre</TableHead>
-                        <TableHead className="text-center text-sipe-white/45">ID</TableHead>
-                        <TableHead className="text-center text-sipe-white/45">Depósito</TableHead>
-                        <TableHead className="text-center text-sipe-white/45">Estado</TableHead>
-                        <TableHead className="text-center text-sipe-white/45">Cantidad</TableHead>
-                        <TableHead className="text-center text-sipe-white/45">Ubicación</TableHead>
-                        <TableHead className="text-center text-sipe-white/45">Matrícula</TableHead>
-                        <TableHead className="text-center text-sipe-white/45">Categoría</TableHead>
+                        <TableHead className="text-center text-sipe-gray">Nombre</TableHead>
+                        <TableHead className="text-center text-sipe-gray">ID</TableHead>
+                        <TableHead className="text-center text-sipe-gray">Depósito</TableHead>
+                        <TableHead className="text-center text-sipe-gray">Estado</TableHead>
+                        <TableHead className="text-center text-sipe-gray">Cantidad</TableHead>
+                        <TableHead className="text-center text-sipe-gray">Ubicación</TableHead>
+                        <TableHead className="text-center text-sipe-gray">Matrícula</TableHead>
+                        <TableHead className="text-center text-sipe-gray">Categoría</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
