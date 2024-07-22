@@ -43,7 +43,7 @@ app.post('/login', (req, res) => {
 
         // Generar y devolver el token JWT
         const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '1h' });
-        res.json({ token, nombre:user.nombre });
+        res.json({ token, nombre:user.nombre, rol:user.rol });
     });
 });
 
