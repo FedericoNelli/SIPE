@@ -24,7 +24,7 @@ db.connect((err) => {
 
 app.post('/login', (req, res) => {
     const { user, password } = req.body;
-
+    
     // Consulta a la base de datos para verificar usuario y contraseña
     const query = 'SELECT * FROM usuario WHERE nombre_usuario = ?';
     db.query(query, [user], (err, results) => {
@@ -88,7 +88,7 @@ app.get('/materials', (req, res) => {
     const query = `
         SELECT 
             m.id, m.nombre, m.cantidad, m.imagen, m.matricula, m.fechaUltimoEstado, 
-            m.mapa, m.bajoStock, m.estadoId, m.idEspacio, m.ultimoUsuarioId, 
+            m.mapa, m.bajoStock, m.idEstado, m.idEspacio, m.ultimoUsuarioId, 
             m.idCategoria, m.idDeposito, 
             d.nombre AS depositoNombre, 
             u.nombre AS ubicacionNombre, 
@@ -101,7 +101,7 @@ app.get('/materials', (req, res) => {
         LEFT JOIN 
             Ubicacion u ON d.idUbicacion = u.id
         LEFT JOIN 
-            Estado es ON m.estadoId = es.id
+            Estado es ON m.idEstado = es.id
         LEFT JOIN 
             Categoria c ON m.idCategoria = c.id
     `;
@@ -118,7 +118,7 @@ app.get('/materials/search', (req, res) => {
     const searchQuery = `
         SELECT 
             m.id, m.nombre, m.cantidad, m.imagen, m.matricula, m.fechaUltimoEstado, 
-            m.mapa, m.bajoStock, m.estadoId, m.idEspacio, m.ultimoUsuarioId, 
+            m.mapa, m.bajoStock, m.idEstado, m.idEspacio, m.ultimoUsuarioId, 
             m.idCategoria, m.idDeposito, 
             d.nombre AS depositoNombre, 
             u.nombre AS ubicacionNombre, 
@@ -131,7 +131,7 @@ app.get('/materials/search', (req, res) => {
         LEFT JOIN 
             Ubicacion u ON d.idUbicacion = u.id
         LEFT JOIN 
-            Estado es ON m.estadoId = es.id
+            Estado es ON m.idEstado = es.id
         LEFT JOIN 
             Categoria c ON m.idCategoria = c.id
         WHERE 

@@ -13,3 +13,12 @@ export const PublicRoute = ({ children }) => {
 
     return isAuthenticated ? <Navigate to="/dshb" /> : children;
 };
+
+export const AdminRoute = ({ children }) => {
+    const token = localStorage.getItem('token');
+    const rol = localStorage.getItem('rol');
+    const isAuthenticated = !!token;
+    const isAdmin = rol === 'Administrador';
+
+    return isAuthenticated && isAdmin ? children : <Navigate to="/dshb" />;
+};
