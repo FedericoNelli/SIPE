@@ -5,7 +5,7 @@ import { Button } from "@/components/Button/Button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Table/Table";
 import { Badge } from "@/components/Badge/Badge";
 import { Search, Filter } from 'lucide-react';
-import FormMaterial from '@/components/FormMaterial/FormMaterial'; 
+import FormMaterial from '@/components/Forms/FormMaterial'; 
 
 function Material() {
     const [materials, setMaterials] = useState([]);

@@ -15,7 +15,7 @@ const AddUser = () => {
 
         const token = localStorage.getItem('token');
         try {
-            await axios.post('http://localhost:8081/addUser', 
+            await axios.post('http://localhost:8081/agregar-usuario', 
             { nombre, apellido, legajo, nombre_usuario, contrasenia, email, rol },
             {
                 headers: {
