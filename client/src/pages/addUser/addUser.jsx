@@ -5,9 +5,9 @@ const AddUser = () => {
     const [nombre, setNombre] = useState('');
     const [apellido, setApellido] = useState('');
     const [legajo, setLegajo] = useState('');
+    const [nombre_usuario, setNombreUsuario] = useState('');
     const [contrasenia, setContrasenia] = useState('');
     const [email, setEmail] = useState('');
-    const [nombre_usuario, setNombreUsuario] = useState('');
     const [rol, setRol] = useState('Colaborador');
 
     const handleAddUser = async (e) => {
@@ -25,10 +25,10 @@ const AddUser = () => {
             setNombre('');
             setApellido('');
             setLegajo('');
+            setNombreUsuario('');
             setContrasenia('');
             setEmail('');
-            setNombreUsuario('');
-            setRol('Usuario');
+            setRol('Colaborador');
             // Muestra un mensaje en la consola
             console.log('Usuario creado');
         } catch (error) {
