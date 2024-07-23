@@ -1,5 +1,5 @@
 
-import FormMaterial from "@/components/FormMaterial/FormMaterial"
+import FormMaterial from "@/components/Forms/FormMaterial"
 
 function Testing() {
     return (

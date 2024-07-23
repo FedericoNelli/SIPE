@@ -1,13 +1,14 @@
 import { Link, NavLink } from 'react-router-dom';
-import { Home, Box, FileText, Archive, ArrowUpRight, Users, BarChart } from 'lucide-react';
+import { Home, Box, FileText, Archive, ArrowUpRight, Users, BarChart, Warehouse } from 'lucide-react';
 
 const sections = [
     { name: 'Dashboard', label: 'Dashboard', icon: <Home />, path: '/dshb', roles: ['Administrador', 'Colaborador'] },
     { name: 'Materiales', label: 'Materiales', icon: <Box />, path: '/mtls', roles: ['Administrador', 'Colaborador'] },
-    { name: 'Informes', label: 'Informes', icon: <FileText />, path: '/informes', roles: ['Administrador'] },
-    { name: 'Depositos', label: 'Depositos', icon: <Archive />, path: '/depositos', roles: ['Administrador'] },
+    { name: 'Estanterias', label: 'Estanterias', icon: <Archive />, path: '/shelf', roles: ['Administrador'] },
+    { name: 'Depositos', label: 'Depositos', icon: <Warehouse />, path: '/deposit', roles: ['Administrador'] },
     { name: 'Movimientos', label: 'Movimientos', icon: <ArrowUpRight />, path: '/movimientos', roles: ['Administrador'] },
-    { name: 'Lista de usuarios', label: 'Lista de usuarios', icon: <Users />, path: '/lista-de-usuarios', roles: ['Administrador'] },
+    { name: 'Informes', label: 'Informes', icon: <FileText />, path: '/informes', roles: ['Administrador'] },
+    { name: 'Lista de usuarios', label: 'Lista de usuarios', icon: <Users />, path: '/user', roles: ['Administrador'] },
     { name: 'Control de stock', label: 'Control de stock', icon: <BarChart />, path: '/control-de-stock', roles: ['Administrador'] },
 ];
 
@@ -28,7 +29,7 @@ function Aside() {
                                 key={index}
                                 to={section.path}
                                 className={({ isActive }) =>
-                                    `w-full text-left font-light text-sipe-white hover:bg-sipe-orange-dark hover:text-sipe-white rounded-l-lg px-3 py-3 mb-2 transition ease-in-out duration-300 ${isActive ? 'bg-sipe-orange-dark text-sipe-white' : 'text-zinc-400'}`
+                                    `w-full text-left font-light text-sipe-white hover:bg-sipe-gray hover:text-sipe-white rounded-l-lg px-3 py-3 mb-2 transition ease-in-out duration-300 ${isActive ? 'bg-sipe-orange-dark text-sipe-white' : 'text-zinc-400'}`
                                 }
                             >
                                 <span className='flex flex-row gap-2 items-center'>

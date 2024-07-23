@@ -6,8 +6,10 @@ import RecoveryPassword from "./pages/RecoveryPassword/RecoveryPassword"
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 import Materials from "./pages/Materials/Materials"
 import { PrivateRoute, PublicRoute, AdminRoute } from "./routes/routes"
-import AddUser from "./pages/AddUser/AddUser"
+import User from "./pages/User/User"
 import Testing from "./pages/Testing/Testing"
+import Shelves from "./pages/Shelves/Shelves"
+import Deposits from "./pages/Deposits/Deposits"
 
 
 function App() {
@@ -21,8 +23,10 @@ function App() {
           <Route path="/nbr" element={<Navbar />} />
           <Route path="/card" element={<Card />} />
           <Route path="/mtls" element={<PrivateRoute><Materials /></PrivateRoute>} />
+          <Route path="/shelf" element={<PrivateRoute><Shelves /></PrivateRoute>} />
+          <Route path="/deposit" element={<PrivateRoute><Deposits /></PrivateRoute>} />
           <Route path="/dshb" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/add" element={<PrivateRoute><AddUser /></PrivateRoute>} />
+          <Route path="/user" element={<PrivateRoute><User /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </>
