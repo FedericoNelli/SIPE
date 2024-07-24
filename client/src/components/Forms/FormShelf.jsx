@@ -1,10 +1,76 @@
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Cards/Card"
-import { Label } from "@/components/Label/Label"
-import { Input } from "@/components/Input/Input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Select/Select"
-import { Button } from "@/components/Button/Button"
+import { useEffect, useState } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Cards/Card";
+import { Label } from "@/components/Label/Label";
+import { Input } from "@/components/Input/Input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Select/Select";
+import { Button } from "@/components/Button/Button";
 
-function FormShelve( {onClose }) {
+function FormShelve({ onClose }) {
+    const [aisles, setAisles] = useState([]);
+    const [sides, setSides] = useState([]);
+    const [formData, setFormData] = useState({
+        cantidad_estante: '',
+        cantidad_division: '',
+        idPasillo: '',
+        idLado: ''
+    });
+
+    useEffect(() => {
+        // Fetch aisles data
+        fetch('http://localhost:8081/aisles')
+            .then(response => response.json())
+            .then(data => setAisles(data))
+            .catch(error => console.error('Error fetching aisles:', error));
+
+        // Fetch sides data
+        fetch('http://localhost:8081/sides')
+            .then(response => response.json())
+            .then(data => setSides(data))
+            .catch(error => console.error('Error fetching sides:', error));
+    }, []);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+
+        setFormData((prevData) => ({
+            ...prevData,
+            [name]: value
+        }));
+    };
+
+
+    const handleSelectChange = (name, value) => {
+        setFormData((prevData) => ({
+            ...prevData,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = () => {
+        fetch('http://localhost:8081/addShelf', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    toast.error("Error al agregar Estantería")
+                    console.error('Error:', data.error);
+                } else {
+                    toast.success("Estantería creada con éxito!!")
+                    console.log('Success:', data.message);
+                    if (onClose) onClose(); // Cierra el formulario después de agregar
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+    };
 
     const handleCancel = () => {
         if (onClose) onClose(); // Llama a la función de cierre pasada como prop
@@ -12,6 +78,7 @@ function FormShelve( {onClose }) {
 
     return (
         <>
+            <ToastContainer />
             <Card className="bg-sipe-blue-dark text-sipe-white p-4">
                 <CardHeader>
                     <CardTitle className="text-3xl text-center font-bold mb-2">Agregar nueva estantería</CardTitle>
@@ -20,48 +87,59 @@ function FormShelve( {onClose }) {
                 <CardContent className="flex flex-col space-y-10">
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
-                        <Label htmlFor="quantity" className="text-sm font-medium">
-                                Numero de Estanteria
-                            </Label>
-                            <Input className="border-b" id="quantity" type="number" placeholder="Ingresa el numero de estanteria" />
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-2">
-                        <Label htmlFor="quantity" className="text-sm font-medium">
+                            <Label htmlFor="cantidad_estante" className="text-sm font-medium">
                                 Cantidad de estantes
                             </Label>
-                            <Input className="border-b" id="quantity" type="number" placeholder="Ingresa la cantidad de estantes" />
+                            <Input
+                                className="border-b"
+                                id="cantidad_estante"
+                                name="cantidad_estante"
+                                type="number"
+                                placeholder="Ingresa la cantidad de estantes"
+                                value={formData.cantidad_estante}
+                                onChange={handleChange}
+                                min="0"
+                            />
                         </div>
                     </div>
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
-                        <Label htmlFor="quantity" className="text-sm font-medium">
+                            <Label htmlFor="cantidad_division" className="text-sm font-medium">
                                 Cantidad de divisiones
                             </Label>
-                            <Input className="border-b" id="quantity" type="number" placeholder="Ingresa la cantidad de divisiones" />
+                            <Input
+                                className="border-b"
+                                id="cantidad_division"
+                                name="cantidad_division"
+                                type="number"
+                                placeholder="Ingresa la cantidad de divisiones"
+                                value={formData.cantidad_division}
+                                onChange={handleChange}
+                                min="0"
+                            />
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
                         <Label className="text-sm font-medium">Ubicación</Label>
                         <div className="flex w-full gap-4">
-                            <Select id="aisle">
+                            <Select id="aisle" onValueChange={(value) => handleSelectChange('idPasillo', value)}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Pasillo" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="pasillo-a">Pasillo A</SelectItem>
-                                    <SelectItem value="pasillo-b">Pasillo B</SelectItem>
-                                    <SelectItem value="pasillo-c">Pasillo C</SelectItem>
+                                    {aisles.map((aisle) => (
+                                        <SelectItem key={aisle.id} value={aisle.id}>{aisle.numero}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
-                            <Select id="aisle-side">
+                            <Select id="aisle-side" onValueChange={(value) => handleSelectChange('idLado', value)}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Lado de pasillo" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="izquierda">Izquierda</SelectItem>
-                                    <SelectItem value="derecha">Derecha</SelectItem>
+                                    {sides.map((side) => (
+                                        <SelectItem key={side.id} value={side.id}>{side.descripcion}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -71,7 +149,7 @@ function FormShelve( {onClose }) {
                     <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
                         CANCELAR
                     </Button>
-                    <Button variant="sipebutton" size="sipebutton">
+                    <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>
                         AGREGAR
                     </Button>
                 </CardFooter>
@@ -80,5 +158,4 @@ function FormShelve( {onClose }) {
     )
 }
 
-export default FormShelve
-
+export default FormShelve;

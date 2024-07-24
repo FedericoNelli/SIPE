@@ -56,32 +56,52 @@ app.post('/logout', (req, res) => {
 app.post('/addUser', (req, res) => {
     const { nombre, apellido, legajo, nombre_usuario, contrasenia, email, rol } = req.body;
 
-    // Verificar si el usuario actual es administrador
+    if (!req.headers.authorization) {
+        console.log('No Authorization header');
+        return res.status(401).send("Authorization header missing");
+    }
+
     const token = req.headers.authorization.split(' ')[1];
+    console.log('Token recibido:', token);
+
     let decoded;
     try {
         decoded = jwt.verify(token, SECRET_KEY);
+        console.log('Token decodificado:', decoded);
     } catch (err) {
+        console.log('Error al verificar el token:', err);
         return res.status(401).send("Token invalido");
     }
+
     if (decoded.rol !== 'Administrador') {
+        console.log('Usuario no es administrador:', decoded.rol);
         return res.status(403).send('Permiso denegado');
     }
 
-    // Encriptar la contraseña
     const salt = bcrypt.genSaltSync(10);
     const passwordHash = bcrypt.hashSync(contrasenia, salt);
 
     const user = { nombre, apellido, legajo, nombre_usuario, contrasenia: passwordHash, email, rol };
+    console.log('Datos recibidos:', user);
 
-    // Insertar el usuario en la base de datos
     const query = 'INSERT INTO usuario SET ?';
     db.query(query, user, (err, result) => {
         if (err) {
-            console.log(err);
+            console.log('Error al insertar en la base de datos:', err);
             return res.status(500).send("Error al crear el usuario");
         }
         res.status(201).send('Usuario creado');
+    });
+});
+
+app.get('/users', (req, res) => {
+    const query = `
+        SELECT 
+            u.id, u.nombre, u.apellido, u.legajo, u.email, u.rol FROM Usuario u`;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
     });
 });
 
@@ -131,11 +151,11 @@ app.post('/addMaterial', (req, res) => {
         ocupado
     } = req.body;
 
-    
-
     if (!nombre || !categoria || !estado || !cantidad || !matricula || !bajoStock || !espacio) {
         return res.status(400).json({ error: 'Campos obligatorios faltantes' });
     }
+
+    const imagenBuffer = imagen ? Buffer.from(imagen.split(',')[1], 'base64') : null;
 
     const query = `
         INSERT INTO Material (
@@ -158,7 +178,7 @@ app.post('/addMaterial', (req, res) => {
     const values = [
         nombre,
         cantidad,
-        imagen || null,
+        imagenBuffer,
         matricula,
         fechaUltimoEstado || new Date(),
         mapa || null,
@@ -234,6 +254,25 @@ app.get('/shelves', (req, res) => {
     });
 });
 
+app.post('/addDeposit', (req, res) => {
+    const { nombre, idUbicacion } = req.body;
+
+    if (!nombre || !idUbicacion) {
+        return res.status(400).json({ message: 'Nombre y ubicación son obligatorios' });
+    }
+
+    const query = 'INSERT INTO Deposito (nombre, idUbicacion) VALUES (?, ?)';
+    const values = [nombre, idUbicacion];
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al insertar depósito:', err);
+            return res.status(500).json({ message: 'Error al agregar depósito' });
+        }
+        res.status(200).json({ message: 'Depósito agregado exitosamente' });
+    });
+});
+
 app.get('/deposits', (req, res) => {
     const query = `
         SELECT d.id, d.nombre, d.idUbicacion, u.nombre AS nombreUbicacion FROM Deposito d LEFT JOIN Ubicacion u ON d.idUbicacion = u.id`;
@@ -280,6 +319,26 @@ app.get('/statuses', (req, res) => {
     });
 });
 
+// Endpoint para agregar una nueva estantería
+app.post('/addShelf', (req, res) => {
+    const { cantidad_estante, cantidad_division, idPasillo, idLado } = req.body;
+
+    if (!cantidad_estante || !cantidad_division || !idPasillo || !idLado) {
+        return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+
+    const query = 'INSERT INTO Estanteria (cantidad_estante, cantidad_division, idPasillo, idLado) VALUES (?, ?, ?, ?)';
+    const values = [cantidad_estante, cantidad_division, idPasillo, idLado];
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al insertar estantería:', err);
+            return res.status(500).json({ error: 'Error al agregar estantería', details: err });
+        }
+        res.status(200).json({ message: 'Estantería agregada exitosamente', result });
+    });
+});
+
 app.get('/shelf', (req, res) => {
     const query = 'SELECT id FROM Estanteria';
     db.query(query, (err, results) => {
@@ -305,6 +364,26 @@ app.get('/spaces/:shelfId', (req, res) => {
         res.json(results);
     });
 });
+
+// Endpoint para obtener los pasillos
+app.get('/aisles', (req, res) => {
+    const query = 'SELECT id, numero FROM Pasillo';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+// Endpoint para obtener los lados
+app.get('/sides', (req, res) => {
+    const query = 'SELECT id, descripcion FROM Lado';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+
 
 app.listen(8081, () => {
     console.log('Servidor corriendo en el puerto 8081');
