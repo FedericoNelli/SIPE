@@ -95,12 +95,12 @@ function FormMaterial({ onClose }) {
 
     const handleSave = async () => {
         const { nombre, cantidad, matricula, bajoStock, estado, espacio, categoria, deposito } = formData;
-    
+
         if (!nombre || !categoria || !estado || !cantidad || !matricula || !bajoStock || !espacio) {
             alert('Por favor completa todos los campos');
             return;
         }
-        
+
         console.log('FormData:', formData);
 
 
@@ -121,13 +121,13 @@ function FormMaterial({ onClose }) {
                     deposito,
                 }),
             });
-    
+
             const data = await response.json();
-    
+
             if (!response.ok) {
                 throw new Error(data.error || 'No se pudo agregar el material');
             }
-    
+
             alert('Material agregado exitosamente');
             if (onClose) onClose();
         } catch (error) {
@@ -252,11 +252,17 @@ function FormMaterial({ onClose }) {
                             </SelectContent>
                         </Select>
                     </div>
+                    <div className="">
+                        <Label className="text-sm font-medium">Imagen</Label>
+                        <div className="flex mt-4">
+                            <Input id="image" type="file" className="bg-sipe-gray text-sipe-white w-full p-0 rounded-sm" placeholder="Seleccionar archivo" />
+                        </div>
+                    </div>
                 </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-4">
-                <Button className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" onClick={handleCancel}>Cancelar</Button>
-                <Button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onClick={handleSave}>Guardar</Button>
+                <Button className="" variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>CANCELAR</Button>
+                <Button className="" variant="sipebutton" size="sipebutton" onClick={handleSave}>AGREGAR</Button>
             </CardFooter>
         </Card>
     );

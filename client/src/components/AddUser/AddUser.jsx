@@ -15,7 +15,7 @@ const AddUser = () => {
 
         const token = localStorage.getItem('token');
         try {
-            await axios.post('http://localhost:8081/agregar-usuario', 
+            await axios.post('http://localhost:8081/addUser', 
             { nombre, apellido, legajo, nombre_usuario, contrasenia, email, rol },
             {
                 headers: {
@@ -28,7 +28,7 @@ const AddUser = () => {
             setNombreUsuario('');
             setContrasenia('');
             setEmail('');
-            setRol('Colaborador');
+            setRol('');
             // Muestra un mensaje en la consola
             console.log('Usuario creado');
         } catch (error) {
