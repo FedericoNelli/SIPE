@@ -1,27 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Label } from '../../components/Label/Label';
 import { Input } from '../../components/Input/Input';
 import { Button } from '../../components/Button/Button';
-import { Link, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
-function RecoveryPassword() {
-    const [email, setEmail] = useState('');
+function RecoveryCode() {
+    const [code, setCode] = useState('');
     const [message, setMessage] = useState('');
+    const [resendTimeout, setResendTimeout] = useState(0);
+    const location = useLocation();
     const navigate = useNavigate();
+    const email = location.state.email;
+
+    useEffect(() => {
+        let timer;
+        if (resendTimeout > 0) {
+            timer = setTimeout(() => setResendTimeout(resendTimeout - 1), 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [resendTimeout]);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
-            await axios.post('http://localhost:8081/sendRecoveryCode', { email });
-            setMessage('Correo de recuperación enviado');
-            navigate('/rCod', { state: { email } });
+            await axios.post('http://localhost:8081/verifyRecoveryCode', { email, recoveryCode: code });
+            navigate('/chPsw', { state: { email } });
         } catch (err) {
-            if (err.response && err.response.status === 404) {
-                setMessage('Email no encontrado');
-            } else {
-                setMessage('Error al enviar el correo de recuperación');
-            }
+            setMessage('Código incorrecto');
+        }
+    };
+
+    const handleResendCode = async () => {
+        try {
+            await axios.post('http://localhost:8081/sendRecoveryCode', { email });
+            setMessage('Nuevo código enviado');
+            setResendTimeout(60);
+        } catch (err) {
+            setMessage('Error al reenviar el código');
         }
     };
 
@@ -35,19 +51,22 @@ function RecoveryPassword() {
                     <div className="mx-auto w-full max-w-md space-y-4">
                         <div className="space-y-2">
                             <h1 className="font-bold text-sipe-white text-4xl">Recuperá tu contraseña</h1>
-                            <p className="font-thin text-sipe-white">Escribí tu email y recibí allí un código para reestablecer tu contraseña</p>
+                            <p className="font-thin text-sipe-white">Ingresá el código que enviamos a tu email</p>
                         </div>
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <Label>
-                                    <Input className="border rounded-lg h-10 px-6 py-6" id="user" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                                    <Input className="border rounded-lg h-10 px-6 py-6" id="user" placeholder="Código" value={code} onChange={(e) => setCode(e.target.value)} />
                                 </Label>
                             </div>
                             <div>
-                                <Button className="mb-5" variant="sipebutton" size="sipebutton" type="button" onClick={handleSubmit}>
-                                    Enviar correo
+                                <Button className="mb-5" variant="sipebutton" size="sipebutton" type="submit" onClick={handleSubmit}>
+                                    Confirmar
                                 </Button>
-                                <Link to="/">
+                                <Button className="mb-5" variant="sipebutton" size="sipebutton" type="button" onClick={handleResendCode} disabled={resendTimeout > 0}>
+                                    {resendTimeout > 0 ? `Reenviar código (${resendTimeout})` : 'Reenviar código'}
+                                </Button>
+                                <Link to="/rPsw">
                                     <Button variant="sipebuttonalt" size="sipebutton" type="submit">
                                         Cancelar
                                     </Button>
@@ -62,7 +81,6 @@ function RecoveryPassword() {
     );
 }
 
-export default RecoveryPassword;
-
+export default RecoveryCode;
 
 
