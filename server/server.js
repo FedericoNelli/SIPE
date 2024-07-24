@@ -68,7 +68,7 @@ app.post('/addUser', (req, res) => {
     let decoded;
     try {
         decoded = jwt.verify(token, SECRET_KEY);
-    } catch(err) {
+    } catch (err) {
         return res.status(401).send("Token invalido");
     }
 
@@ -324,8 +324,9 @@ app.post('/changePassword', (req, res) => {
             console.error('Error al actualizar la contraseña:', err);
             return res.status(500).send('Error al actualizar la contraseña');
         }
-
         res.status(200).send('Contraseña actualizada');
+    })
+});
 
 app.get('/shelves', (req, res) => {
     const query = `
