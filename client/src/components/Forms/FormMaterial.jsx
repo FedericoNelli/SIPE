@@ -16,16 +16,16 @@ function FormMaterial({ onClose }) {
     const [spaces, setSpaces] = useState([]);
     const [selectedShelf, setSelectedShelf] = useState(null);
     const [formData, setFormData] = useState({
-        name: '',
+        nombre: '',
         depositLocation: '',
         depositName: '',
-        category: '',
-        status: '',
-        quantity: '',
-        enrollment: '',
-        lowStock: '',
-        shelf: '',
-        space: ''
+        categoria: '',
+        estado: '',
+        cantidad: '',
+        matricula: '',
+        bajoStock: '',
+        estanteria: '',
+        espacio: ''
     });
 
     useEffect(() => {
@@ -93,42 +93,47 @@ function FormMaterial({ onClose }) {
         }
     };
 
-    const handleSave = () => {
-        const { name, depositLocation, depositName, category, status, quantity, enrollment, lowStock, shelf, space } = formData;
-
-        if (!name || !depositLocation || !depositName || !category || !status || !quantity || !enrollment || !lowStock || !shelf || !space) {
+    const handleSave = async () => {
+        const { nombre, cantidad, matricula, bajoStock, estado, espacio, categoria, deposito } = formData;
+    
+        if (!nombre || !categoria || !estado || !cantidad || !matricula || !bajoStock || !espacio) {
             alert('Por favor completa todos los campos');
             return;
         }
+        
+        console.log('FormData:', formData);
 
-        fetch('http://localhost:8081/addMaterial', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                name,
-                depositLocation,
-                depositName,
-                category,
-                status,
-                quantity,
-                enrollment,
-                lowStock,
-                shelf,
-                space
-            })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                    alert('Material agregado exitosamente');
-                    if (onClose) onClose();
-                } else {
-                    alert('No se pudo agregar el material');
-                }
-            })
-            .catch(error => console.error('Error adding material:', error));
+
+        try {
+            const response = await fetch('http://localhost:8081/addMaterial', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nombre,
+                    cantidad,
+                    matricula,
+                    bajoStock,
+                    estado,
+                    espacio,
+                    categoria,
+                    deposito,
+                }),
+            });
+    
+            const data = await response.json();
+    
+            if (!response.ok) {
+                throw new Error(data.error || 'No se pudo agregar el material');
+            }
+    
+            alert('Material agregado exitosamente');
+            if (onClose) onClose();
+        } catch (error) {
+            console.error('Error adding material:', error);
+            alert('Error al agregar el material');
+        }
     };
 
     const handleCancel = () => {
@@ -144,8 +149,8 @@ function FormMaterial({ onClose }) {
             <CardContent className="grid gap-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="name" className="text-sm font-medium">Nombre del material</Label>
-                        <Input className="border-b" id="name" placeholder="Ingresa el nombre del material" value={formData.name} onChange={handleInputChange} />
+                        <Label htmlFor="nombre" className="text-sm font-medium">Nombre del material</Label>
+                        <Input className="border-b" id="nombre" placeholder="Ingresa el nombre del material" value={formData.nombre} onChange={handleInputChange} />
                     </div>
                     <div className="grid gap-2">
                         <Label htmlFor="depositLocation" className="text-sm font-medium">Ubicación del depósito</Label>
@@ -163,8 +168,8 @@ function FormMaterial({ onClose }) {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="depositName" className="text-sm font-medium">Nombre del depósito</Label>
-                        <Select id="depositName" onValueChange={(value) => handleSelectChange('depositName', value)}>
+                        <Label htmlFor="deposito" className="text-sm font-medium">Nombre del depósito</Label>
+                        <Select id="deposito" onValueChange={(value) => handleSelectChange('deposito', value)}>
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona el depósito" />
                             </SelectTrigger>
@@ -176,8 +181,8 @@ function FormMaterial({ onClose }) {
                         </Select>
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="category" className="text-sm font-medium">Categoría</Label>
-                        <Select id="category" onValueChange={(value) => handleSelectChange('category', value)}>
+                        <Label htmlFor="categoria" className="text-sm font-medium">Categoría</Label>
+                        <Select id="categoria" onValueChange={(value) => handleSelectChange('categoria', value)}>
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona la categoría" />
                             </SelectTrigger>
@@ -191,8 +196,8 @@ function FormMaterial({ onClose }) {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="status" className="text-sm font-medium">Estado</Label>
-                        <Select id="status" onValueChange={(value) => handleSelectChange('status', value)}>
+                        <Label htmlFor="estado" className="text-sm font-medium">Estado</Label>
+                        <Select id="estado" onValueChange={(value) => handleSelectChange('estado', value)}>
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona el estado" />
                             </SelectTrigger>
@@ -204,18 +209,18 @@ function FormMaterial({ onClose }) {
                         </Select>
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="quantity" className="text-sm font-medium">Cantidad</Label>
-                        <Input className="border-b" id="quantity" type="number" placeholder="Ingresa la cantidad" value={formData.quantity} onChange={handleInputChange} />
+                        <Label htmlFor="cantidad" className="text-sm font-medium">Cantidad</Label>
+                        <Input className="border-b" id="cantidad" type="number" placeholder="Ingresa la cantidad" value={formData.cantidad} onChange={handleInputChange} />
                     </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="enrollment" className="text-sm font-medium">Matrícula</Label>
-                        <Input className="border-b" id="enrollment" placeholder="Ingresa la matrícula" value={formData.enrollment} onChange={handleInputChange} />
+                        <Label htmlFor="matricula" className="text-sm font-medium">Matrícula</Label>
+                        <Input className="border-b" id="matricula" placeholder="Ingresa la matrícula" value={formData.matricula} onChange={handleInputChange} />
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="lowStock" className="text-sm font-medium">Bajo stock</Label>
-                        <Input className="border-b" id="lowStock" type="number" placeholder="Ingresa el umbral de bajo stock" value={formData.lowStock} onChange={handleInputChange} />
+                        <Label htmlFor="bajoStock" className="text-sm font-medium">Bajo stock</Label>
+                        <Input className="border-b" id="bajoStock" type="number" placeholder="Ingresa el umbral de bajo stock" value={formData.bajoStock} onChange={handleInputChange} />
                     </div>
                 </div>
                 <div className="grid gap-4">
@@ -234,7 +239,7 @@ function FormMaterial({ onClose }) {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Select id="space" onValueChange={(value) => handleSelectChange('space', value)}>
+                        <Select id="espacio" onValueChange={(value) => handleSelectChange('espacio', value)}>
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Espacio" />
                             </SelectTrigger>
