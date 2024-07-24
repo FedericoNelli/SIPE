@@ -5,6 +5,7 @@ import { Label } from "@/components/Label/Label";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from 'framer-motion';
 import axios from "axios";
 
 function LoginInput() {
@@ -20,7 +21,7 @@ function LoginInput() {
                 localStorage.setItem('token', res.data.token);
                 localStorage.setItem('userName', res.data.nombre);
                 localStorage.setItem('rol', res.data.rol);
-                navigate('/dshb');  
+                navigate('/dshb');
             } else {
                 console.log(res.data);
             }
@@ -30,7 +31,11 @@ function LoginInput() {
     }
 
     return (
-        <div className="mx-auto w-full md:w-40 lg:w-80 xl:w-8/12 space-y-4">
+        <motion.div
+            initial={{ x: 400 }}
+            animate={{ x: 0 }}
+            transition={{ type: "spring", stiffness: 100 }}
+            className="mx-auto w-full md:w-40 lg:w-80 xl:w-8/12 space-y-4">
             <div className="space-y-2">
                 <h1 className="font-bold text-sipe-white text-4xl">Bienvenido a SIPE</h1>
                 <p className="font-thin text-sipe-white">Por favor, entrá con tu cuenta</p>
@@ -58,7 +63,7 @@ function LoginInput() {
                     </Button>
                 </form>
             </div>
-        </div>
+        </motion.div>
     );
 }
 
