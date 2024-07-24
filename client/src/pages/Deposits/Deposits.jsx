@@ -1,10 +1,13 @@
 import Navbar from "@/components/Navbar/Navbar"
 import Aside from "@/components/Aside/Aside"
 import Deposit from "@/components/Deposit/Deposit"
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function Deposits() {
     return (
         <section className="min-h-screen flex bg-sipe-gradient">
+            <ToastContainer />
             <div>
                 <Aside />
             </div>

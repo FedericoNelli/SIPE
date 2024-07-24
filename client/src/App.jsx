@@ -1,3 +1,5 @@
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Navbar from "./components/Navbar/Navbar"
 import Dashboard from "./pages/Dashboard/Dashboard"
 import Login from "./pages/Login/Login"
@@ -6,7 +8,7 @@ import RecoveryPassword from "./pages/RecoveryPassword/RecoveryPassword"
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 import Materials from "./pages/Materials/Materials"
 import { PrivateRoute, PublicRoute } from "./routes/routes"
-import User from "./pages/User/User"
+import Users from "./pages/Users/Users"
 import Testing from "./pages/Testing/Testing"
 import Shelves from "./pages/Shelves/Shelves"
 import Deposits from "./pages/Deposits/Deposits"
@@ -15,6 +17,7 @@ import Deposits from "./pages/Deposits/Deposits"
 function App() {
   return (
     <>
+    <ToastContainer />
       <BrowserRouter>
         <Routes>
         <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
@@ -26,7 +29,7 @@ function App() {
           <Route path="/shelf" element={<PrivateRoute><Shelves /></PrivateRoute>} />
           <Route path="/deposit" element={<PrivateRoute><Deposits /></PrivateRoute>} />
           <Route path="/dshb" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-          <Route path="/user" element={<PrivateRoute><User /></PrivateRoute>} />
+          <Route path="/user" element={<PrivateRoute><Users /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </>
