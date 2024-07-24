@@ -3,7 +3,7 @@ import { Input } from "@/components/Input/Input";
 import { Checkbox } from "@/components/Checkbox/Checkbox";
 import { Label } from "@/components/Label/Label";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from 'framer-motion';
 import axios from "axios";
@@ -11,7 +11,17 @@ import axios from "axios";
 function LoginInput() {
     const [user, setUser] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const savedUser = localStorage.getItem('rememberedUser');
+        if (savedUser) {
+            setUser(savedUser);
+            setRememberMe(true);
+        }
+    }, []);
 
     async function handleSubmit(event) {
         event.preventDefault();
@@ -21,12 +31,26 @@ function LoginInput() {
                 localStorage.setItem('token', res.data.token);
                 localStorage.setItem('userName', res.data.nombre);
                 localStorage.setItem('rol', res.data.rol);
-                navigate('/dshb');
+                if (rememberMe) {
+                    localStorage.setItem('rememberedUser', user);
+                } else {
+                    localStorage.removeItem('rememberedUser');
+                }
+                navigate('/dshb');  
             } else {
-                console.log(res.data);
+                setErrorMessage('Usuario y/o contraseña incorrectos.');
             }
         } catch (err) {
             console.log(err);
+            setErrorMessage('Usuario y/o contraseña incorrectos.');
+        }
+    }
+
+    function handleCheckboxChange(isChecked) {
+        setRememberMe(isChecked);
+        if (!isChecked) {
+            localStorage.removeItem('rememberedUser');
+            setUser('');
         }
     }
 
@@ -44,20 +68,21 @@ function LoginInput() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="user">
-                            <Input className="border rounded-lg h-10 px-6 py-6" id="user" placeholder="Usuario" required type="text" onChange={u => setUser(u.target.value)} />
+                            <Input className="border rounded-lg h-10 px-6 py-6" id="user" placeholder="Usuario" required type="text" value={user} onChange={u => setUser(u.target.value)} />
                         </Label>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="password">
-                            <Input className="border rounded-lg h-10 px-6 py-6" id="password" placeholder="Contraseña" required type="password" onChange={u => setPassword(u.target.value)} />
+                            <Input className="border rounded-lg h-10 px-6 py-6" id="password" placeholder="Contraseña" required type="password" value={password} onChange={u => setPassword(u.target.value)} />
                         </Label>
                     </div>
                     <div className='flex justify-center items-center gap-2 text-sipe-gray'>
-                        <Checkbox /> <span className="text-xs">Recordarme</span>
+                        <Checkbox checked={rememberMe} onCheckedChange={handleCheckboxChange} /> <span className="text-xs">Recordarme</span>
                         <Link className="ml-auto text-xs" to="/rPsw">
                             ¿Olvidaste tu contraseña?
                         </Link>
                     </div>
+                    {errorMessage && <div className="text-red-500 text-xs">{errorMessage}</div>}
                     <Button variant="sipebutton" size="sipebutton" type="submit">
                         LOGIN
                     </Button>
