@@ -116,27 +116,27 @@ app.get('/materials', (req, res) => {
 // Ruta para agregar un nuevo material
 app.post('/addMaterial', (req, res) => {
     const {
-        name,
-        quantity,
-        image,
-        enrollment,
-        lastStateDate,
-        map,
-        lowStock,
-        status,
-        space,
-        lastUserId,
-        category,
-        deposit,
-        occupied
+        nombre,
+        cantidad,
+        imagen,
+        matricula,
+        fechaUltimoEstado,
+        mapa,
+        bajoStock,
+        estado,
+        espacio,
+        ultimousuarioId,
+        categoria,
+        deposito,
+        ocupado
     } = req.body;
 
-    // Verificar que todos los campos obligatorios estÃ©n presentes
-    if (!name || !quantity || !status || !space || !category || !deposit) {
-        return res.status(400).send('Campos obligatorios faltantes');
+    
+
+    if (!nombre || !categoria || !estado || !cantidad || !matricula || !bajoStock || !espacio) {
+        return res.status(400).json({ error: 'Campos obligatorios faltantes' });
     }
 
-    // Crear la consulta SQL
     const query = `
         INSERT INTO Material (
             nombre, 
@@ -155,24 +155,22 @@ app.post('/addMaterial', (req, res) => {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    // Crear el array de valores para la consulta
     const values = [
-        name,
-        quantity,
-        image || null, // Puede ser NULL si no se proporciona
-        enrollment || null, // Puede ser NULL si no se proporciona
-        lastStateDate || null, // Puede ser NULL si no se proporciona
-        map || null, // Puede ser NULL si no se proporciona
-        lowStock || 0, // Valor por defecto
-        status,
-        space,
-        lastUserId || null, // Puede ser NULL si no se proporciona
-        category,
-        deposit,
-        occupied || true // Valor por defecto
+        nombre,
+        cantidad,
+        imagen || null,
+        matricula,
+        fechaUltimoEstado || new Date(),
+        mapa || null,
+        bajoStock,
+        estado,
+        espacio,
+        ultimousuarioId || null,
+        categoria,
+        deposito,
+        ocupado || true
     ];
 
-    // Ejecutar la consulta
     db.query(query, values, (err, result) => {
         if (err) {
             console.error('Error al insertar material:', err);
