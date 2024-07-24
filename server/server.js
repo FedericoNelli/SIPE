@@ -25,7 +25,7 @@ db.connect((err) => {
 
 app.post('/login', (req, res) => {
     const { user, password } = req.body;
-    
+
     // Consulta a la base de datos para verificar usuario y contraseña
     const query = 'SELECT * FROM usuario WHERE nombre_usuario = ?';
     db.query(query, [user], (err, results) => {
@@ -57,32 +57,49 @@ app.post('/logout', (req, res) => {
 app.post('/addUser', (req, res) => {
     const { nombre, apellido, legajo, nombre_usuario, contrasenia, email, rol } = req.body;
 
-    // Verificar si el usuario actual es administrador
+    if (!req.headers.authorization) {
+        console.log('No Authorization header');
+        return res.status(401).send("Authorization header missing");
+    }
+
     const token = req.headers.authorization.split(' ')[1];
+    console.log('Token recibido:', token);
+
     let decoded;
     try {
         decoded = jwt.verify(token, SECRET_KEY);
     } catch(err) {
         return res.status(401).send("Token invalido");
     }
+
     if (decoded.rol !== 'Administrador') {
+        console.log('Usuario no es administrador:', decoded.rol);
         return res.status(403).send('Permiso denegado');
     }
 
-    // Encriptar la contraseña
     const salt = bcrypt.genSaltSync(10);
     const passwordHash = bcrypt.hashSync(contrasenia, salt);
 
     const user = { nombre, apellido, legajo, nombre_usuario, contrasenia: passwordHash, email, rol };
 
-    // Insertar el usuario en la base de datos
     const query = 'INSERT INTO usuario SET ?';
     db.query(query, user, (err, result) => {
         if (err) {
-            console.log(err);
+            console.log('Error al insertar en la base de datos:', err);
             return res.status(500).send("Error al crear el usuario");
         }
         res.status(201).send('Usuario creado');
+    });
+});
+
+app.get('/users', (req, res) => {
+    const query = `
+        SELECT 
+            u.id, u.nombre, u.apellido, u.legajo, u.email, u.rol FROM Usuario u`;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
     });
 });
 
@@ -111,6 +128,73 @@ app.get('/materials', (req, res) => {
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json(results);
+    });
+});
+
+// Ruta para agregar un nuevo material
+app.post('/addMaterial', (req, res) => {
+    const {
+        nombre,
+        cantidad,
+        imagen,
+        matricula,
+        fechaUltimoEstado,
+        mapa,
+        bajoStock,
+        estado,
+        espacio,
+        ultimousuarioId,
+        categoria,
+        deposito,
+        ocupado
+    } = req.body;
+
+    if (!nombre || !categoria || !estado || !cantidad || !matricula || !bajoStock || !espacio) {
+        return res.status(400).json({ error: 'Campos obligatorios faltantes' });
+    }
+
+    const imagenBuffer = imagen ? Buffer.from(imagen.split(',')[1], 'base64') : null;
+
+    const query = `
+        INSERT INTO Material (
+            nombre, 
+            cantidad, 
+            imagen, 
+            matricula, 
+            fechaUltimoEstado, 
+            mapa, 
+            bajoStock, 
+            idEstado, 
+            idEspacio, 
+            ultimoUsuarioId, 
+            idCategoria, 
+            idDeposito,
+            ocupado
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const values = [
+        nombre,
+        cantidad,
+        imagenBuffer,
+        matricula,
+        fechaUltimoEstado || new Date(),
+        mapa || null,
+        bajoStock,
+        estado,
+        espacio,
+        ultimousuarioId || null,
+        categoria,
+        deposito,
+        ocupado || true
+    ];
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al insertar material:', err);
+            return res.status(500).json({ error: 'Error al agregar material', details: err });
+        }
+        res.status(200).json({ message: 'Material agregado exitosamente', result });
     });
 });
 
@@ -147,6 +231,7 @@ app.get('/materials/search', (req, res) => {
         res.json(results);
     });
 });
+
 
 // Configurar el transportador de nodemailer
 const transporter = nodemailer.createTransport({
@@ -241,9 +326,159 @@ app.post('/changePassword', (req, res) => {
         }
 
         res.status(200).send('Contraseña actualizada');
+
+app.get('/shelves', (req, res) => {
+    const query = `
+        SELECT 
+            e.id, e.cantidad_estante, e.cantidad_division, e.idPasillo, e.idLado, 
+            p.numero AS numeroPasillo, 
+            l.descripcion AS direccionLado 
+        FROM 
+            Estanteria e
+        LEFT JOIN 
+            Pasillo p ON e.idPasillo = p.id
+        LEFT JOIN 
+            Lado l ON e.idLado = l.id
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
     });
 });
+
+app.post('/addDeposit', (req, res) => {
+    const { nombre, idUbicacion } = req.body;
+
+    if (!nombre || !idUbicacion) {
+        return res.status(400).json({ message: 'Nombre y ubicación son obligatorios' });
+    }
+
+    const query = 'INSERT INTO Deposito (nombre, idUbicacion) VALUES (?, ?)';
+    const values = [nombre, idUbicacion];
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al insertar depósito:', err);
+            return res.status(500).json({ message: 'Error al agregar depósito' });
+        }
+        res.status(200).json({ message: 'Depósito agregado exitosamente' });
+    });
+});
+
+app.get('/deposits', (req, res) => {
+    const query = `
+        SELECT d.id, d.nombre, d.idUbicacion, u.nombre AS nombreUbicacion FROM Deposito d LEFT JOIN Ubicacion u ON d.idUbicacion = u.id`;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+app.get('/deposit-locations', (req, res) => {
+    const query = 'SELECT id, nombre FROM Ubicacion';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+app.get('/deposit-names', (req, res) => {
+    const locationId = req.query.locationId;
+    if (!locationId) {
+        return res.status(400).send('Se requiere locationId');
+    }
+    const query = 'SELECT id, nombre FROM Deposito WHERE idUbicacion = ?';
+    db.query(query, [locationId], (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+app.get('/categories', (req, res) => {
+    const query = 'SELECT id, descripcion FROM Categoria';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+app.get('/statuses', (req, res) => {
+    const query = 'SELECT id, descripcion FROM Estado';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+// Endpoint para agregar una nueva estantería
+app.post('/addShelf', (req, res) => {
+    const { cantidad_estante, cantidad_division, idPasillo, idLado } = req.body;
+
+    if (!cantidad_estante || !cantidad_division || !idPasillo || !idLado) {
+        return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+
+    const query = 'INSERT INTO Estanteria (cantidad_estante, cantidad_division, idPasillo, idLado) VALUES (?, ?, ?, ?)';
+    const values = [cantidad_estante, cantidad_division, idPasillo, idLado];
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al insertar estantería:', err);
+            return res.status(500).json({ error: 'Error al agregar estantería', details: err });
+        }
+        res.status(200).json({ message: 'Estantería agregada exitosamente', result });
+    });
+});
+
+app.get('/shelf', (req, res) => {
+    const query = 'SELECT id FROM Estanteria';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+app.get('/spaces/:shelfId', (req, res) => {
+    const { shelfId } = req.params;
+    const query = `
+        SELECT Espacio.id, Espacio.fila, Espacio.columna,
+        CASE 
+            WHEN Material.id IS NOT NULL THEN true 
+            ELSE false 
+        END AS ocupado
+        FROM Espacio
+        LEFT JOIN Material ON Material.idEspacio = Espacio.id
+        WHERE Espacio.idEstanteria = ?
+    `;
+    db.query(query, [shelfId], (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+// Endpoint para obtener los pasillos
+app.get('/aisles', (req, res) => {
+    const query = 'SELECT id, numero FROM Pasillo';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+// Endpoint para obtener los lados
+app.get('/sides', (req, res) => {
+    const query = 'SELECT id, descripcion FROM Lado';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+
 
 app.listen(8081, () => {
     console.log(`Servidor corriendo en el puerto 8081`);
 });
+
