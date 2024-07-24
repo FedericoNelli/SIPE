@@ -326,6 +326,8 @@ app.post('/changePassword', (req, res) => {
         }
 
         res.status(200).send('Contraseña actualizada');
+    })
+});
 
 app.get('/shelves', (req, res) => {
     const query = `
@@ -475,8 +477,6 @@ app.get('/sides', (req, res) => {
         res.json(results);
     });
 });
-
-
 
 app.listen(8081, () => {
     console.log(`Servidor corriendo en el puerto 8081`);
