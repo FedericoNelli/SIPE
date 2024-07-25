@@ -15,8 +15,6 @@ import Testing from "./pages/Testing/Testing"
 import Shelves from "./pages/Shelves/Shelves"
 import Deposits from "./pages/Deposits/Deposits"
 
-
-
 function App() {
   return (
     <>
@@ -41,4 +39,4 @@ function App() {
   )
 }
 
-export default App
+export default App;
