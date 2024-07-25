@@ -9,13 +9,11 @@ import RecoveryCode from "./pages/RecoveryCode/RecoveryCode"
 import ChangePassword from "./pages/ChangePassword/ChangePassword"
 import { BrowserRouter, Route, Routes } from "react-router-dom"
 import Materials from "./pages/Materials/Materials"
-import { PrivateRoute, PublicRoute } from "./routes/routes"
+import { AdminRoute, PrivateRoute, PublicRoute } from "./routes/routes"
 import Users from "./pages/Users/Users"
 import Testing from "./pages/Testing/Testing"
 import Shelves from "./pages/Shelves/Shelves"
 import Deposits from "./pages/Deposits/Deposits"
-
-
 
 function App() {
   return (
@@ -31,8 +29,8 @@ function App() {
           <Route path="/nbr" element={<Navbar />} />
           <Route path="/card" element={<Card />} />
           <Route path="/mtls" element={<PrivateRoute><Materials /></PrivateRoute>} />
-          <Route path="/shelf" element={<PrivateRoute><Shelves /></PrivateRoute>} />
-          <Route path="/deposit" element={<PrivateRoute><Deposits /></PrivateRoute>} />
+          <Route path="/shelf" element={<AdminRoute><Shelves /></AdminRoute>} />
+          <Route path="/deposit" element={<AdminRoute><Deposits /></AdminRoute>} />
           <Route path="/dshb" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/user" element={<PrivateRoute><Users /></PrivateRoute>} />
         </Routes>
@@ -41,4 +39,4 @@ function App() {
   )
 }
 
-export default App
+export default App;
