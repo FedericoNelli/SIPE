@@ -86,7 +86,7 @@ function Navbar() {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            localStorage.removeItem('token');
+            localStorage.clear();
             window.location.href = '/';
         } catch (error) {
             console.error('Error al cerrar sesión', error);

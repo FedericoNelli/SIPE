@@ -14,6 +14,8 @@ function Material() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 
+    const userRole = localStorage.getItem('rol'); // Obtén el rol del usuario desde el localStorage
+
     useEffect(() => {
         axios.get('http://localhost:8081/materials')
             .then(response => {
@@ -67,7 +69,9 @@ function Material() {
                     <h3 className="text-md font-light">Listado completo de materiales</h3>
                 </div>
                 <div className="flex flex-row gap-4 text-sipe-white">
-                    <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button> {/* Cambia la función del botón */}
+                    {userRole === 'Administrador' && (
+                        <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
+                    )}
                     <Button variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2 "> <Filter /> <span className="font-light"> Filtrar </span> </Button>
                     <Button onClick={openModal} variant="secondary" className="bg-transparent border-sipe-white border text-sipe-white font-semibold px-2 py-2 flex items-center gap-2"> <Search /> <span className='font-light'>Buscar</span> </Button>
                 </div>
