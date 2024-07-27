@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/Button/Button";
 import axios from 'axios';
 
-function FilterModal({ onClose, onApplyFilters }) {
+function FilterModal({ onClose }) {
     const [ubicaciones, setUbicaciones] = useState([]);
     const [depositos, setDepositos] = useState([]);
     const [categorias, setCategorias] = useState([]);
@@ -36,23 +36,6 @@ function FilterModal({ onClose, onApplyFilters }) {
 
     }, []);
 
-    const handleFilterChange = (filterCategory, value) => {
-        setSelectedFilters(prevFilters => {
-            const newFilters = { ...prevFilters };
-            if (newFilters[filterCategory].includes(value)) {
-                newFilters[filterCategory] = newFilters[filterCategory].filter(item => item !== value);
-            } else {
-                newFilters[filterCategory].push(value);
-            }
-            return newFilters;
-        });
-    };
-
-    const applyFilters = () => {
-        onApplyFilters(selectedFilters);
-        onClose();
-    };
-
     return (
         <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-sipe-blue-dark rounded-lg p-6 w-full max-w-4xl">
@@ -65,11 +48,7 @@ function FilterModal({ onClose, onApplyFilters }) {
                     {ubicaciones.map(ubicacion => (
                         <div key={ubicacion.id}>
                             <label className="text-sipe-white">
-                                <input 
-                                    type="checkbox" 
-                                    checked={selectedFilters.ubicacion.includes(ubicacion.nombre)}
-                                    onChange={() => handleFilterChange('ubicacion', ubicacion.nombre)}
-                                />
+                                <input type="checkbox"/>
                                 {ubicacion.nombre}
                             </label>
                         </div>
@@ -80,11 +59,7 @@ function FilterModal({ onClose, onApplyFilters }) {
                     {depositos.map(deposito => (
                         <div key={deposito.id}>
                             <label className="text-sipe-white">
-                                <input 
-                                    type="checkbox" 
-                                    checked={selectedFilters.deposito.includes(deposito.nombre)}
-                                    onChange={() => handleFilterChange('deposito', deposito.nombre)}
-                                />
+                                <input type="checkbox"/>
                                 {deposito.nombre}
                             </label>
                         </div>
@@ -95,11 +70,7 @@ function FilterModal({ onClose, onApplyFilters }) {
                     {categorias.map(categoria => (
                         <div key={categoria.id}>
                             <label className="text-sipe-white">
-                                <input 
-                                    type="checkbox" 
-                                    checked={selectedFilters.categoria.includes(categoria.descripcion)}
-                                    onChange={() => handleFilterChange('categoria', categoria.descripcion)}
-                                />
+                                <input type="checkbox"/>
                                 {categoria.descripcion}
                             </label>
                         </div>
@@ -110,17 +81,13 @@ function FilterModal({ onClose, onApplyFilters }) {
                     {estados.map(estado => (
                         <div key={estado.id}>
                             <label className="text-sipe-white">
-                                <input 
-                                    type="checkbox" 
-                                    checked={selectedFilters.estado.includes(estado.descripcion)}
-                                    onChange={() => handleFilterChange('estado', estado.descripcion)}
-                                />
+                                <input type="checkbox"/>
                                 {estado.descripcion}
                             </label>
                         </div>
                     ))}
                 </div>
-                <Button onClick={applyFilters} className="mt-4 bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">
+                <Button onClick={onClose} className="mt-4 bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">
                     Aplicar Filtros
                 </Button>
             </div>
