@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../Dropdown/Dropdown-menu";
 import { ChevronDown } from "lucide-react";
-<<<<<<< HEAD
+import { Button } from "../Button/Button";
 import { Bell } from 'lucide-react';
 
-=======
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
->>>>>>> developer
+
 
 function Navbar() {
 
@@ -99,42 +98,13 @@ function Navbar() {
 
     const handleChangePassword = () => {
         navigate('/rPsw');
-        handleClose();
+        
     };
 
     return (
-<<<<<<< HEAD
-        <>
-            <div className="flex justify-between items-center text-sipe-white font-light p-10 px-10">
-                <h1 className="text-4xl font-bold">Buen día, {userName}!</h1>
-                <div>
-                    <ul className="flex flex-row justify-center items-center gap-6 text-lg">
-                        <li>{currentDate}</li>
-                        <li className="bg-sipe-blue-dark rounded-full p-2"><Bell /></li>
-                        <div className="flex flex-row justify-center items-center">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger className="flex items-center bg-sipe-white rounded-full p-0.5">
-                                    <div className="flex items-center justify-center w-8 h-8 bg-sipe-blue-dark text-white rounded-full">
-                                        {initial}
-                                    </div>
-                                    <div className="flex items-center justify-center ml-1 hover:scale-125 transition-transform duration-200">
-                                        <ChevronDown className="text-black" />
-                                    </div>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="mt-2 bg-white shadow-md rounded-lg">
-                                    <DropdownMenuItem className="p-2 hover:bg-gray-200 rounded-t-lg">
-                                        Cambiar contraseña
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="p-2 hover:bg-gray-200 rounded-b-lg" onClick={handleLogout}>
-                                        Cerrar sesión
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    </ul>
-                </div>
-=======
-        <div className="flex justify-between items-center text-sipe-white font-light p-8 px-10">
+
+
+        <div className="flex justify-between items-center text-sipe-white font-light p-10 px-10">
             <h1 className="text-4xl font-bold">Buen día, {userName}!</h1>
             <div>
                 <ul className="flex flex-row justify-center items-center gap-6 text-lg">
@@ -142,7 +112,7 @@ function Navbar() {
                     <li className="relative bg-sipe-blue-dark rounded-full p-2 notification-container">
                         <DropdownMenu>
                             <DropdownMenuTrigger className="bg-sipe-blue-dark rounded-full" onClick={handleBellClick}>
-                                <img src="src/assets/images/icons/Notificaciones.png" alt="" />
+                                <Bell />
                                 {notificationCount > 0 && (
                                     <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">{notificationCount}</span>
                                 )}
@@ -174,7 +144,7 @@ function Navbar() {
                         </DropdownMenu>
                     </div>
                 </ul>
->>>>>>> developer
+
             </div>
         </div>
     );
