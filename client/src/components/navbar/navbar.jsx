@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../Dropdown/Dropdown-menu";
-import { Button } from "../Button/Button";
 import { ChevronDown } from "lucide-react";
+import { Bell } from 'lucide-react';
 
 
 function Navbar() {
@@ -45,23 +45,30 @@ function Navbar() {
 
     return (
         <>
-            <div className="flex justify-between items-center text-sipe-white font-light p-8 px-10">
+            <div className="flex justify-between items-center text-sipe-white font-light p-10 px-10">
                 <h1 className="text-4xl font-bold">Buen día, {userName}!</h1>
                 <div>
                     <ul className="flex flex-row justify-center items-center gap-6 text-lg">
                         <li>{currentDate}</li>
-                        <li className="bg-sipe-blue-dark rounded-full p-2"><img src="src\assets\images\icons\Notificaciones.png" alt="" /></li>
+                        <li className="bg-sipe-blue-dark rounded-full p-2"><Bell /></li>
                         <div className="flex flex-row justify-center items-center">
                             <DropdownMenu>
-                            <li className=" p-2 rounded-lg"> 
-                                <DropdownMenuTrigger className="bg-sipe-blue-dark rounded-xl">
-                                    <Button variant="sipehover" className="rounded-lg gap-2 px-3">{initial}<ChevronDown /></Button>
-                                    </DropdownMenuTrigger> 
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem>Cambiar Contraseña</DropdownMenuItem> 
-                                    <DropdownMenuItem onClick={handleLogout}>Cerrar Sesión</DropdownMenuItem> 
+                                <DropdownMenuTrigger className="flex items-center bg-sipe-white rounded-full p-0.5">
+                                    <div className="flex items-center justify-center w-8 h-8 bg-sipe-blue-dark text-white rounded-full">
+                                        {initial}
+                                    </div>
+                                    <div className="flex items-center justify-center ml-1 hover:scale-125 transition-transform duration-200">
+                                        <ChevronDown className="text-black" />
+                                    </div>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="mt-2 bg-white shadow-md rounded-lg">
+                                    <DropdownMenuItem className="p-2 hover:bg-gray-200 rounded-t-lg">
+                                        Cambiar contraseña
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="p-2 hover:bg-gray-200 rounded-b-lg" onClick={handleLogout}>
+                                        Cerrar sesión
+                                    </DropdownMenuItem>
                                 </DropdownMenuContent>
-                            </li>
                             </DropdownMenu>
                         </div>
                     </ul>
