@@ -1,17 +1,166 @@
-import CardMd from "@/components/Cards/CardMd";
-import CardLg from "@/components/Cards/CardLg";
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import CustomCard from '@/components/Cards/CustomCard';
+import { Package, TriangleAlert, Rows3, CornerDownRight, AlignStartVertical, Goal } from 'lucide-react';
 
 function MainDashboard() {
+    const [totalMaterials, setTotalMaterials] = useState(0);
+    const [lowStockMaterials, setLowStockMaterials] = useState(0);
+    const [totalEstanterias, setTotalEstanterias] = useState(0);
+    const [lastMaterial, setLastMaterial] = useState('');
+    const [updateTrigger, setUpdateTrigger] = useState(false);
+    
+    const navigate = useNavigate(); 
+
+    const triggerUpdate = () => { 
+        setUpdateTrigger(prev => !prev); //Esta función se agrega para poder forzar al re-renderizado, pq rompia las tarjetas inlcusive vaciando caché. Esta puesto el trigger en cada useEffect como dependencia, y cada vez que se navegue, tmb se ejecuta
+    };
+
+    useEffect(() => {
+        const fetchTotalMaterials = async () => {
+            try {
+                const response = await axios.get('http://localhost:8081/total-materials');
+                setTotalMaterials(response.data.total);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+        fetchTotalMaterials();
+    }, [updateTrigger]);
+
+    useEffect(() => {
+        const fetchLowStockMaterials = async () => {
+            try {
+                const response = await axios.get('http://localhost:8081/low-stock-materials');
+                setLowStockMaterials(response.data.total);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+        fetchLowStockMaterials();
+    }, [updateTrigger]);
+
+    useEffect(() => {
+        const fetchTotalEstanterias = async () => {
+            try {
+                const response = await axios.get('http://localhost:8081/total-estanterias');
+                setTotalEstanterias(response.data.total);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+        fetchTotalEstanterias();
+    }, [updateTrigger]);
+
+    useEffect(() => {
+        const fetchLastMaterial = async () => {
+            try {
+                const response = await axios.get('http://localhost:8081/last-material');
+                setLastMaterial(response.data.nombre);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+        fetchLastMaterial();
+    }, [updateTrigger]);
+
+    const rol = localStorage.getItem('rol');
+    const buttonSection = [
+        { 
+            label: 'Ir a Estanterías',
+            disabled: rol !== 'Administrador',
+            path: '/shelf' 
+        },
+        { 
+            label: 'Ir a Movimientos',
+            disabled: rol !== 'Administrador',
+            path: '/movimientos' 
+        },
+        { 
+            label: 'Ir a Materiales',
+            disabled: rol !== 'Administrador' && rol !== 'Colaborador',
+            path: '/mtls' 
+        },
+        { 
+            label: 'Ir a Informes',
+            disabled: rol !== 'Administrador',
+            path: '/informes' 
+        },
+        { 
+            label: 'Ir a Control de stock',
+            disabled: rol !== 'Administrador',
+            path: '/control-de-stock' 
+        }
+    ];
+
+    const handleButtonClick = (path) => {
+        navigate(path);
+        triggerUpdate(); 
+    };
+
     return (
-        <>
-            <CardMd />
-            <CardMd />
-            <CardLg />
-            <CardLg />
-            <CardMd />
-            <CardMd />
-        </>
-    )
+        <main className="max-h-screen p-3 py-0 flex flex-col">
+            <div className="grid grid-cols-4 gap-4 flex-grow">
+                <CustomCard
+                    Icon={Rows3}
+                    colSpan={1}
+                    title="Total de estanterías"
+                    totalElement={`${totalEstanterias} estanterías`} 
+                    buttonText={buttonSection[0].label}
+                    buttonDisabled={buttonSection[0].disabled}
+                    onButtonClick={() => handleButtonClick(buttonSection[0].path)}
+                />
+                <CustomCard
+                    Icon={CornerDownRight}
+                    colSpan={1}
+                    title="Último cambio de estado"
+                    totalElement={lastMaterial}
+                    buttonText={buttonSection[1].label}
+                    buttonDisabled={buttonSection[1].disabled}
+                    onButtonClick={() => handleButtonClick(buttonSection[1].path)} 
+                />
+                <CustomCard
+                    Icon={Package}
+                    colSpan={2}
+                    title="Total de stock"
+                    totalElement={`${totalMaterials} materiales`} 
+                    buttonText={buttonSection[2].label}
+                    buttonDisabled={buttonSection[2].disabled}
+                    additionalDescription="Ésta es la cantidad de materiales en los depósitos. Es importante estar al tanto de estos valores para mejorar la gestión de recursos."
+                    onButtonClick={() => handleButtonClick(buttonSection[2].path)} 
+                />
+                <CustomCard
+                    Icon={TriangleAlert}
+                    colSpan={2}
+                    title="Materiales críticos"
+                    totalElement={lowStockMaterials}
+                    buttonText={buttonSection[2].label}
+                    buttonDisabled={buttonSection[2].disabled}
+                    additionalDescription="Cantidad de materiales que están por debajo del nivel mínimo de stock. Es importante mantener estos materiales en un nivel óptimo para evitar retrasos en los trabajos."
+                    onButtonClick={() => handleButtonClick(buttonSection[2].path)} 
+                />
+                <CustomCard
+                    Icon={AlignStartVertical}
+                    colSpan={1}
+                    title="Cantidad de informes generados"
+                    totalElement={10}
+                    buttonText={buttonSection[3].label}
+                    buttonDisabled={buttonSection[3].disabled}
+                    onButtonClick={() => handleButtonClick(buttonSection[3].path)} 
+                />
+                <CustomCard
+                    Icon={Goal}
+                    colSpan={1}
+                    title="Último control de stock"
+                    totalElement={new Date().toLocaleDateString()}
+                    buttonText={buttonSection[4].label}
+                    buttonDisabled={buttonSection[4].disabled}
+                    onButtonClick={() => handleButtonClick(buttonSection[4].path)} 
+                />
+            </div>
+        </main>
+    );
 }
 
-export default MainDashboard
+export default MainDashboard;

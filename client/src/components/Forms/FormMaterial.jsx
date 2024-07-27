@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Cards/Card";
 import { Label } from "@/components/Label/Label";
 import { Input } from "@/components/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Select/Select";
 import { Button } from "@/components/Button/Button";
+import imageCompression from 'browser-image-compression';
 
-function FormMaterial({ onClose }) {
+function FormMaterial({ onClose, notify }) {
     const [depositLocations, setDepositLocations] = useState([]);
     const [depositNames, setDepositNames] = useState([]);
     const [locationId, setLocationId] = useState(null);
@@ -26,20 +26,11 @@ function FormMaterial({ onClose }) {
         espacio: '',
         categoria: '',
         deposito: '',
-        imagen: null,
+        imagen: '',
         mapa: '',
         ultimousuarioId: '',
         ocupado: true
     });
-
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setFormData({ ...formData, imagen: reader.result });
-        };
-        reader.readAsDataURL(file);
-    };
 
     useEffect(() => {
         fetch('http://localhost:8081/deposit-locations')
@@ -108,22 +99,45 @@ function FormMaterial({ onClose }) {
             [id]: value
         }));
 
-        // Actualizar locationId cuando cambie el select de ubicación
         if (id === 'depositLocation') {
             setLocationId(value);
         }
     };
 
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            console.log(`Tamaño del archivo original: ${file.size} bytes`);
+            if (file.size > 10 * 1024 * 1024) { // 10 MB
+                alert("El archivo es demasiado grande. El tamaño máximo es 10 MB.");
+                return;
+            }
+            try {
+                const options = {
+                    maxSizeMB: 1, 
+                    useWebWorker: true,
+                    maxWidthOrHeight: 1920, 
+                };
+                const compressedFile = await imageCompression(file, options);
+                console.log(`Tamaño del archivo comprimido: ${compressedFile.size} bytes`);
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setFormData({ ...formData, imagen: reader.result }); 
+                };
+                reader.readAsDataURL(compressedFile);
+            } catch (error) {
+                console.error('Error al comprimir la imagen:', error);
+            }
+        }
+    };
+
     const handleSave = async () => {
-        const { nombre, cantidad, matricula, bajoStock, estado, espacio, categoria, deposito } = formData;
+        const { nombre, cantidad, imagen, matricula, bajoStock, estado, espacio, categoria, deposito } = formData;
 
         if (!nombre || !categoria || !estado || !cantidad || !matricula || !bajoStock || !espacio) {
-            alert('Por favor completa todos los campos');
+            notify('error', 'Por favor completa todos los campos');
             return;
         }
-
-        console.log('FormData:', formData);
-
 
         try {
             const response = await fetch('http://localhost:8081/addMaterial', {
@@ -134,6 +148,7 @@ function FormMaterial({ onClose }) {
                 body: JSON.stringify({
                     nombre,
                     cantidad,
+                    imagen,
                     matricula,
                     bajoStock,
                     estado,
@@ -146,14 +161,13 @@ function FormMaterial({ onClose }) {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || toast.error("Error al agregar Material"));
+                throw new Error(data.error || console.log("Error al agregar Material"));
             }
 
-            alert('Material agregado exitosamente');
+            notify('success', "Material agregado correctamente!");
             if (onClose) onClose();
         } catch (error) {
-            toast.error("Error al agregar Material")
-            console.error('Error adding material:', error);
+            notify('error', "Error al agregar el material");
         }
     };
 
@@ -163,7 +177,6 @@ function FormMaterial({ onClose }) {
 
     return (
         <>
-            <ToastContainer />
             <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl">
                 <CardHeader>
                     <CardTitle className="text-3xl font-bold mb-2 text-center">Agregar nuevo material</CardTitle>
