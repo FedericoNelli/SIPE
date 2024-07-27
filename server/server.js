@@ -493,46 +493,6 @@ app.get('/sides', (req, res) => {
     });
 });
 
-// Endpoint para obtener la cantidad total de materiales
-app.get('/total-materials', (req, res) => {
-    const query = 'SELECT COUNT(*) AS total FROM Material';
-    
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).send('Error al consultar la base de datos');
-        res.json(results[0]);
-    });
-});
-
-// Endpoint para obtener la cantidad de materiales con bajo stock
-app.get('/low-stock-materials', (req, res) => {
-    const query = 'SELECT COUNT(*) AS total FROM Material WHERE cantidad <= bajoStock';
-
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).send('Error al consultar la base de datos');
-        res.json(results[0]);
-    });
-});
-
-//Endpoint para obtener la cantidad total de estanterías
-app.get('/total-estanterias', (req, res) => {
-    const query = 'SELECT COUNT(*) AS total FROM Estanteria';
-
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).send('Error al consultar la base de datos');
-        res.json(results[0]);
-    });
-});
-
-//Endpoint para obtener el último material ingresado, basado en la fecha del último estado
-app.get('/last-material', (req, res) => {
-    const query = 'SELECT nombre, fechaUltimoEstado FROM Material ORDER BY fechaUltimoEstado DESC LIMIT 1';
-
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).send('Error al consultar la base de datos');
-        res.json({ nombre: results[0].nombre });
-    });
-});
-
 app.listen(8081, () => {
     console.log(`Servidor corriendo en el puerto 8081`);
 });
