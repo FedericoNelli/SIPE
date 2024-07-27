@@ -6,6 +6,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Badge } from "@/components/Badge/Badge";
 import { Search, Filter } from 'lucide-react';
 import FormMaterial from '@/components/Forms/FormMaterial'; 
+import FilterModal from '../Forms/FilterModal';
 
 function Material() {
     const [materials, setMaterials] = useState([]);
@@ -13,6 +14,7 @@ function Material() {
     const [searchResults, setSearchResults] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
     const userRole = localStorage.getItem('rol'); // Obtén el rol del usuario desde el localStorage
 
@@ -53,6 +55,14 @@ function Material() {
         setSearchResults([]); // Restablece los resultados de búsqueda
     };
 
+    const openFilterModal = () => {
+        setIsFilterModalOpen(true); 
+    };
+    
+    const closeFilterModal = () => {
+        setIsFilterModalOpen(false); 
+    };
+
     const openFormModal = () => {
         setIsFormModalOpen(true); 
     };
@@ -72,7 +82,7 @@ function Material() {
                     {userRole === 'Administrador' && (
                         <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
                     )}
-                    <Button variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2 "> <Filter /> <span className="font-light"> Filtrar </span> </Button>
+                    <Button onClick={openFilterModal} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2 "> <Filter /> <span className="font-light"> Filtrar </span> </Button>
                     <Button onClick={openModal} variant="secondary" className="bg-transparent border-sipe-white border text-sipe-white font-semibold px-2 py-2 flex items-center gap-2"> <Search /> <span className='font-light'>Buscar</span> </Button>
                 </div>
             </div>
@@ -148,6 +158,12 @@ function Material() {
             {isFormModalOpen && (
                 <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                     <FormMaterial onClose={closeFormModal} /> 
+                </div>
+            )}
+
+            {isFilterModalOpen && (
+                <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <FilterModal onClose={closeFilterModal} /> 
                 </div>
             )}
         </div>

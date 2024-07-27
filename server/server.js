@@ -378,13 +378,6 @@ app.get('/deposits', (req, res) => {
     });
 });
 
-app.get('/deposit-locations', (req, res) => {
-    const query = 'SELECT id, nombre FROM Ubicacion';
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).send('Error al consultar la base de datos');
-        res.json(results);
-    });
-});
 
 app.get('/deposit-names', (req, res) => {
     const locationId = req.query.locationId;
@@ -398,6 +391,25 @@ app.get('/deposit-names', (req, res) => {
     });
 });
 
+//Obtener Ubicación
+app.get('/deposit-locations', (req, res) => {
+    const query = 'SELECT id, nombre FROM Ubicacion';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+//Obtener Depósitos
+app.get('/depo-names', (req, res) => {
+    const query = 'SELECT id, nombre FROM Deposito';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+//Obtener Categorías
 app.get('/categories', (req, res) => {
     const query = 'SELECT id, descripcion FROM Categoria';
     db.query(query, (err, results) => {
@@ -406,6 +418,7 @@ app.get('/categories', (req, res) => {
     });
 });
 
+//Obtener Estados
 app.get('/statuses', (req, res) => {
     const query = 'SELECT id, descripcion FROM Estado';
     db.query(query, (err, results) => {
@@ -501,4 +514,3 @@ app.get('/notificaciones-material', (req, res) => {
 app.listen(8081, () => {
     console.log(`Servidor corriendo en el puerto 8081`);
 });
-
