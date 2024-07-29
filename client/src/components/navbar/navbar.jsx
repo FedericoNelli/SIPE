@@ -89,7 +89,15 @@ function Navbar() {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            localStorage.removeItem('token');
+
+            var rememberedUser = localStorage.getItem('rememberedUser');
+
+            localStorage.clear();
+
+            if (rememberedUser !== null) {
+                localStorage.setItem('rememberedUser', rememberedUser);
+            }
+
             window.location.href = '/';
         } catch (error) {
             console.error('Error al cerrar sesión', error);
