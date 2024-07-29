@@ -140,17 +140,17 @@ function Material({ notify }) {
                             </ul>
                         </div>
                     </div>
-                )};
+                )}
                 {isFilterModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <FilterModal onClose={closeFilterModal} /> 
                     </div>
-                )};
+                )}
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <FormMaterial onClose={closeFormModal} notify={notify} />
                     </div>
-                )};.
+                )}
             </div>
         </div>
     )

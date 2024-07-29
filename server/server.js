@@ -546,6 +546,20 @@ app.get('/last-material', (req, res) => {
     });
 });
 
+// Ruta para obtener materiales con bajo stock o sin stock
+app.get('/notificaciones-material', (req, res) => {
+    const query = `
+        SELECT id, nombre, cantidad, bajoStock
+        FROM material
+        WHERE cantidad <= bajoStock OR cantidad = 0
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
 app.listen(8081, () => {
     console.log(`Servidor corriendo en el puerto 8081`);
 });
