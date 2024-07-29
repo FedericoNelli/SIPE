@@ -5,14 +5,31 @@ const jwt = require('jsonwebtoken');
 const mysql = require('mysql');
 const nodemailer = require('nodemailer');
 const bodyParser = require('body-parser');
+const multer = require('multer');
+const path = require('path');
 
 const app = express();
 const SECRET_KEY = 'peron74';
+
+// Configuración de multer para almacenar archivos en public/uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, path.join(__dirname, 'public', 'uploads'));
+    },
+    filename: (req, file, cb) => {
+        // Genera un nombre de archivo único
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' })); 
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true })); 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 const db = mysql.createConnection({
     host: 'localhost',
@@ -139,18 +156,14 @@ app.get('/materials', (req, res) => {
 });
 
 // Ruta para agregar un nuevo material
-app.post('/addMaterial', (req, res) => {
+app.post('/addMaterial', upload.single('imagen'), (req, res) => {
     const {
         nombre,
         cantidad,
-        imagen, // Este debe ser un string en formato base64
         matricula,
-        fechaUltimoEstado,
-        mapa,
         bajoStock,
         estado,
         espacio,
-        ultimousuarioId,
         categoria,
         deposito,
         ocupado
@@ -160,15 +173,8 @@ app.post('/addMaterial', (req, res) => {
         return res.status(400).json({ error: 'Campos obligatorios faltantes' });
     }
 
-    // Verificar si la imagen se envió y si tiene el formato base64
-    let imagenBuffer = null;
-    if (imagen) {
-        // Verifica si la imagen está en base64 y separa los datos de cabecera
-        if (imagen.startsWith('data:image/')) {
-            const base64Data = imagen.split(',')[1]; // Obtiene solo los datos base64
-            imagenBuffer = Buffer.from(base64Data, 'base64'); // Convierte a Buffer
-        }
-    }
+    // Ruta de la imagen si se subió
+    const imagenPath = req.file ? req.file.path : null;
 
     const query = `
         INSERT INTO Material (
@@ -176,8 +182,6 @@ app.post('/addMaterial', (req, res) => {
             cantidad, 
             imagen, 
             matricula, 
-            fechaUltimoEstado, 
-            mapa, 
             bajoStock, 
             idEstado, 
             idEspacio, 
@@ -185,20 +189,18 @@ app.post('/addMaterial', (req, res) => {
             idCategoria, 
             idDeposito,
             ocupado
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [
         nombre,
         cantidad,
-        imagenBuffer,
+        imagenPath, // Guarda solo la ruta de la imagen
         matricula,
-        fechaUltimoEstado || new Date(),
-        mapa || null,
         bajoStock,
         estado,
         espacio,
-        ultimousuarioId || null,
+        req.body.ultimoUsuarioId || null,
         categoria,
         deposito,
         ocupado || true
