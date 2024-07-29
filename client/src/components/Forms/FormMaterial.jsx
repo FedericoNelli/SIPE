@@ -26,7 +26,7 @@ function FormMaterial({ onClose, notify }) {
         espacio: '',
         categoria: '',
         deposito: '',
-        imagen: '',
+        imagen: null,
         mapa: '',
         ultimousuarioId: '',
         ocupado: true
@@ -104,7 +104,7 @@ function FormMaterial({ onClose, notify }) {
         }
     };
 
-    const handleFileChange = async (e) => {
+    const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
             console.log(`Tamaño del archivo original: ${file.size} bytes`);
@@ -112,56 +112,46 @@ function FormMaterial({ onClose, notify }) {
                 alert("El archivo es demasiado grande. El tamaño máximo es 10 MB.");
                 return;
             }
-            try {
-                const options = {
-                    maxSizeMB: 1, 
-                    useWebWorker: true,
-                    maxWidthOrHeight: 1920, 
-                };
-                const compressedFile = await imageCompression(file, options);
-                console.log(`Tamaño del archivo comprimido: ${compressedFile.size} bytes`);
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    setFormData({ ...formData, imagen: reader.result }); 
-                };
-                reader.readAsDataURL(compressedFile);
-            } catch (error) {
-                console.error('Error al comprimir la imagen:', error);
-            }
+            setFormData(prevData => ({
+                ...prevData,
+                imagen: file // Guardamos el archivo directamente
+            }));
         }
     };
 
     const handleSave = async () => {
-        const { nombre, cantidad, imagen, matricula, bajoStock, estado, espacio, categoria, deposito } = formData;
+        const { nombre, cantidad, matricula, bajoStock, estado, espacio, categoria, deposito, ocupado, imagen } = formData;
 
         if (!nombre || !categoria || !estado || !cantidad || !matricula || !bajoStock || !espacio) {
             notify('error', 'Por favor completa todos los campos');
             return;
         }
 
+        const formDataToSend = new FormData();
+        formDataToSend.append('nombre', nombre);
+        formDataToSend.append('cantidad', cantidad);
+        formDataToSend.append('matricula', matricula);
+        formDataToSend.append('bajoStock', bajoStock);
+        formDataToSend.append('estado', estado);
+        formDataToSend.append('espacio', espacio);
+        formDataToSend.append('categoria', categoria);
+        formDataToSend.append('deposito', deposito);
+        formDataToSend.append('ocupado', ocupado);
+
+        if (imagen) {
+            formDataToSend.append('imagen', imagen);
+        }
+
         try {
             const response = await fetch('http://localhost:8081/addMaterial', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    nombre,
-                    cantidad,
-                    imagen,
-                    matricula,
-                    bajoStock,
-                    estado,
-                    espacio,
-                    categoria,
-                    deposito,
-                }),
+                body: formDataToSend,
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || console.log("Error al agregar Material"));
+                throw new Error(data.error || "Error al agregar Material");
             }
 
             notify('success', "Material agregado correctamente!");
