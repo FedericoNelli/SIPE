@@ -1,121 +1,97 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
+import { Modal, ModalContent, ModalHeader, ModalFooter, ModalBody } from "@/components/Modal/Modal";
 import { Button } from "@/components/Button/Button";
-import axios from 'axios';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
-function FilterModal({ onClose }) {
-    const [ubicaciones, setUbicaciones] = useState([]);
-    const [depositos, setDepositos] = useState([]);
-    const [categorias, setCategorias] = useState([]);
-    const [estados, setEstados] = useState([]);
-    
-    const [selectedFilters, setSelectedFilters] = useState({
-        ubicacion: [],
-        deposito: [],
-        categoria: [],
-        estado: []
-    });
-
-    useEffect(() => {
-        axios.get('http://localhost:8081/deposit-locations')
-            .then(response => setUbicaciones(response.data))
-            .catch(error => {
-                console.error('Error fetching ubicaciones:', error);
-                toast.error('Error al obtener ubicaciones');
-            });
-
-        axios.get('http://localhost:8081/depo-names')
-            .then(response => setDepositos(response.data))
-            .catch(error => {
-                console.error('Error fetching depositos:', error);
-                toast.error('Error al obtener depósitos');
-            });
-
-        axios.get('http://localhost:8081/categories')
-            .then(response => setCategorias(response.data))
-            .catch(error => {
-                console.error('Error fetching categorias:', error);
-                toast.error('Error al obtener categorías');
-            });
-        
-        axios.get('http://localhost:8081/statuses')
-            .then(response => setEstados(response.data))
-            .catch(error => {
-                console.error('Error fetching estados:', error);
-                toast.error('Error al obtener estados');
-            });
-
-    }, []);
-
-    const handleApplyFilters = () => {
-        // Aquí puedes agregar la lógica para aplicar los filtros, si es necesario
-
-        // Mostrar un mensaje de éxito al aplicar los filtros
-        toast.success('Filtros aplicados exitosamente');
-        if (onClose) onClose();
-    };
-
+const FilterModal = ({ isOpen, onClose, onApply, onReset, filters, onFilterChange, availableLocations, availableDeposits, availableCategories, availableStatuses }) => {
     return (
-        <>
-            <ToastContainer />
-            <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                <div className="bg-sipe-blue-dark rounded-lg p-6 w-full max-w-4xl">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-bold text-sipe-white">Filtrar materiales</h2>
-                        <button onClick={onClose} className="text-gray-300">&times;</button>
-                    </div>
-                    <div className="mt-4">
-                        <h3 className="text-sipe-white">Ubicación</h3>
-                        {ubicaciones.map(ubicacion => (
-                            <div key={ubicacion.id}>
-                                <label className="text-sipe-white">
-                                    <input type="checkbox"/>
-                                    {ubicacion.nombre}
-                                </label>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="mt-4">
-                        <h3 className="text-sipe-white">Depósito</h3>
-                        {depositos.map(deposito => (
-                            <div key={deposito.id}>
-                                <label className="text-sipe-white">
-                                    <input type="checkbox"/>
-                                    {deposito.nombre}
-                                </label>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="mt-4">
-                        <h3 className="text-sipe-white">Categoría</h3>
-                        {categorias.map(categoria => (
-                            <div key={categoria.id}>
-                                <label className="text-sipe-white">
-                                    <input type="checkbox"/>
-                                    {categoria.descripcion}
-                                </label>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="mt-4">
-                        <h3 className="text-sipe-white">Estado</h3>
-                        {estados.map(estado => (
-                            <div key={estado.id}>
-                                <label className="text-sipe-white">
-                                    <input type="checkbox"/>
-                                    {estado.descripcion}
-                                </label>
-                            </div>
-                        ))}
-                    </div>
-                    <Button onClick={handleApplyFilters} className="mt-4 bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">
-                        Aplicar Filtros
-                    </Button>
-                </div>
-            </div>
-        </>
+        <Modal isOpen={isOpen} onClose={onClose}>
+            <ModalContent>
+                <ModalHeader>
+                    <h2 className="text-xl font-semibold text-sipe-white">Filtrar Materiales</h2>
+                </ModalHeader>
+                <ModalBody>
+                    <form>
+                        <div className="mb-4">
+                            <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="ubicacion">
+                                Ubicación
+                            </label>
+                            <select
+                                name="ubicacion"
+                                value={filters.ubicacion}
+                                onChange={onFilterChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded"
+                            >
+                                <option value="">Seleccione una ubicación</option>
+                                {availableLocations.map(location => (
+                                    <option key={location.id} value={location.nombre}>
+                                        {location.nombre}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="deposito">
+                                Depósito
+                            </label>
+                            <select
+                                name="deposito"
+                                value={filters.deposito}
+                                onChange={onFilterChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded"
+                            >
+                                <option value="">Seleccione un depósito</option>
+                                {availableDeposits.map(deposit => (
+                                    <option key={deposit.id} value={deposit.nombre}>
+                                        {deposit.nombre}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="categoria">
+                                Categoría
+                            </label>
+                            <select
+                                name="categoria"
+                                value={filters.categoria}
+                                onChange={onFilterChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded"
+                            >
+                                <option value="">Seleccione una categoría</option>
+                                {availableCategories.map(category => (
+                                    <option key={category.id} value={category.descripcion}>
+                                        {category.descripcion}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="mb-4">
+                            <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="estado">
+                                Estado
+                            </label>
+                            <select
+                                name="estado"
+                                value={filters.estado}
+                                onChange={onFilterChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded"
+                            >
+                                <option value="">Seleccione un estado</option>
+                                {availableStatuses.map(status => (
+                                    <option key={status.id} value={status.descripcion}>
+                                        {status.descripcion}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </form>
+                </ModalBody>
+                <ModalFooter>
+                    <Button onClick={onApply} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">Aplicar</Button>
+                    <Button onClick={onReset} className="ml-2 bg-sipe-gray-light font-semibold px-4 py-2 rounded hover:bg-sipe-gray-dark">Restablecer</Button>
+                </ModalFooter>
+            </ModalContent>
+        </Modal>
     );
-}
+};
 
 export default FilterModal;

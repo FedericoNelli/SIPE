@@ -111,7 +111,9 @@ app.get('/users', (req, res) => {
 });
 
 app.get('/materials', (req, res) => {
-    const query = `
+    const { ubicacion, deposito, categoria, estado } = req.query;
+
+    let query = `
         SELECT 
             m.id, m.nombre, m.cantidad, m.imagen, m.matricula, m.fechaUltimoEstado, 
             m.mapa, m.bajoStock, m.idEstado, m.idEspacio, m.ultimoUsuarioId, 
@@ -132,11 +134,30 @@ app.get('/materials', (req, res) => {
             Categoria c ON m.idCategoria = c.id
     `;
 
+    const filters = [];
+    if (ubicacion) {
+        filters.push(`u.nombre = ${db.escape(ubicacion)}`);
+    }
+    if (deposito) {
+        filters.push(`d.nombre = ${db.escape(deposito)}`);
+    }
+    if (categoria) {
+        filters.push(`c.descripcion = ${db.escape(categoria)}`);
+    }
+    if (estado) {
+        filters.push(`es.descripcion = ${db.escape(estado)}`);
+    }
+
+    if (filters.length > 0) {
+        query += ' WHERE ' + filters.join(' AND ');
+    }
+
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json(results);
     });
 });
+
 
 // Ruta para agregar un nuevo material
 app.post('/addMaterial', (req, res) => {
