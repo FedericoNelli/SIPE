@@ -6,6 +6,8 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@
 import FormMaterial from '@/components/Forms/FormMaterial';
 import MaterialList from '@/components/Lists/ListMaterial';
 import { Search, Filter } from 'lucide-react';
+import FilterModal from '../Forms/FilterModal';
+
 
 function Material({ notify }) {
     const [materials, setMaterials] = useState([]);
@@ -13,6 +15,10 @@ function Material({ notify }) {
     const [searchResults, setSearchResults] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+    const userRole = localStorage.getItem('rol'); // Obtén el rol del usuario desde el localStorage
+
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
 
@@ -53,6 +59,14 @@ function Material({ notify }) {
         setSearchResults([]);
     };
 
+    const openFilterModal = () => {
+        setIsFilterModalOpen(true); 
+    };
+    
+    const closeFilterModal = () => {
+        setIsFilterModalOpen(false); 
+    };
+
     const openFormModal = () => {
         setIsFormModalOpen(true);
     };
@@ -80,12 +94,13 @@ function Material({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de materiales</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
-                        <Button variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2 "> <Filter /> Filtrar </Button>
+                        {userRole === 'Administrador' && (
+                          <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
+                        )}
+                        <Button onClick={openFilterModal} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2 "> <Filter /> Filtrar </Button>
                         <Button onClick={openModalSearch} variant="secondary" className="bg-transparent border-sipe-white border text-sipe-white font-semibold px-2 py-2 flex items-center gap-2"> <Search /> Buscar </Button>
                     </div>
-                </div>
-                
+                </div>               
                 <MaterialList materials={currentMaterials} />
     
                 <div className="flex justify-center p-4">
@@ -126,7 +141,11 @@ function Material({ notify }) {
                         </div>
                     </div>
                 )}
-    
+                {isFilterModalOpen && (
+                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                        <FilterModal onClose={closeFilterModal} /> 
+                    </div>
+                )}
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <FormMaterial onClose={closeFormModal} notify={notify} />
@@ -134,7 +153,7 @@ function Material({ notify }) {
                 )}
             </div>
         </div>
-    );
-}
+    )
+};
 
 export default Material;

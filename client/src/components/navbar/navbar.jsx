@@ -2,20 +2,16 @@ import { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../Dropdown/Dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import { Bell } from 'lucide-react';
-
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 
-
 function Navbar() {
-
     function getDate() {
         const today = new Date();
         const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         const month = monthNames[today.getMonth()];
         const year = today.getFullYear();
         const date = today.getDate();
-
         return `${date} de ${month} de ${year}`;
     }
 
@@ -79,6 +75,10 @@ function Navbar() {
         };
     }, [showNotifications]);
 
+    const handleChangePassword = () => {
+        navigate('/rPsw');
+    };
+
     const handleLogout = async () => {
         try {
             await fetch('http://localhost:8081/logout', {
@@ -88,15 +88,15 @@ function Navbar() {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            localStorage.removeItem('token');
+
+            const rememberMe = localStorage.getItem('rememberedUser');
+            localStorage.clear();
+            localStorage.setItem('rememberedUser', rememberMe);
             window.location.href = '/';
+
         } catch (error) {
             console.error('Error al cerrar sesión', error);
         }
-    };
-
-    const handleChangePassword = () => {
-        navigate('/rPsw');
     };
 
     return (
@@ -142,6 +142,7 @@ function Navbar() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="p-2 hover:bg-gray-200 rounded-b-lg" onClick={handleLogout}>
                                     Cerrar sesión
+
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -153,6 +154,3 @@ function Navbar() {
 }
 
 export default Navbar;
-
-
-
