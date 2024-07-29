@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -8,7 +8,7 @@ import { Input } from '../Input/Input';
 import { Button } from '../Button/Button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '../Select/Select';  // Importa los componentes necesarios
 
-const FormUser = ({ onClose }) => {
+const FormUser = ({ onClose, notify }) => {
     const [formData, setFormData] = useState({
         nombre: '',
         apellido: '',
@@ -58,11 +58,10 @@ const FormUser = ({ onClose }) => {
                 email: '',
                 rol: ''
             });
-            console.log('Usuario creado');
+            notify('success', "¡Usuario creado correctamente!");
             if (onClose) onClose();
         } catch (error) {
-            toast.error("Error al agregar Usuario")
-            console.error('Error al agregar el usuario2', error);
+            notify('error', "Error al crear usuario");
         }
     };
 

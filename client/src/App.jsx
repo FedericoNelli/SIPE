@@ -1,9 +1,7 @@
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+
 import Navbar from "./components/Navbar/Navbar"
 import Dashboard from "./pages/Dashboard/Dashboard"
 import Login from "./pages/Login/Login"
-import Card from "./components/Cards/CardLg"
 import RecoveryPassword from "./pages/RecoveryPassword/RecoveryPassword"
 import RecoveryCode from "./pages/RecoveryCode/RecoveryCode"
 import ChangePassword from "./pages/ChangePassword/ChangePassword"
@@ -18,7 +16,6 @@ import Deposits from "./pages/Deposits/Deposits"
 function App() {
   return (
     <>
-    <ToastContainer />
       <BrowserRouter>
         <Routes>
         <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
@@ -27,7 +24,6 @@ function App() {
           <Route path="/chPsw" element={<ChangePassword />} />
           <Route path="/testing" element={<Testing />} />
           <Route path="/nbr" element={<Navbar />} />
-          <Route path="/card" element={<Card />} />
           <Route path="/mtls" element={<PrivateRoute><Materials /></PrivateRoute>} />
           <Route path="/shelf" element={<AdminRoute><Shelves /></AdminRoute>} />
           <Route path="/deposit" element={<AdminRoute><Deposits /></AdminRoute>} />
