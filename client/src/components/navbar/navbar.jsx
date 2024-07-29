@@ -1,22 +1,17 @@
 import { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../Dropdown/Dropdown-menu";
 import { ChevronDown } from "lucide-react";
-import { Button } from "../Button/Button";
 import { Bell } from 'lucide-react';
-
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 
-
 function Navbar() {
-
     function getDate() {
         const today = new Date();
         const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         const month = monthNames[today.getMonth()];
         const year = today.getFullYear();
         const date = today.getDate();
-        
         return `${date} de ${month} de ${year}`;
     }
 
@@ -80,6 +75,10 @@ function Navbar() {
         };
     }, [showNotifications]);
 
+    const handleChangePassword = () => {
+        navigate('/rPsw');
+    };
+
     const handleLogout = async () => {
         try {
             await fetch('http://localhost:8081/logout', {
@@ -90,36 +89,26 @@ function Navbar() {
                 }
             });
 
-            var rememberedUser = localStorage.getItem('rememberedUser');
-
+            const rememberMe = localStorage.getItem('rememberedUser');
             localStorage.clear();
-
-            if (rememberedUser !== null) {
-                localStorage.setItem('rememberedUser', rememberedUser);
-            }
-
+            localStorage.setItem('rememberedUser', rememberMe);
             window.location.href = '/';
+
         } catch (error) {
             console.error('Error al cerrar sesión', error);
         }
     };
 
-    const handleChangePassword = () => {
-        navigate('/rPsw');
-        
-    };
 
     return (
-
-
-        <div className="flex justify-between items-center text-sipe-white font-light p-10 px-10">
+        <div className="flex justify-between items-center text-sipe-white font-light p-8 px-10">
             <h1 className="text-4xl font-bold">Buen día, {userName}!</h1>
             <div>
                 <ul className="flex flex-row justify-center items-center gap-6 text-lg">
                     <li>{currentDate}</li>
                     <li className="relative bg-sipe-blue-dark rounded-full p-2 notification-container">
                         <DropdownMenu>
-                            <DropdownMenuTrigger className="bg-sipe-blue-dark rounded-full" onClick={handleBellClick}>
+                            <DropdownMenuTrigger className="bg-sipe-blue-dark rounded-full flex justify-center p-2" onClick={handleBellClick}>
                                 <Bell />
                                 {notificationCount > 0 && (
                                     <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">{notificationCount}</span>
@@ -140,25 +129,28 @@ function Navbar() {
                     </li>
                     <div className="flex flex-row justify-center items-center">
                         <DropdownMenu>
-                            <li className="p-2 rounded-lg">
-                                <DropdownMenuTrigger className="bg-sipe-blue-dark rounded-xl">
-                                    <Button variant="sipehover" className="rounded-lg gap-2 px-3">{initial}<ChevronDown /></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                        <DropdownMenuItem onClick={handleChangePassword}>Cambiar Contraseña</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={handleLogout}>Cerrar Sesión</DropdownMenuItem> 
-                                </DropdownMenuContent>
-                            </li>
+                            <DropdownMenuTrigger className="flex items-center bg-sipe-white rounded-full pe-1">
+                                <div className="flex items-center justify-center w-8 h-8 bg-sipe-blue-dark text-sipe-white rounded-full">
+                                    {initial}
+                                </div>
+                                <div className="flex items-center justify-center ml-1">
+                                    <ChevronDown className="text-black" />
+                                </div>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="mt-2 bg-sipe-white shadow-md rounded-lg">
+                                <DropdownMenuItem className="p-2 hover:bg-gray-200 rounded-t-lg" onClick={handleChangePassword}>
+                                    Cambiar Contraseña
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="p-2 hover:bg-gray-200 rounded-b-lg" onClick={handleLogout}>
+                                    Cerrar Sesión
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
                 </ul>
-
             </div>
         </div>
     );
 }
 
 export default Navbar;
-
-
-

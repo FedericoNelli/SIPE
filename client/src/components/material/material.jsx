@@ -15,6 +15,7 @@ function Material({ notify }) {
     const [searchResults, setSearchResults] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
     const userRole = localStorage.getItem('rol'); // Obtén el rol del usuario desde el localStorage
 
@@ -139,11 +140,12 @@ function Material({ notify }) {
                             </ul>
                         </div>
                     </div>
-            {isFilterModalOpen && (
-                <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                    <FilterModal onClose={closeFilterModal} /> 
-                </div>
-            )}
+                )}
+                {isFilterModalOpen && (
+                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                        <FilterModal onClose={closeFilterModal} /> 
+                    </div>
+                )}
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <FormMaterial onClose={closeFormModal} notify={notify} />
@@ -151,7 +153,7 @@ function Material({ notify }) {
                 )}
             </div>
         </div>
-    );
-}
+    )
+};
 
 export default Material;
