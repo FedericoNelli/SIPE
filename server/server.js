@@ -4,11 +4,14 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql');
 const nodemailer = require('nodemailer');
+const bodyParser = require('body-parser');
 
 const app = express();
 const SECRET_KEY = 'peron74';
 
 app.use(cors());
+app.use(bodyParser.json({ limit: '50mb' })); 
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true })); 
 app.use(express.json());
 
 const db = mysql.createConnection({
@@ -56,6 +59,10 @@ app.post('/logout', (req, res) => {
 // Endpoint para agregar usuarios
 app.post('/addUser', (req, res) => {
     const { nombre, apellido, legajo, nombre_usuario, contrasenia, email, rol } = req.body;
+
+    if (!nombre || !apellido || !legajo || !nombre_usuario || !contrasenia || !email || !rol) {
+        return res.status(400).json({ message: 'Faltan campos obligatorios' });
+    }
 
     if (!req.headers.authorization) {
         console.log('No Authorization header');
@@ -136,7 +143,7 @@ app.post('/addMaterial', (req, res) => {
     const {
         nombre,
         cantidad,
-        imagen,
+        imagen, // Este debe ser un string en formato base64
         matricula,
         fechaUltimoEstado,
         mapa,
@@ -153,7 +160,15 @@ app.post('/addMaterial', (req, res) => {
         return res.status(400).json({ error: 'Campos obligatorios faltantes' });
     }
 
-    const imagenBuffer = imagen ? Buffer.from(imagen.split(',')[1], 'base64') : null;
+    // Verificar si la imagen se envió y si tiene el formato base64
+    let imagenBuffer = null;
+    if (imagen) {
+        // Verifica si la imagen está en base64 y separa los datos de cabecera
+        if (imagen.startsWith('data:image/')) {
+            const base64Data = imagen.split(',')[1]; // Obtiene solo los datos base64
+            imagenBuffer = Buffer.from(base64Data, 'base64'); // Convierte a Buffer
+        }
+    }
 
     const query = `
         INSERT INTO Material (
@@ -477,9 +492,46 @@ app.get('/sides', (req, res) => {
     });
 });
 
+// Endpoint para obtener la cantidad total de materiales
+app.get('/total-materials', (req, res) => {
+    const query = 'SELECT COUNT(*) AS total FROM Material';
+    
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results[0]);
+    });
+});
 
+// Endpoint para obtener la cantidad de materiales con bajo stock
+app.get('/low-stock-materials', (req, res) => {
+    const query = 'SELECT COUNT(*) AS total FROM Material WHERE cantidad <= bajoStock';
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results[0]);
+    });
+});
+
+//Endpoint para obtener la cantidad total de estanterías
+app.get('/total-estanterias', (req, res) => {
+    const query = 'SELECT COUNT(*) AS total FROM Estanteria';
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results[0]);
+    });
+});
+
+//Endpoint para obtener el último material ingresado, basado en la fecha del último estado
+app.get('/last-material', (req, res) => {
+    const query = 'SELECT nombre, fechaUltimoEstado FROM Material ORDER BY fechaUltimoEstado DESC LIMIT 1';
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json({ nombre: results[0].nombre });
+    });
+});
 
 app.listen(8081, () => {
     console.log(`Servidor corriendo en el puerto 8081`);
 });
-
