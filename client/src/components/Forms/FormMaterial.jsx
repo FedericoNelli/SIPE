@@ -28,7 +28,7 @@ function FormMaterial({ onClose, notify }) {
         imagen: null,
         mapa: '',
         ultimoUsuarioId: '',
-        ocupado: true
+        ocupado: 1
     });
 
     useEffect(() => {
@@ -120,50 +120,57 @@ function FormMaterial({ onClose, notify }) {
 
     const handleSave = async () => {
         const { nombre, cantidad, matricula, bajoStock, estado, espacio, categoria, deposito, imagen, ocupado } = formData;
-
+    
         if (!nombre || !cantidad || !matricula || !bajoStock || !estado || !espacio || !categoria || !deposito) {
             notify('error', 'Por favor completa todos los campos');
             return;
         }
-
+    
         const fechaUltimoEstado = new Date().toISOString();
-        const ultimoUsuarioId = localStorage.getItem('rememberedUser');
+        const ultimoUsuarioId = localStorage.getItem('id');
+
         if (!ultimoUsuarioId) {
             notify('error', 'Usuario no encontrado en localStorage');
             return;
         }
-
+    
         const formDataToSend = new FormData();
         formDataToSend.append('nombre', nombre);
         formDataToSend.append('cantidad', cantidad);
         formDataToSend.append('matricula', matricula);
         formDataToSend.append('bajoStock', bajoStock);
-        formDataToSend.append('estado', estado);
-        formDataToSend.append('espacio', espacio);
-        formDataToSend.append('categoria', categoria);
-        formDataToSend.append('deposito', deposito);
-        formDataToSend.append('ocupado', ocupado);
+        formDataToSend.append('idEstado', estado);
+        formDataToSend.append('idEspacio', espacio);
+        formDataToSend.append('idCategoria', categoria);
+        formDataToSend.append('idDeposito', deposito);
         formDataToSend.append('fechaUltimoEstado', fechaUltimoEstado);
         formDataToSend.append('ultimoUsuarioId', ultimoUsuarioId);
+        formDataToSend.append('ocupado', ocupado);
         if (imagen) {
             formDataToSend.append('imagen', imagen);
         }
-
+    
         try {
-            const response = await axios.post('http://localhost:8081/addMaterial', formDataToSend);
+            const response = await axios.post('http://localhost:8081/addMaterial', formDataToSend, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
             const data = response.data;
-
+    
             if (response.status !== 200) {
                 throw new Error(data.error || "Error al agregar Material");
             }
-
+    
             notify('success', "Material agregado correctamente!");
             if (onClose) onClose();
+
         } catch (error) {
             console.error('Error al agregar el material:', error);
             notify('error', error.message || "Error al agregar el material");
         }
     };
+    
 
     const handleCancel = () => {
         if (onClose) onClose();
