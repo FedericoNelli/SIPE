@@ -154,6 +154,6 @@ function Material({ notify }) {
             </div>
         </div>
     )
-};
+}
 
 export default Material;

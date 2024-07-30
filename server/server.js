@@ -7,29 +7,8 @@ const nodemailer = require('nodemailer');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const path = require('path');
-
 const app = express();
 const SECRET_KEY = 'peron74';
-
-// Configuración de multer para almacenar archivos en public/uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, 'public', 'uploads'));
-    },
-    filename: (req, file, cb) => {
-        // Genera un nombre de archivo único
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
-const upload = multer({ storage: storage });
-
-app.use(cors());
-app.use(bodyParser.json({ limit: '50mb' })); 
-app.use(bodyParser.urlencoded({ limit: '50mb', extended: true })); 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 const db = mysql.createConnection({
     host: 'localhost',
@@ -37,6 +16,41 @@ const db = mysql.createConnection({
     password: '',
     database: 'sipe'
 });
+
+const getNextImageNumber = (callback) => {
+    const query = 'SELECT COUNT(*) AS count FROM Material WHERE imagen IS NOT NULL';
+    db.query(query, (err, results) => {
+        if (err) {
+            return callback(err, null);
+        }
+        const count = results[0].count;
+        callback(null, count + 1);
+    });
+};
+
+// Configuración de multer para almacenar archivos en public/uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, path.join(__dirname, 'public', 'uploads'));
+    },
+    filename: (req, file, cb) => {
+        getNextImageNumber((err, imageNumber) => {
+            if (err) {
+                return cb(err);
+            }
+            const filename = `SIPE-img${imageNumber}${path.extname(file.originalname)}`;
+            cb(null, filename);
+        });
+    }
+});
+
+const upload = multer({ storage: storage });
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+
+
 
 db.connect((err) => {
     if (err) throw err;
@@ -156,62 +170,42 @@ app.get('/materials', (req, res) => {
 });
 
 // Ruta para agregar un nuevo material
-app.post('/addMaterial', upload.single('imagen'), (req, res) => {
+app.post('/addMaterial', (req, res) => {
     const {
-        nombre,
-        cantidad,
-        matricula,
-        bajoStock,
-        estado,
-        espacio,
-        categoria,
-        deposito,
-        ocupado
+        nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado
     } = req.body;
+    const imagen = req.files?.imagen;
 
-    if (!nombre || !categoria || !estado || !cantidad || !matricula || !bajoStock || !espacio) {
-        return res.status(400).json({ error: 'Campos obligatorios faltantes' });
+    // Validación de campos obligatorios
+    if (!nombre || !cantidad || !matricula || !idEstado || !idEspacio || !idCategoria || !idDeposito || !ultimoUsuarioId) {
+        return res.status(400).json({ mensaje: 'Campos obligatorios faltantes' });
     }
 
-    // Ruta de la imagen si se subió
-    const imagenPath = req.file ? req.file.path : null;
+    // Opcional: Validación de otros campos según sea necesario
+    const bajoStockValue = bajoStock !== undefined ? bajoStock : null;
+    const ocupadoValue = ocupado !== undefined ? ocupado : true;
 
-    const query = `
-        INSERT INTO Material (
-            nombre, 
-            cantidad, 
-            imagen, 
-            matricula, 
-            bajoStock, 
-            idEstado, 
-            idEspacio, 
-            ultimoUsuarioId, 
-            idCategoria, 
-            idDeposito,
-            ocupado
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+    // Si se ha subido una imagen, procesa y guarda la imagen
+    let imagenPath = null;
+    if (imagen) {
+        const imagenNombre = `${Date.now()}_${imagen.name}`;
+        imagenPath = `/uploads/${imagenNombre}`;
+        imagen.mv(`./public${imagenPath}`, (err) => {
+            if (err) {
+                return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
+            }
+        });
+    }
 
-    const values = [
-        nombre,
-        cantidad,
-        imagenPath, // Guarda solo la ruta de la imagen
-        matricula,
-        bajoStock,
-        estado,
-        espacio,
-        req.body.ultimoUsuarioId || null,
-        categoria,
-        deposito,
-        ocupado || true
-    ];
+    const insertQuery = `INSERT INTO Material (nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado, imagen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const values = [nombre, cantidad, matricula, bajoStockValue, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupadoValue, imagenPath];
 
-    db.query(query, values, (err, result) => {
+    db.query(insertQuery, values, (err, result) => {
         if (err) {
             console.error('Error al insertar material:', err);
-            return res.status(500).json({ error: 'Error al agregar material', details: err });
+            return res.status(500).json({ mensaje: 'Error al insertar material' });
         }
-        res.status(200).json({ message: 'Material agregado exitosamente', result });
+        res.status(201).json({ mensaje: 'Material agregado exitosamente', id: result.insertId });
     });
 });
 

@@ -14,7 +14,6 @@ function MaterialList({ materials }) {
     };
 
     const handleCellClick = (material) => {
-        console.log("Material seleccionado:", material); // Agrega esto para verificar el objeto
         setSelectedMaterial(material);
         setIsModalOpen(true);
     };
@@ -86,7 +85,7 @@ function MaterialList({ materials }) {
                             <div>
                                 {selectedMaterial.imagen ? (
                                     <img
-                                        src={`data:image/jpeg;base64,${selectedMaterial.imagen}`}
+                                        src={`http://localhost:8081/${selectedMaterial.imagen}`} // Asegúrate de que el path sea correcto
                                         alt={selectedMaterial.nombre}
                                         className="w-full h-auto rounded-md mb-4"
                                     />
