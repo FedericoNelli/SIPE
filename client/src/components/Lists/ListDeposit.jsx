@@ -19,8 +19,8 @@ function DepositList() {
             <Table className="w-full text-white">
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="text-center text-sipe-gray">Nombre</TableHead>
-                        <TableHead className="text-center text-sipe-gray">Ubicación</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Nombre</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Ubicación</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
