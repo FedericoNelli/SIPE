@@ -179,7 +179,6 @@ function Material({ notify }) {
                         </PaginationContent>
                     </Pagination>
                 </div>
-
                 {isModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <div className="bg-sipe-blue-dark rounded-lg p-6 w-full max-w-4xl">
