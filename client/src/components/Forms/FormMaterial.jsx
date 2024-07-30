@@ -6,7 +6,6 @@ import { Label } from "@/components/Label/Label";
 import { Input } from "@/components/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Select/Select";
 import { Button } from "@/components/Button/Button";
-import imageCompression from 'browser-image-compression';
 
 function FormMaterial({ onClose, notify }) {
     const [depositLocations, setDepositLocations] = useState([]);
@@ -28,7 +27,7 @@ function FormMaterial({ onClose, notify }) {
         deposito: '',
         imagen: null,
         mapa: '',
-        ultimousuarioId: '',
+        ultimoUsuarioId: '',
         ocupado: true
     });
 
@@ -114,16 +113,23 @@ function FormMaterial({ onClose, notify }) {
             }
             setFormData(prevData => ({
                 ...prevData,
-                imagen: file // Guardamos el archivo directamente
+                imagen: file 
             }));
         }
     };
 
     const handleSave = async () => {
-        const { nombre, cantidad, matricula, bajoStock, estado, espacio, categoria, deposito, ocupado, imagen } = formData;
+        const { nombre, cantidad, matricula, bajoStock, estado, espacio, categoria, deposito, imagen, ocupado } = formData;
 
-        if (!nombre || !categoria || !estado || !cantidad || !matricula || !bajoStock || !espacio) {
+        if (!nombre || !cantidad || !matricula || !bajoStock || !estado || !espacio || !categoria || !deposito) {
             notify('error', 'Por favor completa todos los campos');
+            return;
+        }
+
+        const fechaUltimoEstado = new Date().toISOString();
+        const ultimoUsuarioId = localStorage.getItem('rememberedUser');
+        if (!ultimoUsuarioId) {
+            notify('error', 'Usuario no encontrado en localStorage');
             return;
         }
 
@@ -137,27 +143,25 @@ function FormMaterial({ onClose, notify }) {
         formDataToSend.append('categoria', categoria);
         formDataToSend.append('deposito', deposito);
         formDataToSend.append('ocupado', ocupado);
-
+        formDataToSend.append('fechaUltimoEstado', fechaUltimoEstado);
+        formDataToSend.append('ultimoUsuarioId', ultimoUsuarioId);
         if (imagen) {
             formDataToSend.append('imagen', imagen);
         }
 
         try {
-            const response = await fetch('http://localhost:8081/addMaterial', {
-                method: 'POST',
-                body: formDataToSend,
-            });
+            const response = await axios.post('http://localhost:8081/addMaterial', formDataToSend);
+            const data = response.data;
 
-            const data = await response.json();
-
-            if (!response.ok) {
+            if (response.status !== 200) {
                 throw new Error(data.error || "Error al agregar Material");
             }
 
             notify('success', "Material agregado correctamente!");
             if (onClose) onClose();
         } catch (error) {
-            notify('error', "Error al agregar el material");
+            console.error('Error al agregar el material:', error);
+            notify('error', error.message || "Error al agregar el material");
         }
     };
 
