@@ -78,7 +78,7 @@ app.post('/login', (req, res) => {
 
         // Generar y devolver el token JWT
         const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '1h' });
-        res.json({ token, nombre: user.nombre, rol: user.rol });
+        res.json({ token, nombre: user.nombre, rol: user.rol, id: user.id });
     });
 });
 
@@ -189,44 +189,33 @@ app.get('/materials', (req, res) => {
     });
 });
 
-
 // Ruta para agregar un nuevo material
-app.post('/addMaterial', (req, res) => {
+app.post('/addMaterial', upload.single('imagen'), (req, res) => {
     const {
         nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado
     } = req.body;
-    const imagen = req.files?.imagen;
+    const imagen = req.file;
 
     // Validación de campos obligatorios
     if (!nombre || !cantidad || !matricula || !idEstado || !idEspacio || !idCategoria || !idDeposito || !ultimoUsuarioId) {
         return res.status(400).json({ mensaje: 'Campos obligatorios faltantes' });
     }
 
-    // Opcional: Validación de otros campos según sea necesario
-    const bajoStockValue = bajoStock !== undefined ? bajoStock : null;
-    const ocupadoValue = ocupado !== undefined ? ocupado : true;
-
-    // Si se ha subido una imagen, procesa y guarda la imagen
+    // Procesa y guarda la imagen si se ha subido una
     let imagenPath = null;
     if (imagen) {
-        const imagenNombre = `${Date.now()}_${imagen.name}`;
-        imagenPath = `/uploads/${imagenNombre}`;
-        imagen.mv(`./public${imagenPath}`, (err) => {
-            if (err) {
-                return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
-            }
-        });
+        imagenPath = `/uploads/${imagen.filename}`;
     }
 
     const insertQuery = `INSERT INTO Material (nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado, imagen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    const values = [nombre, cantidad, matricula, bajoStockValue, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupadoValue, imagenPath];
+    const values = [nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado, imagenPath];
 
     db.query(insertQuery, values, (err, result) => {
         if (err) {
             console.error('Error al insertar material:', err);
             return res.status(500).json({ mensaje: 'Error al insertar material' });
         }
-        res.status(201).json({ mensaje: 'Material agregado exitosamente', id: result.insertId });
+        res.status(200).json({ mensaje: 'Material agregado exitosamente', id: result.insertId });
     });
 });
 
