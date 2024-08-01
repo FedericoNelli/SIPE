@@ -22,7 +22,9 @@ const buttonVariants = cva(
         sipebuttonalt: "w-full text-sipe-white bg-sipe-orange-dark text-4xl font-bold p-9 hover:bg-sipe-orange-dark-variant",
         sipehover:"hover:bg-sipe-orange-light hover:text-accent-foreground",
         sipepagination: "bg-sipe-orange-light hover:bg-sipe-orange-light-variant hover:text-accent-foreground",
-        sipepaginationalt: "bg-sipe-orange-dark hover:bg-sipe-orange-dark-variant hover:text-accent-foreground"
+        sipepaginationalt: "bg-sipe-orange-dark hover:bg-sipe-orange-dark-variant hover:text-accent-foreground",
+        sipemodal: "w-30 text-sipe-white bg-sipe-orange-light text-xl font-bold hover:bg-sipe-orange-light-variant",
+        sipemodalalt: "w-30 text-sipe-white bg-sipe-orange-dark text-xl font-bold hover:bg-sipe-orange-dark-variant"
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -30,6 +32,7 @@ const buttonVariants = cva(
         lg: "h-11 rounded-md px-8",
         icon: "h-10 w-10",
         sipebutton: "p-4 rounded-xl",
+        sipebuttonmodal: "p-1 rounded-xl",
       },
     },
     defaultVariants: {

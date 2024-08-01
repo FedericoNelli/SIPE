@@ -4,10 +4,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql');
 const nodemailer = require('nodemailer');
-const bodyParser = require('body-parser');
 const multer = require('multer');
 const path = require('path');
 const app = express();
+const fs = require('fs');
 const SECRET_KEY = 'peron74';
 
 const db = mysql.createConnection({
@@ -16,17 +16,6 @@ const db = mysql.createConnection({
     password: '',
     database: 'sipe'
 });
-
-const getNextImageNumber = (callback) => {
-    const query = 'SELECT COUNT(*) AS count FROM Material WHERE imagen IS NOT NULL';
-    db.query(query, (err, results) => {
-        if (err) {
-            return callback(err, null);
-        }
-        const count = results[0].count;
-        callback(null, count + 1);
-    });
-};
 
 // Configuración de multer para almacenar archivos en public/uploads
 const storage = multer.diskStorage({
@@ -51,11 +40,21 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 
-
 db.connect((err) => {
     if (err) throw err;
     console.log('Conectado a la base de datos');
 });
+
+const getNextImageNumber = (callback) => {
+    const query = 'SELECT COUNT(*) AS count FROM Material WHERE imagen IS NOT NULL';
+    db.query(query, (err, results) => {
+        if (err) {
+            return callback(err, null);
+        }
+        const count = results[0].count;
+        callback(null, count + 1);
+    });
+};
 
 app.post('/login', (req, res) => {
     const { user, password } = req.body;
@@ -563,6 +562,47 @@ app.get('/notificaciones-material', (req, res) => {
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json(results);
+    });
+});
+
+app.delete('/materials/:id', (req, res) => {
+    const materialId = req.params.id;
+
+    // Primero, obtenemos la información del material para obtener el path de la imagen
+    const queryGetImage = 'SELECT imagen FROM Material WHERE id = ?';
+
+    db.query(queryGetImage, [materialId], (err, results) => {
+        if (err) {
+            console.error('Error al obtener la imagen:', err);
+            return res.status(500).send('Error al obtener la imagen');
+        }
+
+        if (results.length > 0) {
+            const imagePath = results[0].imagen; // Obtener el path de la imagen
+            const fullPath = path.join(__dirname, 'public', imagePath); // Construir la ruta completa
+
+            // Eliminar la imagen del sistema de archivos
+            fs.unlink(fullPath, (err) => {
+                if (err) {
+                    console.error('Error al eliminar la imagen:', err);
+                    return res.status(500).send('Error al eliminar la imagen');
+                }
+
+                // Ahora que la imagen ha sido eliminada, eliminamos el registro de la base de datos
+                const queryDeleteMaterial = 'DELETE FROM Material WHERE id = ?';
+
+                db.query(queryDeleteMaterial, [materialId], (err, result) => {
+                    if (err) {
+                        console.error('Error al eliminar el material:', err);
+                        return res.status(500).send('Error al eliminar el material');
+                    }
+
+                    res.status(200).send('Material eliminado con éxito y imagen eliminada.');
+                });
+            });
+        } else {
+            return res.status(404).send('Material no encontrado');
+        }
     });
 });
 
