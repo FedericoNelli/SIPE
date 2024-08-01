@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import 'react-toastify/dist/ReactToastify.css';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Cards/Card";
 import { Label } from "@/components/Label/Label";
 import { Input } from "@/components/Input/Input";
@@ -164,6 +163,7 @@ function FormMaterial({ onClose, notify }) {
     
             notify('success', "Material agregado correctamente!");
             if (onClose) onClose();
+            window.location.reload();
 
         } catch (error) {
             console.error('Error al agregar el material:', error);

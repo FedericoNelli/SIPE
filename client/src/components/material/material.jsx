@@ -4,7 +4,7 @@ import { Input } from "../Input/Input";
 import { Button } from "@/components/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Pagination/Pagination";
 import FormMaterial from '@/components/Forms/FormMaterial';
-import MaterialList from '@/components/Lists/ListMaterial';
+import ListMaterial from '@/components/Lists/ListMaterial';
 import { Search, Filter } from 'lucide-react';
 import FilterModal from '../Forms/FilterModal';
 
@@ -159,13 +159,13 @@ function Material({ notify }) {
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
                         {userRole === 'Administrador' && (
-                          <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
+                            <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
                         )}
                         <Button onClick={openFilterModal} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2 "> <Filter /> Filtrar </Button>
                         <Button onClick={openModalSearch} variant="secondary" className="bg-transparent border-sipe-white border text-sipe-white font-semibold px-2 py-2 flex items-center gap-2"> <Search /> Buscar </Button>
                     </div>
                 </div>
-                <MaterialList materials={currentMaterials} />
+                <ListMaterial materials={currentMaterials} />
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
