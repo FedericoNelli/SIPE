@@ -144,26 +144,47 @@ app.get('/users', (req, res) => {
 app.get('/materials', (req, res) => {
     const { ubicacion, deposito, categoria, estado } = req.query;
 
-    let query = `
-        SELECT 
-            m.id, m.nombre, m.cantidad, m.imagen, m.matricula, m.fechaUltimoEstado, 
-            m.mapa, m.bajoStock, m.idEstado, m.idEspacio, m.ultimoUsuarioId, 
-            m.idCategoria, m.idDeposito, 
-            d.nombre AS depositoNombre, 
-            u.nombre AS ubicacionNombre, 
-            es.descripcion AS estadoDescripcion, 
-            c.descripcion AS categoriaDescripcion
-        FROM 
-            Material m
-        LEFT JOIN 
-            Deposito d ON m.idDeposito = d.id
-        LEFT JOIN 
-            Ubicacion u ON d.idUbicacion = u.id
-        LEFT JOIN 
-            Estado es ON m.idEstado = es.id
-        LEFT JOIN 
-            Categoria c ON m.idCategoria = c.id
-    `;
+    let query = `SELECT 
+        m.id, 
+        m.nombre, 
+        m.cantidad, 
+        m.imagen, 
+        m.matricula, 
+        m.fechaUltimoEstado, 
+        m.mapa, 
+        m.bajoStock, 
+        m.idEstado, 
+        m.idEspacio, 
+        m.ultimoUsuarioId, 
+        m.idCategoria, 
+        m.idDeposito, 
+        d.nombre AS depositoNombre, 
+        u.nombre AS ubicacionNombre, 
+        es.descripcion AS estadoDescripcion, 
+        c.descripcion AS categoriaDescripcion,
+        et.cantidad_estante AS estanteriaNombre,
+        e.fila AS estante,
+        e.columna AS division,
+        p.numero AS pasilloNumero,
+        l.descripcion AS lado
+    FROM 
+        Material m
+    LEFT JOIN 
+        Deposito d ON m.idDeposito = d.id
+    LEFT JOIN 
+        Ubicacion u ON d.idUbicacion = u.id
+    LEFT JOIN 
+        Estado es ON m.idEstado = es.id
+    LEFT JOIN 
+        Categoria c ON m.idCategoria = c.id
+    LEFT JOIN 
+        Espacio e ON m.idEspacio = e.id
+    LEFT JOIN 
+        Estanteria et ON e.idEstanteria = et.id
+    LEFT JOIN 
+        Pasillo p ON et.idPasillo = p.id
+    LEFT JOIN 
+        Lado l ON et.idLado = l.id`;
 
     const filters = [];
     if (ubicacion) {

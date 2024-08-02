@@ -26,6 +26,7 @@ function MaterialList({ materials }) {
     return (
         <>
             <Table className="w-full text-sipe-white">
+                {/* Encabezado de la tabla */}
                 <TableHeader>
                     <TableRow>
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Nombre</TableHead>
@@ -76,32 +77,35 @@ function MaterialList({ materials }) {
                 </TableBody>
             </Table>
 
-            {/* Modal */} 
-            {isModalOpen && (
+            {/* Modal */}
+            {isModalOpen && selectedMaterial && (
                 <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
                     <div className="bg-white rounded-lg shadow-lg p-6 w-1/3">
                         <h2 className="text-lg font-bold mb-4">Detalles del Material</h2>
-                        {selectedMaterial && (
-                            <div>
-                                {selectedMaterial.imagen ? (
-                                    <img
-                                        src={`http://localhost:8081/${selectedMaterial.imagen}`} // Asegúrate de que el path sea correcto
-                                        alt={selectedMaterial.nombre}
-                                        className="w-full h-auto rounded-md mb-4"
-                                    />
-                                ) : (
-                                    <p>No hay imagen disponible</p>
-                                )}
-                                <p><strong>Nombre:</strong> {selectedMaterial.nombre}</p>
-                                <p><strong>ID:</strong> {selectedMaterial.id}</p>
-                                <p><strong>Depósito:</strong> {selectedMaterial.depositoNombre}</p>
-                                <p><strong>Estado:</strong> {selectedMaterial.estadoDescripcion}</p>
-                                <p><strong>Cantidad:</strong> {selectedMaterial.cantidad} unidades</p>
-                                <p><strong>Ubicación:</strong> {selectedMaterial.ubicacionNombre}</p>
-                                <p><strong>Matrícula:</strong> {selectedMaterial.matricula}</p>
-                                <p><strong>Categoría:</strong> {selectedMaterial.categoriaDescripcion}</p>
-                            </div>
-                        )}
+                        <div>
+                            {selectedMaterial.imagen ? (
+                                <img
+                                    src={`http://localhost:8081/${selectedMaterial.imagen}`}
+                                    alt={selectedMaterial.nombre}
+                                    className="w-full h-auto rounded-md mb-4"
+                                />
+                            ) : (
+                                <p>No hay imagen disponible</p>
+                            )}
+                            <p><strong>Nombre:</strong> {selectedMaterial.nombre}</p>
+                            <p><strong>ID:</strong> {selectedMaterial.id}</p>
+                            <p><strong>Depósito:</strong> {selectedMaterial.depositoNombre}</p>
+                            <p><strong>Estado:</strong> {selectedMaterial.estadoDescripcion}</p>
+                            <p><strong>Cantidad:</strong> {selectedMaterial.cantidad} unidades</p>
+                            <p><strong>Ubicación:</strong> {selectedMaterial.ubicacionNombre}</p>
+                            <p><strong>Matrícula:</strong> {selectedMaterial.matricula}</p>
+                            <p><strong>Categoría:</strong> {selectedMaterial.categoriaDescripcion}</p>
+                            {/* <p className="text-xs"><strong>Estantería:</strong> {shelves.find(shelf => shelf.id === selectedMaterial.idEstanteria)?.nombre}</p> */}
+                            <p className="text-xs"><strong>Estante:</strong> {selectedMaterial.estanteriaNombre}</p>
+                            <p className="text-xs"><strong>División:</strong> {selectedMaterial.division}</p>
+                            <p className="text-xs"><strong>Espacio:</strong> {selectedMaterial.idEspacio}</p>
+                            <p className="text-xs"><strong>Pasillo:</strong> {selectedMaterial.pasilloNumero}</p>
+                        </div>
                         <button
                             onClick={closeModal}
                             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
