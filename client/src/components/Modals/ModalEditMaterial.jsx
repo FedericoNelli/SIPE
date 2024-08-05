@@ -6,28 +6,21 @@ import { Input } from "@/components/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Select/Select";
 import { Button } from "@/components/Button/Button";
 
-function FormMaterial({ onClose, notify }) {
+function ModalEditMaterial({ isOpen, onClose, notify, material }) {
     const [depositLocations, setDepositLocations] = useState([]);
     const [depositNames, setDepositNames] = useState([]);
-    const [locationId, setLocationId] = useState(null);
+    const [locationId, setLocationId] = useState(material?.idUbicacion || '');
     const [categories, setCategories] = useState([]);
     const [statuses, setStatuses] = useState([]);
-    const [shelves, setShelves] = useState([]);
-    const [spaces, setSpaces] = useState([]);
-    const [selectedShelf, setSelectedShelf] = useState(null);
     const [formData, setFormData] = useState({
-        nombre: '',
-        cantidad: '',
-        matricula: '',
-        bajoStock: '',
-        estado: '',
-        espacio: '',
-        categoria: '',
-        deposito: '',
+        nombre: material?.nombre || '',
+        cantidad: material?.cantidad || '',
+        matricula: material?.matricula || '',
+        estado: material?.idEstado || '',
+        categoria: material?.idCategoria || '',
+        deposito: material?.idDeposito || '',
         imagen: null,
-        mapa: '',
-        ultimoUsuarioId: '',
-        ocupado: 1
+        imagenPreview: material?.imagen || ''
     });
 
     useEffect(() => {
@@ -45,11 +38,6 @@ function FormMaterial({ onClose, notify }) {
             .then(response => response.json())
             .then(data => setStatuses(data))
             .catch(error => console.error('Error fetching statuses:', error));
-
-        fetch('http://localhost:8081/shelves')
-            .then(response => response.json())
-            .then(data => setShelves(data))
-            .catch(error => console.error('Error fetching shelves:', error));
     }, []);
 
     useEffect(() => {
@@ -66,29 +54,12 @@ function FormMaterial({ onClose, notify }) {
         }
     }, [locationId]);
 
-    useEffect(() => {
-        if (selectedShelf) {
-            fetch(`http://localhost:8081/spaces/${selectedShelf}`)
-                .then(response => response.json())
-                .then(data => setSpaces(data))
-                .catch(error => console.error('Error fetching spaces:', error));
-        }
-    }, [selectedShelf]);
-
     const handleInputChange = (e) => {
         const { id, value } = e.target;
-
-        if (id === 'cantidad' && value < 0) {
-            setFormData((prevData) => ({
-                ...prevData,
-                [id]: 0,
-            }));
-        } else {
-            setFormData((prevData) => ({
-                ...prevData,
-                [id]: value,
-            }));
-        }
+        setFormData((prevData) => ({
+            ...prevData,
+            [id]: value,
+        }));
     };
 
     const handleSelectChange = (id, value) => {
@@ -105,33 +76,31 @@ function FormMaterial({ onClose, notify }) {
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            console.log(`Tamaño del archivo original: ${file.size} bytes`);
             if (file.size > 10 * 1024 * 1024) { // 10 MB
                 alert("El archivo es demasiado grande. El tamaño máximo es 10 MB.");
                 return;
             }
             setFormData(prevData => ({
                 ...prevData,
-                imagen: file
+                imagen: file,
+                imagenPreview: URL.createObjectURL(file)
             }));
         }
     };
 
+    const handleDeleteImage = () => {
+        setFormData(prevData => ({
+            ...prevData,
+            imagen: null,
+            imagenPreview: null
+        }));
+    };
+
     const handleSave = async () => {
-        const { nombre, cantidad, matricula, bajoStock, estado, espacio, categoria, deposito, imagen, ocupado } = formData;
+        const { nombre, cantidad, matricula, estado, categoria, deposito, imagen } = formData;
 
-        if (!nombre || !cantidad || !matricula || !bajoStock || !estado || !espacio || !categoria || !deposito) {
+        if (!nombre || !cantidad || !matricula || !estado || !categoria || !deposito) {
             notify('error', 'Por favor completa todos los campos');
-            return;
-        }
-
-        const fechaUltimoEstado = new Date();
-        fechaUltimoEstado.setHours(fechaUltimoEstado.getHours() - 3); 
-        const fechaFormatoISO = fechaUltimoEstado.toISOString(); 
-        const ultimoUsuarioId = localStorage.getItem('id');
-
-        if (!ultimoUsuarioId) {
-            notify('error', 'Usuario no encontrado en localStorage');
             return;
         }
 
@@ -139,50 +108,45 @@ function FormMaterial({ onClose, notify }) {
         formDataToSend.append('nombre', nombre);
         formDataToSend.append('cantidad', cantidad);
         formDataToSend.append('matricula', matricula);
-        formDataToSend.append('bajoStock', bajoStock);
         formDataToSend.append('idEstado', estado);
-        formDataToSend.append('idEspacio', espacio);
         formDataToSend.append('idCategoria', categoria);
         formDataToSend.append('idDeposito', deposito);
-        formDataToSend.append('fechaUltimoEstado', fechaFormatoISO);
-        formDataToSend.append('ultimoUsuarioId', ultimoUsuarioId);
-        formDataToSend.append('ocupado', ocupado);
         if (imagen) {
             formDataToSend.append('imagen', imagen);
         }
 
         try {
-            const response = await axios.post('http://localhost:8081/addMaterial', formDataToSend, {
+            const response = await axios.put(`http://localhost:8081/materiales/${material.id}`, formDataToSend, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
             });
-            const data = response.data;
 
             if (response.status !== 200) {
-                throw new Error(data.error || "Error al agregar Material");
+                throw new Error(response.data.error || "Error al actualizar Material");
             }
 
-            notify('success', "Material agregado correctamente!");
+            notify('success', "Material actualizado correctamente!");
             if (onClose) onClose();
             window.location.reload();
 
         } catch (error) {
-            console.error('Error al agregar el material:', error);
-            notify('error', error.message || "Error al agregar el material");
+            console.error('Error al actualizar el material:', error);
+            notify('error', error.message || "Error al actualizar el material");
         }
     };
-
 
     const handleCancel = () => {
         if (onClose) onClose();
     };
 
+    if (!isOpen) return null;
+
     return (
-        <>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
             <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl">
                 <CardHeader>
-                    <CardTitle className="text-3xl font-bold mb-2 text-center">Agregar nuevo material</CardTitle>
+                    <CardTitle className="text-3xl font-bold mb-2 text-center">Editar Material</CardTitle>
                     <hr />
                 </CardHeader>
                 <CardContent className="grid gap-4">
@@ -257,53 +221,46 @@ function FormMaterial({ onClose, notify }) {
                             <Label htmlFor="matricula" className="text-sm font-medium">Matrícula</Label>
                             <Input className="border-b" id="matricula" placeholder="Ingresa la matrícula" value={formData.matricula} onChange={handleInputChange} />
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="bajoStock" className="text-sm font-medium">Bajo stock</Label>
-                            <Input className="border-b" id="bajoStock" type="number" placeholder="Ingresa el umbral de bajo stock" value={formData.bajoStock} onChange={handleInputChange} min="0" />
-                        </div>
                     </div>
-                    <div className="grid gap-4">
-                        <Label className="text-sm font-medium">Ubicación</Label>
-                        <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
-                            <Select id="shelf" onValueChange={(value) => {
-                                handleSelectChange('shelf', value);
-                                setSelectedShelf(value);
-                            }}>
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Estantería" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {shelves.map(shelf => (
-                                        <SelectItem key={shelf.id} value={shelf.id}>Estantería {shelf.id}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select id="espacio" onValueChange={(value) => handleSelectChange('espacio', value)}>
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Espacio" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {spaces.map(space => (
-                                        <SelectItem key={space.numeroEspacio} value={space.id} disabled={space.ocupado}>
-                                            {`Espacio ${space.numeroEspacio}`}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="image" className="text-sm font-medium">Imagen</Label>
-                            <Input className="border-b" id="image" type="file" accept="image/*" onChange={handleFileChange} />
+                    <div className="grid gap-2">
+                        <Label htmlFor="image" className="text-sm font-medium">Imagen</Label>
+                        <div className="flex items-center gap-4">
+                            {formData.imagenPreview ? (
+                                <img
+                                    src={formData.imagenPreview}
+                                    width="64"
+                                    height="64"
+                                    alt="Imagen del material"
+                                    className="rounded-md"
+                                    style={{ aspectRatio: "64/64", objectFit: "cover" }}
+                                />
+                            ) : (
+                                <img
+                                    src="/placeholder.svg"
+                                    width="64"
+                                    height="64"
+                                    alt="Sin imagen"
+                                    className="rounded-md"
+                                    style={{ aspectRatio: "64/64", objectFit: "cover" }}
+                                />
+                            )}
+                            <div className="flex flex-col gap-2">
+                                <Button variant="outline" onClick={handleDeleteImage}>Eliminar Imagen</Button>
+                                <input type="file" id="photo" className="hidden" onChange={handleFileChange} />
+                                <Label htmlFor="photo" className="cursor-pointer">
+                                    Subir nueva imagen
+                                </Label>
+                            </div>
                         </div>
                     </div>
                 </CardContent>
                 <CardFooter className="flex justify-end gap-4">
-                    <Button className="" variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>CANCELAR</Button>
-                    <Button className="" variant="sipebutton" size="sipebutton" onClick={handleSave}>AGREGAR</Button>
+                    <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>CANCELAR</Button>
+                    <Button variant="sipebutton" size="sipebutton" onClick={handleSave}>GUARDAR</Button>
                 </CardFooter>
             </Card>
-        </>
+        </div>
     );
 }
 
-export default FormMaterial;
+export default ModalEditMaterial;
