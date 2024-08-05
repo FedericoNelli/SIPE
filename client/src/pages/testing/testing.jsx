@@ -1,21 +1,32 @@
-import { Button } from "@/components/Button/Button";
+import React, { useState } from 'react';
+import ModalEditMaterial from '@/components/Testing/CompTesting';
 
+const MaterialPage = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedMaterial, setSelectedMaterial] = useState(null);
 
+    const handleEditClick = (material) => {
+        setSelectedMaterial(material);
+        setIsModalOpen(true);
+    };
 
-function Testing() {
-    
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedMaterial(null);
+    };
+
     return (
-        <div className='bg-sipe-blue-dark h-screen flex justify-center items-center text-sipe-white'>
-            <div className="bg-sipe-blue-light flex flex-col justify-center w-350 rounded-xl gap-6 p-4">
-                <p className="font-bold text-2xl text-center">¿Estás seguro que querés 
-                borrar este material?</p>
-                <div className="flex justify-around">
-                    <Button variant="sipemodalalt" size="sipebuttonmodal" className="px-4">CANCELAR</Button>
-                    <Button variant="sipemodal" size="sipebuttonmodal" className="px-4">ELIMINAR</Button>
-                </div>
-            </div>
+        <div>
+            <button onClick={() => handleEditClick(material)}>Editar Material</button>
+            <ModalEditMaterial
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                // notify={notify}
+                material={selectedMaterial}
+            />
         </div>
     );
-}
+};
 
-export default Testing
+
+export default MaterialPage;

@@ -38,7 +38,7 @@ const PaginationLink = ({
   <a
     aria-current={isActive ? "page" : undefined}
     className={cn(buttonVariants({
-      variant: isActive ? "sipepaginationalt" : "sipepagination",
+      variant: isActive ? "sipepagination" : "sipepaginationalt",
       size,
     }), className)}
     {...props} />
