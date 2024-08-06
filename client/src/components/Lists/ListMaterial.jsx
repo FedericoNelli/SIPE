@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Table/Table";
 import { Badge } from "@/components/Badge/Badge";
+import axios from "axios";
+import ModalDetailMaterial from "@/components/Modals/ModalDetailMaterial";
 
-function MaterialList({ materials }) {
+function ListMaterial({ materials }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMaterial, setSelectedMaterial] = useState(null);
+    const [shelves, setShelves] = useState([]);
 
     const sipeBadges = {
         "disponible": "#88B04B",
@@ -13,16 +16,25 @@ function MaterialList({ materials }) {
         "bajo-stock": "#FF8C42"
     };
 
-    const handleCellClick = (material) => {
-        console.log("Material seleccionado:", material); // Agrega esto para verificar el objeto
+    const handleCellClick = useCallback((material) => {
         setSelectedMaterial(material);
         setIsModalOpen(true);
-    };
+    }, []);
 
-    const closeModal = () => {
+    const closeModal = useCallback(() => {
         setIsModalOpen(false);
         setSelectedMaterial(null);
-    };
+    }, []);
+
+    useEffect(() => {
+        axios.get('http://localhost:8081/shelves')
+            .then(response => {
+                setShelves(response.data);
+            })
+            .catch(error => {
+                console.error('Error fetching shelves:', error);
+            });
+    }, []);
 
     return (
         <>
@@ -70,50 +82,20 @@ function MaterialList({ materials }) {
                                 {material.matricula}
                             </TableCell>
                             <TableCell className="text-center font-light">
-                                {material.categoriaDescripcion}
+                                {material.categoriaNombre}
                             </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
             </Table>
 
-            {/* Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-                    <div className="bg-white rounded-lg shadow-lg p-6 w-1/3">
-                        <h2 className="text-lg font-bold mb-4">Detalles del Material</h2>
-                        {selectedMaterial && (
-                            <div>
-                                {selectedMaterial.imagen ? (
-                                    <img
-                                        src={`data:image/jpeg;base64,${selectedMaterial.imagen}`}
-                                        alt={selectedMaterial.nombre}
-                                        className="w-full h-auto rounded-md mb-4"
-                                    />
-                                ) : (
-                                    <p>No hay imagen disponible</p>
-                                )}
-                                <p><strong>Nombre:</strong> {selectedMaterial.nombre}</p>
-                                <p><strong>ID:</strong> {selectedMaterial.id}</p>
-                                <p><strong>Depósito:</strong> {selectedMaterial.depositoNombre}</p>
-                                <p><strong>Estado:</strong> {selectedMaterial.estadoDescripcion}</p>
-                                <p><strong>Cantidad:</strong> {selectedMaterial.cantidad} unidades</p>
-                                <p><strong>Ubicación:</strong> {selectedMaterial.ubicacionNombre}</p>
-                                <p><strong>Matrícula:</strong> {selectedMaterial.matricula}</p>
-                                <p><strong>Categoría:</strong> {selectedMaterial.categoriaDescripcion}</p>
-                            </div>
-                        )}
-                        <button
-                            onClick={closeModal}
-                            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                        >
-                            Cerrar
-                        </button>
-                    </div>
-                </div>
-            )}
+            <ModalDetailMaterial 
+                isOpen={isModalOpen}
+                onClose={closeModal}
+                selectedMaterial={selectedMaterial}
+            />
         </>
     );
 }
 
-export default MaterialList;
+export default ListMaterial;

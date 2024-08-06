@@ -4,15 +4,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql');
 const nodemailer = require('nodemailer');
-const bodyParser = require('body-parser');
-
+const multer = require('multer');
+const path = require('path');
 const app = express();
+const fs = require('fs');
 const SECRET_KEY = 'peron74';
-
-app.use(cors());
-app.use(bodyParser.json({ limit: '50mb' })); 
-app.use(bodyParser.urlencoded({ limit: '50mb', extended: true })); 
-app.use(express.json());
 
 const db = mysql.createConnection({
     host: 'localhost',
@@ -21,15 +17,49 @@ const db = mysql.createConnection({
     database: 'sipe'
 });
 
+// Configuración de multer para almacenar archivos en public/uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, path.join(__dirname, 'public', 'uploads'));
+    },
+    filename: (req, file, cb) => {
+        getNextImageNumber((err, imageNumber) => {
+            if (err) {
+                return cb(err);
+            }
+            const filename = `SIPE-img${imageNumber}${path.extname(file.originalname)}`;
+            cb(null, filename);
+        });
+    }
+});
+
+const upload = multer({ storage: storage });
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+
+
 db.connect((err) => {
     if (err) throw err;
     console.log('Conectado a la base de datos');
 });
 
+const getNextImageNumber = (callback) => {
+    const query = 'SELECT COUNT(*) AS count FROM Material WHERE imagen IS NOT NULL';
+    db.query(query, (err, results) => {
+        if (err) {
+            return callback(err, null);
+        }
+        const count = results[0].count;
+        callback(null, count + 1);
+    });
+};
+
+// Consulta a la base de datos para verificar usuario y contraseña
 app.post('/login', (req, res) => {
     const { user, password } = req.body;
 
-    // Consulta a la base de datos para verificar usuario y contraseña
     const query = 'SELECT * FROM usuario WHERE nombre_usuario = ?';
     db.query(query, [user], (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
@@ -47,12 +77,11 @@ app.post('/login', (req, res) => {
 
         // Generar y devolver el token JWT
         const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '1h' });
-        res.json({ token, nombre: user.nombre, rol: user.rol });
+        res.json({ token, nombre: user.nombre, rol: user.rol, id: user.id });
     });
 });
 
 app.post('/logout', (req, res) => {
-    // No es necesario hacer nada en el servidor para logout con JWT.
     res.status(200).send('Logout exitoso');
 });
 
@@ -111,26 +140,75 @@ app.get('/users', (req, res) => {
 });
 
 app.get('/materials', (req, res) => {
-    const query = `
-        SELECT 
-            m.id, m.nombre, m.cantidad, m.imagen, m.matricula, m.fechaUltimoEstado, 
-            m.mapa, m.bajoStock, m.idEstado, m.idEspacio, m.ultimoUsuarioId, 
-            m.idCategoria, m.idDeposito, 
-            d.nombre AS depositoNombre, 
-            u.nombre AS ubicacionNombre, 
-            es.descripcion AS estadoDescripcion, 
-            c.descripcion AS categoriaDescripcion
-        FROM 
-            Material m
-        LEFT JOIN 
-            Deposito d ON m.idDeposito = d.id
-        LEFT JOIN 
-            Ubicacion u ON d.idUbicacion = u.id
-        LEFT JOIN 
-            Estado es ON m.idEstado = es.id
-        LEFT JOIN 
-            Categoria c ON m.idCategoria = c.id
-    `;
+    const { ubicacion, deposito, categoria, estado } = req.query;
+
+    let query = `
+    SELECT 
+        m.id, 
+        m.nombre, 
+        m.cantidad, 
+        m.imagen, 
+        m.matricula, 
+        DATE_FORMAT(m.fechaUltimoEstado, '%d-%m-%Y') AS fechaUltimoEstado, 
+        m.mapa, 
+        m.bajoStock, 
+        m.idEstado, 
+        m.idEspacio, 
+        m.ultimoUsuarioId, 
+        m.idCategoria, 
+        m.idDeposito, 
+        d.nombre AS depositoNombre, 
+        u.nombre AS ubicacionNombre, 
+        es.descripcion AS estadoDescripcion, 
+        c.descripcion AS categoriaNombre,
+        et.id AS estanteriaId,                 
+        et.cantidad_estante AS cantidadEstante,   
+        et.cantidad_division AS cantidadDivision,   
+        e.fila AS estanteEstanteria,                
+        e.columna AS divisionEstanteria,             
+        p.numero AS pasilloNumero,
+        l.descripcion AS lado,
+        e.numeroEspacio,
+        uu.nombre_usuario AS ultimoUsuarioNombre
+    FROM 
+        Material m
+    LEFT JOIN 
+        Deposito d ON m.idDeposito = d.id
+    LEFT JOIN 
+        Ubicacion u ON d.idUbicacion = u.id
+    LEFT JOIN 
+        Estado es ON m.idEstado = es.id
+    LEFT JOIN 
+        Categoria c ON m.idCategoria = c.id
+    LEFT JOIN 
+        Espacio e ON m.idEspacio = e.id
+    LEFT JOIN 
+        Estanteria et ON e.idEstanteria = et.id
+    LEFT JOIN 
+        Pasillo p ON et.idPasillo = p.id
+    LEFT JOIN 
+        Lado l ON et.idLado = l.id
+    LEFT JOIN 
+        Usuario uu ON m.ultimoUsuarioId = uu.id
+`;
+
+    const filters = [];
+    if (ubicacion) {
+        filters.push(`u.nombre = ${db.escape(ubicacion)}`);
+    }
+    if (deposito) {
+        filters.push(`d.nombre = ${db.escape(deposito)}`);
+    }
+    if (categoria) {
+        filters.push(`c.descripcion = ${db.escape(categoria)}`);
+    }
+    if (estado) {
+        filters.push(`es.descripcion = ${db.escape(estado)}`);
+    }
+
+    if (filters.length > 0) {
+        query += ' WHERE ' + filters.join(' AND ');
+    }
 
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
@@ -139,77 +217,53 @@ app.get('/materials', (req, res) => {
 });
 
 // Ruta para agregar un nuevo material
-app.post('/addMaterial', (req, res) => {
+app.post('/addMaterial', upload.single('imagen'), (req, res) => {
     const {
-        nombre,
-        cantidad,
-        imagen, // Este debe ser un string en formato base64
-        matricula,
-        fechaUltimoEstado,
-        mapa,
-        bajoStock,
-        estado,
-        espacio,
-        ultimousuarioId,
-        categoria,
-        deposito,
-        ocupado
+        nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado
     } = req.body;
+    const imagen = req.file;
 
-    if (!nombre || !categoria || !estado || !cantidad || !matricula || !bajoStock || !espacio) {
-        return res.status(400).json({ error: 'Campos obligatorios faltantes' });
+    // Validación de campos obligatorios
+    if (!nombre || !cantidad || !matricula || !idEstado || !idEspacio || !idCategoria || !idDeposito || !ultimoUsuarioId) {
+        return res.status(400).json({ mensaje: 'Campos obligatorios faltantes' });
     }
 
-    // Verificar si la imagen se envió y si tiene el formato base64
-    let imagenBuffer = null;
-    if (imagen) {
-        // Verifica si la imagen está en base64 y separa los datos de cabecera
-        if (imagen.startsWith('data:image/')) {
-            const base64Data = imagen.split(',')[1]; // Obtiene solo los datos base64
-            imagenBuffer = Buffer.from(base64Data, 'base64'); // Convierte a Buffer
-        }
-    }
+    const insertQuery = `INSERT INTO Material (nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const values = [nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado];
 
-    const query = `
-        INSERT INTO Material (
-            nombre, 
-            cantidad, 
-            imagen, 
-            matricula, 
-            fechaUltimoEstado, 
-            mapa, 
-            bajoStock, 
-            idEstado, 
-            idEspacio, 
-            ultimoUsuarioId, 
-            idCategoria, 
-            idDeposito,
-            ocupado
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    const values = [
-        nombre,
-        cantidad,
-        imagenBuffer,
-        matricula,
-        fechaUltimoEstado || new Date(),
-        mapa || null,
-        bajoStock,
-        estado,
-        espacio,
-        ultimousuarioId || null,
-        categoria,
-        deposito,
-        ocupado || true
-    ];
-
-    db.query(query, values, (err, result) => {
+    db.query(insertQuery, values, (err, result) => {
         if (err) {
             console.error('Error al insertar material:', err);
-            return res.status(500).json({ error: 'Error al agregar material', details: err });
+            return res.status(500).json({ mensaje: 'Error al insertar material' });
         }
-        res.status(200).json({ message: 'Material agregado exitosamente', result });
+
+        const materialId = result.insertId;
+
+        // Procesa y guarda la imagen si se ha subido una
+        let imagenPath = null;
+        if (imagen) {
+            imagenPath = `/uploads/SIPE-img-${materialId}${path.extname(imagen.originalname)}`;
+            const newFilePath = path.join(__dirname, 'public', imagenPath);
+
+            fs.rename(imagen.path, newFilePath, (err) => {
+                if (err) {
+                    console.error('Error al renombrar la imagen:', err);
+                    return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
+                }
+
+                const updateQuery = 'UPDATE Material SET imagen = ? WHERE id = ?';
+                db.query(updateQuery, [imagenPath, materialId], (err, result) => {
+                    if (err) {
+                        console.error('Error al actualizar la base de datos con la imagen:', err);
+                        return res.status(500).json({ mensaje: 'Error al actualizar la imagen en la base de datos' });
+                    }
+
+                    res.status(200).json({ mensaje: 'Material agregado exitosamente', id: materialId });
+                });
+            });
+        } else {
+            res.status(200).json({ mensaje: 'Material agregado exitosamente', id: materialId });
+        }
     });
 });
 
@@ -224,7 +278,8 @@ app.get('/materials/search', (req, res) => {
             d.nombre AS depositoNombre, 
             u.nombre AS ubicacionNombre, 
             es.descripcion AS estadoDescripcion, 
-            c.descripcion AS categoriaDescripcion
+            c.descripcion AS categoriaDescripcion,
+            e.numeroEspacio
         FROM 
             Material m
         LEFT JOIN 
@@ -235,6 +290,8 @@ app.get('/materials/search', (req, res) => {
             Estado es ON m.idEstado = es.id
         LEFT JOIN 
             Categoria c ON m.idCategoria = c.id
+        LEFT JOIN 
+            Espacio e ON m.idEspacio = e.id           
         WHERE 
             m.nombre LIKE ?
     `;
@@ -392,13 +449,6 @@ app.get('/deposits', (req, res) => {
     });
 });
 
-app.get('/deposit-locations', (req, res) => {
-    const query = 'SELECT id, nombre FROM Ubicacion';
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).send('Error al consultar la base de datos');
-        res.json(results);
-    });
-});
 
 app.get('/deposit-names', (req, res) => {
     const locationId = req.query.locationId;
@@ -412,6 +462,25 @@ app.get('/deposit-names', (req, res) => {
     });
 });
 
+//Obtener Ubicación
+app.get('/deposit-locations', (req, res) => {
+    const query = 'SELECT id, nombre FROM Ubicacion';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+//Obtener Depósitos
+app.get('/depo-names', (req, res) => {
+    const query = 'SELECT id, nombre FROM Deposito';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+//Obtener Categorías
 app.get('/categories', (req, res) => {
     const query = 'SELECT id, descripcion FROM Categoria';
     db.query(query, (err, results) => {
@@ -420,6 +489,7 @@ app.get('/categories', (req, res) => {
     });
 });
 
+//Obtener Estados
 app.get('/statuses', (req, res) => {
     const query = 'SELECT id, descripcion FROM Estado';
     db.query(query, (err, results) => {
@@ -459,7 +529,7 @@ app.get('/shelf', (req, res) => {
 app.get('/spaces/:shelfId', (req, res) => {
     const { shelfId } = req.params;
     const query = `
-        SELECT Espacio.id, Espacio.fila, Espacio.columna,
+        SELECT Espacio.id, Espacio.fila, Espacio.columna, Espacio.numeroEspacio,
         CASE 
             WHEN Material.id IS NOT NULL THEN true 
             ELSE false 
@@ -529,6 +599,128 @@ app.get('/last-material', (req, res) => {
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json({ nombre: results[0].nombre });
+    });
+});
+
+// Ruta para obtener materiales con bajo stock o sin stock
+app.get('/notificaciones-material', (req, res) => {
+    const query = `
+        SELECT id, nombre, cantidad, bajoStock
+        FROM material
+        WHERE cantidad <= bajoStock OR cantidad = 0
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
+app.delete('/materials/:id', (req, res) => {
+    const materialId = req.params.id;
+
+    // Primero, obtenemos la información del material para obtener el path de la imagen
+    const queryGetImage = 'SELECT imagen FROM Material WHERE id = ?';
+
+    db.query(queryGetImage, [materialId], (err, results) => {
+        if (err) {
+            console.error('Error al obtener la imagen:', err);
+            return res.status(500).send('Error al obtener la imagen');
+        }
+
+        if (results.length > 0) {
+            const imagePath = results[0].imagen; // Obtener el path de la imagen
+            const fullPath = path.join(__dirname, 'public', imagePath); // Construir la ruta completa
+
+            // Eliminar la imagen del sistema de archivos
+            fs.unlink(fullPath, (err) => {
+                if (err) {
+                    console.error('Error al eliminar la imagen:', err);
+                    return res.status(500).send('Error al eliminar la imagen');
+                }
+
+                // Ahora que la imagen ha sido eliminada, eliminamos el registro de la base de datos
+                const queryDeleteMaterial = 'DELETE FROM Material WHERE id = ?';
+
+                db.query(queryDeleteMaterial, [materialId], (err, result) => {
+                    if (err) {
+                        console.error('Error al eliminar el material:', err);
+                        return res.status(500).send('Error al eliminar el material');
+                    }
+
+                    res.status(200).send('Material eliminado con éxito y imagen eliminada.');
+                });
+            });
+        } else {
+            return res.status(404).send('Material no encontrado');
+        }
+    });
+});
+
+//Endpoint para editar un material
+app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
+    const id = req.params.id;
+    const { nombre, cantidad, matricula, idEstado, idCategoria, idDeposito } = req.body;
+    const imagen = req.file ? '/uploads/' + req.file.filename : null;
+
+    let query = `
+        UPDATE Material SET 
+        nombre = ?, 
+        cantidad = ?, 
+        matricula = ?, 
+        idEstado = ?, 
+        idCategoria = ?, 
+        idDeposito = ?`;
+
+    const values = [nombre, cantidad, matricula, idEstado, idCategoria, idDeposito];
+
+    if (imagen) {
+        query += `, imagen = ?`;
+        values.push(imagen);
+    }
+
+    query += ` WHERE id = ?`;
+    values.push(id);
+
+    connection.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al actualizar el material:', err);
+            res.status(500).send('Error al actualizar el material');
+        } else {
+            res.status(200).send('Material actualizado correctamente');
+        }
+    });
+});
+
+// Ruta para subir la imagen generada desde el canvas
+app.post('/upload', (req, res) => {
+    const { image, id } = req.body;
+
+    if (!image || !id) {
+        return res.status(400).send('Faltan parámetros obligatorios');
+    }
+
+    const base64Data = image.replace(/^data:image\/png;base64,/, "");
+    const filePath = path.join(__dirname, 'public', 'uploads', `SIPE-map-${id}.png`);
+
+    fs.writeFile(filePath, base64Data, 'base64', (err) => {
+        if (err) {
+            console.error('Error al guardar la imagen:', err);
+            return res.status(500).send('Error al guardar la imagen');
+        }
+
+        // Guardar el path en la base de datos
+        const imagePath = `/uploads/SIPE-map-${id}.png`;
+        const updateQuery = 'UPDATE Material SET mapa = ? WHERE id = ?';
+
+        db.query(updateQuery, [imagePath, id], (err, result) => {
+            if (err) {
+                console.error('Error al actualizar la base de datos:', err);
+                return res.status(500).send('Error al actualizar la base de datos');
+            }
+
+            res.status(200).send({ message: 'Imagen guardada con éxito y path actualizado en la base de datos', path: imagePath });
+        });
     });
 });
 

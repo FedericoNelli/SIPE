@@ -1,27 +1,32 @@
+import React, { useState } from 'react';
+import ModalEditMaterial from '@/components/Testing/CompTesting';
 
-import { Toaster, resolveValue } from 'react-hot-toast';
+const MaterialPage = () => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedMaterial, setSelectedMaterial] = useState(null);
 
+    const handleEditClick = (material) => {
+        setSelectedMaterial(material);
+        setIsModalOpen(true);
+    };
 
-function Testing() {
-    const handleClick = () => {
-        toast.success('🦄 Wow so easy!', {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: true,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "dark",
-            });
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedMaterial(null);
     };
 
     return (
-        <div className='bg-sipe-blue-dark h-screen flex justify-center items-center'>
-            <Toaster />
-            <button className='text-sipe-white border h-16 p-4 rounded-xl bg-sipe-blue-light hover:bg-sipe-orange-light-variant duration-150' onClick={handleClick}>Mostrar Toast</button>
+        <div>
+            <button onClick={() => handleEditClick(material)}>Editar Material</button>
+            <ModalEditMaterial
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                // notify={notify}
+                material={selectedMaterial}
+            />
         </div>
     );
-}
+};
 
-export default Testing
+
+export default MaterialPage;
