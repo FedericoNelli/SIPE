@@ -1,13 +1,55 @@
-import React from 'react';
-import { Modal, ModalContent, ModalHeader, ModalFooter, ModalBody } from "@/components/Modal/Modal";
+import { useEffect, useRef } from "react";
+import { Modal, ModalContent, ModalHeader, ModalFooter, ModalBody } from "@/components/Modals/Modal";
 import { Button } from "@/components/Button/Button";
+import { motion } from "framer-motion";
 
 const FilterModal = ({ isOpen, onClose, onApply, onReset, filters, onFilterChange, availableLocations, availableDeposits, availableCategories, availableStatuses }) => {
+    const modalContentRef = useRef(null); 
+
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === "Escape") {
+                onClose();
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [onClose]);
+
+    
+    const handleClickOutside = (event) => {
+        if (modalContentRef.current && !modalContentRef.current.contains(event.target)) {
+            onClose();
+        }
+    };
+
+    
+    useEffect(() => {
+        if (isOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        } else {
+            document.removeEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isOpen]);
+
     return (
+        <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                >
         <Modal isOpen={isOpen} onClose={onClose}>
-            <ModalContent>
+            <ModalContent ref={modalContentRef}>
                 <ModalHeader>
-                    <h2 className="text-xl font-semibold text-sipe-white">Filtrar Materiales</h2>
+                    <h2 className="text-xl font-semibold text-sipe-white mb-4">Filtrar materiales</h2>
                 </ModalHeader>
                 <ModalBody>
                     <form>
@@ -85,12 +127,13 @@ const FilterModal = ({ isOpen, onClose, onApply, onReset, filters, onFilterChang
                         </div>
                     </form>
                 </ModalBody>
-                <ModalFooter>
-                    <Button onClick={onApply} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">Aplicar</Button>
-                    <Button onClick={onReset} className="ml-2 bg-sipe-gray-light font-semibold px-4 py-2 rounded hover:bg-sipe-gray-dark">Restablecer</Button>
+                <ModalFooter className="gap-2">
+                    <Button variant="sipemodalalt" size="sipebutton" onClick={onReset}>RESTABLECER</Button>
+                    <Button variant="sipemodal" size="sipebutton" onClick={onApply}>APLICAR</Button>
                 </ModalFooter>
             </ModalContent>
         </Modal>
+        </motion.div>
     );
 };
 
