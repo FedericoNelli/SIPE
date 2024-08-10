@@ -592,15 +592,24 @@ app.get('/total-estanterias', (req, res) => {
     });
 });
 
+
 //Endpoint para obtener el último material ingresado, basado en la fecha del último estado
 app.get('/last-material', (req, res) => {
     const query = 'SELECT nombre, fechaUltimoEstado FROM Material ORDER BY fechaUltimoEstado DESC LIMIT 1';
 
     db.query(query, (err, results) => {
-        if (err) return res.status(500).send('Error al consultar la base de datos');
+        if (err) {
+            return res.status(500).send('Error al consultar la base de datos');
+        }
+        
+        if (results.length === 0) {
+            return res.status(404).send('No se encontró ningún material');
+        }
+
         res.json({ nombre: results[0].nombre });
     });
 });
+
 
 // Ruta para obtener materiales con bajo stock o sin stock
 app.get('/notificaciones-material', (req, res) => {
