@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Button } from "@/components/Button/Button";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Pagination/Pagination";
-import FormUser from '@/components/Forms/FormUser';
-import UserList from '../Lists/ListUser';
+import { Button } from "@/components/Common/Button/Button";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import FormUser from '@/components/User/FormUser';
+import UserList from '@/components/User/ListUser';
 import axios from 'axios';
 
 function User({ notify }) {

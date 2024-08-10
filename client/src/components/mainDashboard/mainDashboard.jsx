@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import CustomCard from '@/components/Cards/CustomCard';
+import CustomCard from '@/components/Common/Cards/CustomCard';
 import { Package, TriangleAlert, Rows3, CornerDownRight, AlignStartVertical, Goal } from 'lucide-react';
 
 function MainDashboard() {

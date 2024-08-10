@@ -1,5 +1,5 @@
-import Navbar from "@/components/Navbar/Navbar"
-import Aside from "@/components/Aside/Aside"
+import Navbar from "@/components/Sides/Navbar/Navbar"
+import Aside from "@/components/Sides/Aside/Aside"
 import User from "@/components/User/User"
 import toast, { Toaster } from 'react-hot-toast';
 import { motion } from "framer-motion";
@@ -42,7 +42,7 @@ function Users() {
                 gutter={8}
                 toastOptions={{
                     className: '',
-                    duration: 5000,
+                    duration: 2500,
                     style: {
                         background: '#2C3B4D',
                         color: '#EEE9DF',

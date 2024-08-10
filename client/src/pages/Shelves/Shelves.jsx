@@ -1,5 +1,5 @@
-import Navbar from "@/components/Navbar/Navbar"
-import Aside from "@/components/Aside/Aside"
+import Navbar from "@/components/Sides/Navbar/Navbar"
+import Aside from "@/components/Sides/Aside/Aside"
 import Shelf from "@/components/Shelf/Shelf"
 import { motion } from "framer-motion"
 
