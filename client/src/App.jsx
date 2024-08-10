@@ -1,4 +1,4 @@
-import Navbar from "./components/Navbar/Navbar"
+import Navbar from "./components/Sides/Navbar/Navbar"
 import Dashboard from "./pages/Dashboard/Dashboard"
 import Login from "./pages/Login/Login"
 import RecoveryPassword from "./pages/RecoveryPassword/RecoveryPassword"

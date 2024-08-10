@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Input } from "../Input/Input";
-import { Button } from "@/components/Button/Button";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Pagination/Pagination";
-import FormMaterial from '@/components/Forms/FormMaterial';
-import ListMaterial from '@/components/Lists/ListMaterial';
+import { Input } from "@/components/Common/Input/Input";
+import { Button } from "@/components/Common/Button/Button";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import FormMaterial from '@/components/Material/FormMaterial';
+import ListMaterial from '@/components/Material/ListMaterial';
 import { Search, Filter } from 'lucide-react';
-import FilterModal from '../Forms/FilterModal';
+import FilterModal from '@/components/Common/Filter/FilterModal';
 
 function Material({ notify }) {
     const [materials, setMaterials] = useState([]);

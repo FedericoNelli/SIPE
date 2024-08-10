@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Label } from '../../components/Label/Label';
-import { Input } from '../../components/Input/Input';
-import { Button } from '../../components/Button/Button';
+import { Label } from '@/components/Common/Label/Label';
+import { Input } from '@/components/Common/Input/Input';
+import { Button } from '@/components/Common/Button/Button';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
