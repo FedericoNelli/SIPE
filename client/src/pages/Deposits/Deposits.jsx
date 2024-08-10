@@ -1,5 +1,5 @@
-import Navbar from "@/components/Navbar/Navbar";
-import Aside from "@/components/Aside/Aside";
+import Navbar from "@/components/Sides/Navbar/Navbar";
+import Aside from "@/components/Sides/Aside/Aside";
 import Deposit from "@/components/Deposit/Deposit";
 import toast, { Toaster } from 'react-hot-toast';
 import { motion } from "framer-motion";

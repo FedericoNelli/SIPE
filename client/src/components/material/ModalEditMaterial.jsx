@@ -6,21 +6,21 @@ import { Input } from "@/components/Common/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Common/Select/Select";
 import { Button } from "@/components/Common/Button/Button";
 
-function CompTesting({ onClose, notify, material }) {
+function ModalEditMaterial({ isOpen, onClose, notify, material }) {
     const [depositLocations, setDepositLocations] = useState([]);
     const [depositNames, setDepositNames] = useState([]);
-    const [locationId, setLocationId] = useState(material?.idUbicacion);
+    const [locationId, setLocationId] = useState(material?.idUbicacion || '');
     const [categories, setCategories] = useState([]);
     const [statuses, setStatuses] = useState([]);
     const [formData, setFormData] = useState({
-        nombre: '',
-        cantidad: '',
-        matricula: '',
-        estado: '',
-        categoria: '',
-        deposito: '',
+        nombre: material?.nombre || '',
+        cantidad: material?.cantidad || '',
+        matricula: material?.matricula || '',
+        estado: material?.idEstado || '',
+        categoria: material?.idCategoria || '',
+        deposito: material?.idDeposito || '',
         imagen: null,
-        imagenPreview: ''
+        imagenPreview: material?.imagen || ''
     });
 
     useEffect(() => {
@@ -140,8 +140,10 @@ function CompTesting({ onClose, notify, material }) {
         if (onClose) onClose();
     };
 
+    if (!isOpen) return null;
+
     return (
-        <>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
             <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl">
                 <CardHeader>
                     <CardTitle className="text-3xl font-bold mb-2 text-center">Editar Material</CardTitle>
@@ -257,9 +259,8 @@ function CompTesting({ onClose, notify, material }) {
                     <Button variant="sipebutton" size="sipebutton" onClick={handleSave}>GUARDAR</Button>
                 </CardFooter>
             </Card>
-        </>
+        </div>
     );
 }
 
-export default CompTesting;
-
+export default ModalEditMaterial;

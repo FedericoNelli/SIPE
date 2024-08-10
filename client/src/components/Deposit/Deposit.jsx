@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Button } from "@/components/Button/Button";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Pagination/Pagination";
-import FormDeposit from '../Forms/FormDeposit';
-import DepositList from '../Lists/ListDeposit';
+import { Button } from "@/components/Common/Button/Button";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import FormDeposit from '@/components/Deposit/FormDeposit';
+import DepositList from '@/components/Deposit/ListDeposit';
 import axios from 'axios';
 
 function Deposit({ notify }) {
