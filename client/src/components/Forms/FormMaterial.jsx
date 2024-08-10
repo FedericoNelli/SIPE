@@ -126,8 +126,8 @@ function FormMaterial({ onClose, notify }) {
         }
 
         const fechaUltimoEstado = new Date();
-        fechaUltimoEstado.setHours(fechaUltimoEstado.getHours() - 3); 
-        const fechaFormatoISO = fechaUltimoEstado.toISOString(); 
+        fechaUltimoEstado.setHours(fechaUltimoEstado.getHours() - 3);
+        const fechaFormatoISO = fechaUltimoEstado.toISOString().slice(0, 19).replace('T', ' ');
         const ultimoUsuarioId = localStorage.getItem('id');
 
         if (!ultimoUsuarioId) {
