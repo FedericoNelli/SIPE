@@ -124,7 +124,7 @@ app.post('/addUser', (req, res) => {
             console.log('Error al insertar en la base de datos:', err);
             return res.status(500).send("Error al crear el usuario");
         }
-        res.status(201).send('Usuario creado');
+        res.status(200).send('Usuario creado');
     });
 });
 
@@ -565,7 +565,7 @@ app.get('/sides', (req, res) => {
 // Endpoint para obtener la cantidad total de materiales
 app.get('/total-materials', (req, res) => {
     const query = 'SELECT COUNT(*) AS total FROM Material';
-    
+
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json(results[0]);
@@ -601,7 +601,7 @@ app.get('/last-material', (req, res) => {
         if (err) {
             return res.status(500).send('Error al consultar la base de datos');
         }
-        
+
         if (results.length === 0) {
             return res.status(404).send('No se encontró ningún material');
         }
@@ -730,6 +730,69 @@ app.post('/upload', (req, res) => {
 
             res.status(200).send({ message: 'Imagen guardada con éxito y path actualizado en la base de datos', path: imagePath });
         });
+    });
+});
+
+app.get('/movements', (req, res) => {
+    const query = `
+        SELECT 
+            m.id, 
+            m.fechaMovimiento, 
+            u.nombre AS Usuario,
+            mat.nombre AS Material, 
+            d1.nombre AS depositoOrigen, 
+            d2.nombre AS depositoDestino
+        FROM 
+            movimiento m
+        JOIN 
+            usuario u ON m.idUsuario = u.id
+        JOIN
+            material mat ON m.idMaterial = mat.id
+        JOIN 
+            deposito d1 ON m.idDepositoOrigen = d1.id
+        JOIN 
+            deposito d2 ON m.idDepositoDestino = d2.id
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error al obtener los movimientos:', err);
+            res.status(500).json({ error: 'Error al obtener los movimientos' });
+            return;
+        }
+        res.json(results);
+    });
+});
+
+app.post('/addMovements', (req, res) => {
+    const { fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino } = req.body;
+
+    const query = `
+        INSERT INTO movimiento (fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino) 
+        VALUES (?, ?, ?, ?, ?)
+    `;
+
+    db.query(query, [fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino], (err, result) => {
+        if (err) {
+            console.error('Error al agregar el movimiento:', err);
+            res.status(500).json({ error: 'Error al agregar el movimiento' });
+            return;
+        }
+        res.status(200).json({ message: 'Movimiento agregado correctamente' });
+    });
+});
+
+app.get('/deposit-locations-movements', (req, res) => {
+    const query = `SELECT d.id, d.nombre, u.nombre AS ubicacion 
+                FROM deposito d 
+                JOIN ubicacion u ON d.idUbicacion = u.id`;
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error al obtener las ubicaciones de los depósitos:', err);
+            res.status(500).json({ error: 'Error al obtener las ubicaciones' });
+            return;
+        }
+        res.json(results);
     });
 });
 

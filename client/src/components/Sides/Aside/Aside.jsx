@@ -7,7 +7,7 @@ const sections = [
     { name: 'Materiales', label: 'Materiales', icon: <Box />, path: '/mtls', roles: ['Administrador', 'Colaborador'] },
     { name: 'Estanterias', label: 'Estanterías', icon: <Archive />, path: '/shelf', roles: ['Administrador'] },
     { name: 'Depositos', label: 'Depósitos', icon: <Warehouse />, path: '/deposit', roles: ['Administrador'] },
-    { name: 'Movimientos', label: 'Movimientos', icon: <ArrowUpRight />, path: '/movimientos', roles: ['Administrador'] },
+    { name: 'Movimientos', label: 'Movimientos', icon: <ArrowUpRight />, path: '/movement', roles: ['Administrador'] },
     { name: 'Informes', label: 'Informes', icon: <FileText />, path: '/informes', roles: ['Administrador'] },
     { name: 'Lista de usuarios', label: 'Lista de usuarios', icon: <Users />, path: '/user', roles: ['Administrador'] },
     { name: 'Control de stock', label: 'Control de stock', icon: <BarChart />, path: '/control-de-stock', roles: ['Administrador'] },
