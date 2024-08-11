@@ -37,15 +37,25 @@ function FormDeposit({ onClose, notify }) {
         }));
     };
 
-    const handleSubmit = () => {
-        axios.post('http://localhost:8081/addDeposit', formData)
-            .then(response => {
-                notify('success', "¡Depósito agregado correctamente!");
-                if (onClose) onClose();
-            })
-            .catch(error => {
-                notify('error', "Error al agregar depósito");
-            });
+    const handleSubmit = async () => {
+        try {
+            const response = await axios.post('http://localhost:8081/addDeposit', formData);
+    
+            if (response.status !== 200) {
+                throw new Error(response.data.error || "Error al agregar depósito");
+            }
+    
+            notify('success', "¡Depósito agregado correctamente!");
+    
+            if (onClose) onClose();
+    
+            setTimeout(() => {
+                window.location.reload();
+            }, 2500);
+        } catch (error) {
+            console.error('Error al agregar el depósito:', error);
+            notify('error', error.message || "Error al agregar depósito");
+        }
     };
 
     const handleCancel = () => {
