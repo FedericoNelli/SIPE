@@ -39,6 +39,7 @@ function ListMaterial({ materials }) {
     return (
         <>
             <Table className="w-full text-sipe-white">
+                {/* Encabezado de la tabla */}
                 <TableHeader>
                     <TableRow>
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Nombre</TableHead>

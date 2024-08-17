@@ -8,8 +8,6 @@ import ModalEditMaterial from "@/components/Material/ModalEditMaterial";
 function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [canvasImage, setCanvasImage] = useState(null);
-    const [isDetailModalOpen, setIsDetailModalOpen] = useState(isOpen);
 
     useEffect(() => {
         const handleEscape = (event) => {
@@ -22,19 +20,6 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
             document.removeEventListener('keydown', handleEscape);
         };
     }, [onClose]);
-
-    const handleImageGenerated = useCallback((image) => {
-        setCanvasImage(image);
-
-        // Enviar la imagen al servidor
-        axios.post('http://localhost:8081/upload', { image: image, id: selectedMaterial.id })
-            .then(response => {
-                console.log('Imagen guardada en el servidor:', response.data);
-            })
-            .catch(error => {
-                console.error('Error al guardar la imagen en el servidor:', error);
-            });
-    }, [selectedMaterial]);
 
     const openConfirmDeleteModal = useCallback(() => {
         setIsConfirmDeleteOpen(true);
@@ -119,9 +104,6 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
                     <div className="bg-sipe-blue-dark rounded-xl flex flex-col justify-center items-center w-auto p-4">
                         <p className="text-sipe-white font-light py-2">Pasillo {selectedMaterial.pasilloNumero} | Estantería {selectedMaterial.estanteriaId}</p>
                         <div className="flex justify-center items-center">
-                            {canvasImage ? (
-                                <img src={canvasImage} alt="Mapa del material" />
-                            ) : (
                                 <Map
                                     pasillo={selectedMaterial.pasilloNumero}
                                     estanteria={selectedMaterial.estanteriaId}
@@ -129,9 +111,7 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
                                     divisiones={selectedMaterial.cantidadDivision}
                                     objetoEstante={selectedMaterial.estanteEstanteria}
                                     objetoDivision={selectedMaterial.divisionEstanteria}
-                                    onImageGenerated={handleImageGenerated}
                                 />
-                            )}
                         </div>
                     </div>
                     <hr />

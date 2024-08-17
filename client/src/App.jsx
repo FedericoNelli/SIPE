@@ -8,7 +8,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom"
 import Materials from "./pages/Materials/Materials"
 import { AdminRoute, PrivateRoute, PublicRoute } from "./routes/routes"
 import Users from "./pages/Users/Users"
-import Testing from "./pages/Testing/Testing"
+import CompTesting from "./components/Testing/CompTesting"
 import Shelves from "./pages/Shelves/Shelves"
 import Deposits from "./pages/Deposits/Deposits"
 import Movements from "./pages/Movements/Movements"
@@ -22,7 +22,7 @@ function App() {
           <Route path="/rPsw" element={<RecoveryPassword />} />
           <Route path="/rCod" element={<RecoveryCode />} />
           <Route path="/chPsw" element={<ChangePassword />} />
-          <Route path="/testing" element={<Testing />} />
+          <Route path="/testing" element={<CompTesting />} />
           <Route path="/nbr" element={<Navbar />} />
           <Route path="/mtls" element={<PrivateRoute><Materials /></PrivateRoute>} />
           <Route path="/shelf" element={<AdminRoute><Shelves /></AdminRoute>} />
