@@ -7,17 +7,18 @@ import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
 function FormMovement({ onClose, notify }) {
-    const [formData, setFormData] = useState({ 
-        fechaMovimiento: '', 
-        idMaterial: '', 
-        idUsuario: '', 
-        idDepositoOrigen: '', 
-        idDepositoDestino: '' 
+    const [formData, setFormData] = useState({
+        fechaMovimiento: '',
+        idMaterial: '',
+        idUsuario: '',
+        idDepositoOrigen: '',
+        idDepositoDestino: '',
+        cantidadMovida: ''
     });
     const [materiales, setMateriales] = useState([]);
     const [usuarios, setUsuarios] = useState([]);
     const [depositos, setDepositos] = useState([]);
-    const [ubicaciones, setUbicaciones] = useState([]);
+    const [cantidadDisponible, setCantidadDisponible] = useState('');
 
     useEffect(() => {
         axios.get('http://localhost:8081/materials')
@@ -34,23 +35,39 @@ function FormMovement({ onClose, notify }) {
                 notify('error', 'Error al cargar usuarios');
             });
 
-            axios.get('http://localhost:8081/deposit-locations')
-            .then(response => setUbicaciones(response.data))
-            .catch(error => {
-                console.error('Error al obtener ubicaciones:', error);
-                notify('error', 'Error al cargar ubicaciones');
-            });
-
         axios.get('http://localhost:8081/deposit-locations-movements')
-            .then(response => setDepositos(response.data))
+            .then(response => { // Verifica los datos que estás recibiendo
+                setDepositos(response.data);
+            })
             .catch(error => {
                 console.error('Error al obtener depósitos:', error);
                 notify('error', 'Error al cargar depósitos');
             });
     }, [notify]);
 
+    // Efecto para actualizar el depósito origen y la cantidad disponible cuando se selecciona un material
+    useEffect(() => {
+        if (formData.idMaterial) {
+            const materialSeleccionado = materiales.find(material => material.id === formData.idMaterial);
+            if (materialSeleccionado) {
+                setFormData((prevData) => ({
+                    ...prevData,
+                    idDepositoOrigen: materialSeleccionado.idDeposito  // Preselecciona el depósito origen
+                }));
+                setCantidadDisponible(materialSeleccionado.cantidad);  // Actualiza la cantidad disponible
+            }
+        }
+    }, [formData.idMaterial, materiales]);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+
+        // Verificación para que la cantidad movida no sea mayor a la cantidad disponible
+        if (name === "cantidadMovida" && value > cantidadDisponible) {
+            notify('error', 'La cantidad a mover no puede ser mayor a la disponible');
+            return;
+        }
+
         setFormData((prevData) => ({
             ...prevData,
             [name]: value
@@ -67,15 +84,15 @@ function FormMovement({ onClose, notify }) {
     const handleSubmit = async () => {
         try {
             const response = await axios.post('http://localhost:8081/addMovements', formData);
-    
+
             if (response.status !== 200) {
                 throw new Error(response.data.error || "Error al agregar movimiento");
             }
-    
+
             notify('success', "¡Movimiento agregado correctamente!");
-    
+
             if (onClose) onClose();
-    
+
             setTimeout(() => {
                 window.location.reload();
             }, 2500);
@@ -128,6 +145,29 @@ function FormMovement({ onClose, notify }) {
                         </Select>
                     </div>
                     <div className="flex items-center gap-2">
+                        <Label htmlFor="cantidadDisponible" className="text-sm font-medium">Cantidad Disponible</Label>
+                        <Input
+                            className="border-b"
+                            id="cantidadDisponible"
+                            name="cantidadDisponible"
+                            type="number"
+                            value={cantidadDisponible}
+                            readOnly
+                        />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Label htmlFor="cantidadMovida" className="text-sm font-medium">Cantidad a Mover</Label>
+                        <Input
+                            className="border-b"
+                            id="cantidadMovida"
+                            name="cantidadMovida"
+                            type="number"
+                            value={formData.cantidadMovida}
+                            onChange={handleInputChange}
+                            max={cantidadDisponible} 
+                        />
+                    </div>
+                    <div className="flex items-center gap-2">
                         <Label htmlFor="idUsuario" className="text-sm font-medium">Usuario</Label>
                         <Select
                             value={formData.idUsuario}
@@ -152,6 +192,7 @@ function FormMovement({ onClose, notify }) {
                             value={formData.idDepositoOrigen}
                             onValueChange={handleSelectChange('idDepositoOrigen')}
                             className="w-full"
+                            disabled
                         >
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona un depósito origen" />
@@ -176,11 +217,13 @@ function FormMovement({ onClose, notify }) {
                                 <SelectValue placeholder="Selecciona un depósito destino" />
                             </SelectTrigger>
                             <SelectContent>
-                                {depositos.map((deposito) => (
-                                    <SelectItem key={deposito.id} value={deposito.id}>
-                                        {deposito.nombre} - {deposito.ubicacion}
-                                    </SelectItem>
-                                ))}
+                                {depositos
+                                    .filter(deposito => deposito.id !== formData.idDepositoOrigen)
+                                    .map((deposito) => (
+                                        <SelectItem key={deposito.id} value={deposito.id}>
+                                            {deposito.nombre} - {deposito.ubicacion}
+                                        </SelectItem>
+                                    ))}
                             </SelectContent>
                         </Select>
                     </div>

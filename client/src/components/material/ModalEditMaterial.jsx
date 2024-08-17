@@ -12,6 +12,10 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
     const [locationId, setLocationId] = useState(material?.idUbicacion || '');
     const [categories, setCategories] = useState([]);
     const [statuses, setStatuses] = useState([]);
+    const [shelves, setShelves] = useState([]);
+    const [spaces, setSpaces] = useState([]);
+    const [selectedShelf, setSelectedShelf] = useState(material?.idEstanteria || '');
+    const [selectedSpace, setSelectedSpace] = useState(material?.idEspacio || '');
     const [formData, setFormData] = useState({
         nombre: material?.nombre || '',
         cantidad: material?.cantidad || '',
@@ -20,7 +24,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
         categoria: material?.idCategoria || '',
         deposito: material?.idDeposito || '',
         imagen: null,
-        imagenPreview: material?.imagen || ''
+        imagenPreview: material?.imagen ? `http://localhost:8081${material.imagen}` : ''
     });
 
     useEffect(() => {
@@ -38,7 +42,21 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
             .then(response => response.json())
             .then(data => setStatuses(data))
             .catch(error => console.error('Error fetching statuses:', error));
+
+        fetch('http://localhost:8081/shelves')
+            .then(response => response.json())
+            .then(data => setShelves(data))
+            .catch(error => console.error('Error fetching shelves:', error));
     }, []);
+
+    useEffect(() => {
+        if (selectedShelf) {
+            fetch(`http://localhost:8081/spaces/${selectedShelf}`)
+                .then(response => response.json())
+                .then(data => setSpaces(data))
+                .catch(error => console.error('Error fetching spaces:', error));
+        }
+    }, [selectedShelf]);
 
     useEffect(() => {
         if (locationId) {
@@ -55,6 +73,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
     }, [locationId]);
 
     const handleInputChange = (e) => {
+        e.stopPropagation(); // Detener la propagación del evento
         const { id, value } = e.target;
         setFormData((prevData) => ({
             ...prevData,
@@ -73,7 +92,17 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
         }
     };
 
+    const handleShelfChange = (value) => {
+        setSelectedShelf(value);
+        setSelectedSpace('');  // Resetear espacio cuando se cambia la estantería
+    };
+
+    const handleSpaceChange = (value) => {
+        setSelectedSpace(value);
+    };
+
     const handleFileChange = (e) => {
+        e.stopPropagation(); // Detener la propagación del evento
         const file = e.target.files[0];
         if (file) {
             if (file.size > 10 * 1024 * 1024) { // 10 MB
@@ -88,48 +117,59 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
         }
     };
 
-    const handleDeleteImage = () => {
-        setFormData(prevData => ({
-            ...prevData,
-            imagen: null,
-            imagenPreview: null
-        }));
+    const handleDeleteImage = async (e) => {
+        e.stopPropagation();
+    
+        try {
+            // Realiza una solicitud al backend para eliminar la imagen
+            await axios.delete(`http://localhost:8081/materiales/${material.id}/imagen`);
+    
+            // Actualiza el estado en el frontend
+            setFormData(prevData => ({
+                ...prevData,
+                imagen: null,
+                imagenPreview: null
+            }));
+    
+            notify('success', "Imagen eliminada correctamente!");
+        } catch (error) {
+            console.error('Error al eliminar la imagen:', error);
+            notify('error', "Error al eliminar la imagen");
+        }
     };
+    
 
     const handleSave = async () => {
         const { nombre, cantidad, matricula, estado, categoria, deposito, imagen } = formData;
-
-        if (!nombre || !cantidad || !matricula || !estado || !categoria || !deposito) {
-            notify('error', 'Por favor completa todos los campos');
-            return;
-        }
-
+    
+        // Evita el caso en que todos los campos, excepto imagen, sean nulos o undefined
         const formDataToSend = new FormData();
-        formDataToSend.append('nombre', nombre);
-        formDataToSend.append('cantidad', cantidad);
-        formDataToSend.append('matricula', matricula);
-        formDataToSend.append('idEstado', estado);
-        formDataToSend.append('idCategoria', categoria);
-        formDataToSend.append('idDeposito', deposito);
-        if (imagen) {
-            formDataToSend.append('imagen', imagen);
-        }
-
+        if (nombre) formDataToSend.append('nombre', nombre);
+        if (cantidad) formDataToSend.append('cantidad', cantidad);
+        if (matricula) formDataToSend.append('matricula', matricula);
+        if (estado) formDataToSend.append('idEstado', estado);
+        if (categoria) formDataToSend.append('idCategoria', categoria);
+        if (deposito) formDataToSend.append('idDeposito', deposito);
+        if (selectedSpace) formDataToSend.append('idEspacio', selectedSpace);
+        if (imagen) formDataToSend.append('imagen', imagen);
+    
         try {
             const response = await axios.put(`http://localhost:8081/materiales/${material.id}`, formDataToSend, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
             });
-
+    
             if (response.status !== 200) {
                 throw new Error(response.data.error || "Error al actualizar Material");
             }
-
+    
             notify('success', "Material actualizado correctamente!");
             if (onClose) onClose();
-            window.location.reload();
-
+            setTimeout(() => {
+                window.location.reload();
+            }, 2500);
+    
         } catch (error) {
             console.error('Error al actualizar el material:', error);
             notify('error', error.message || "Error al actualizar el material");
@@ -143,8 +183,8 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-            <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50" onClick={onClose}>
+            <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl" onClick={(e) => e.stopPropagation()}>
                 <CardHeader>
                     <CardTitle className="text-3xl font-bold mb-2 text-center">Editar Material</CardTitle>
                     <hr />
@@ -218,8 +258,32 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="matricula" className="text-sm font-medium">Matrícula</Label>
-                            <Input className="border-b" id="matricula" placeholder="Ingresa la matrícula" value={formData.matricula} onChange={handleInputChange} />
+                            <Label htmlFor="shelf" className="text-sm font-medium">Estantería</Label>
+                            <Select id="shelf" onValueChange={(value) => handleShelfChange(value)}>
+                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                    <SelectValue placeholder="Selecciona la estantería" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {shelves.map(shelf => (
+                                        <SelectItem key={shelf.id} value={shelf.id}>Estantería {shelf.id}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="space" className="text-sm font-medium">Espacio</Label>
+                            <Select id="space" onValueChange={(value) => handleSpaceChange(value)}>
+                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                    <SelectValue placeholder="Selecciona el espacio" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {spaces.map(space => (
+                                        <SelectItem key={space.id} value={space.id} disabled={space.ocupado}>
+                                            {`Espacio ${space.numeroEspacio}`}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                     <div className="grid gap-2">
@@ -245,7 +309,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                                 />
                             )}
                             <div className="flex flex-col gap-2">
-                                <Button variant="outline" onClick={handleDeleteImage}>Eliminar Imagen</Button>
+                                <Button variant="" onClick={handleDeleteImage}>Eliminar Imagen</Button>
                                 <input type="file" id="photo" className="hidden" onChange={handleFileChange} />
                                 <Label htmlFor="photo" className="cursor-pointer">
                                     Subir nueva imagen

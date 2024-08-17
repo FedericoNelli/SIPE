@@ -75,7 +75,7 @@ function MainDashboard() {
         { 
             label: 'Ir a Movimientos',
             disabled: rol !== 'Administrador',
-            path: '/movimientos' 
+            path: '/movement' 
         },
         { 
             label: 'Ir a Materiales',
