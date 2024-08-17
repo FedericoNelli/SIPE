@@ -37,7 +37,7 @@ function LoginInput() {
                 } else {
                     localStorage.removeItem('rememberedUser');
                 }
-                navigate('/dshb');  
+                navigate('/dshb');
             } else {
                 setErrorMessage('Usuario y/o contraseña incorrectos.');
             }
@@ -56,10 +56,12 @@ function LoginInput() {
     }
 
     return (
-            <motion.div
+        <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ type: "tween", duration: 2.5, ease: 'easeInOut' }}className="mx-auto w-full md:w-40 lg:w-80 xl:w-8/12 space-y-4">
+            transition={{ type: "tween", duration: 2.5, ease: 'easeInOut' }}
+            className="mx-auto w-full max-w-xs space-y-4"  // Ajustar ancho del formulario
+        >
             <div className="space-y-2">
                 <h1 className="font-bold text-sipe-white text-4xl">Bienvenido a SIPE</h1>
                 <p className="font-thin text-sipe-white">Por favor, entrá con tu cuenta</p>
@@ -88,7 +90,8 @@ function LoginInput() {
                     </Button>
                 </form>
             </div>
-            </motion.div>
+        </motion.div>
+
     );
 }
 
