@@ -33,7 +33,10 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 } // Limitar el tamaño a 10 MB
+});
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -124,7 +127,7 @@ app.post('/addUser', (req, res) => {
             console.log('Error al insertar en la base de datos:', err);
             return res.status(500).send("Error al crear el usuario");
         }
-        res.status(201).send('Usuario creado');
+        res.status(200).send('Usuario creado');
     });
 });
 
@@ -565,7 +568,7 @@ app.get('/sides', (req, res) => {
 // Endpoint para obtener la cantidad total de materiales
 app.get('/total-materials', (req, res) => {
     const query = 'SELECT COUNT(*) AS total FROM Material';
-    
+
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json(results[0]);
@@ -601,7 +604,7 @@ app.get('/last-material', (req, res) => {
         if (err) {
             return res.status(500).send('Error al consultar la base de datos');
         }
-        
+
         if (results.length === 0) {
             return res.status(404).send('No se encontró ningún material');
         }
@@ -639,27 +642,38 @@ app.delete('/materials/:id', (req, res) => {
 
         if (results.length > 0) {
             const imagePath = results[0].imagen; // Obtener el path de la imagen
-            const fullPath = path.join(__dirname, 'public', imagePath); // Construir la ruta completa
 
-            // Eliminar la imagen del sistema de archivos
-            fs.unlink(fullPath, (err) => {
-                if (err) {
-                    console.error('Error al eliminar la imagen:', err);
-                    return res.status(500).send('Error al eliminar la imagen');
-                }
+            if (imagePath) {
+                const fullPath = path.join(__dirname, 'public', imagePath); // Construir la ruta completa
 
-                // Ahora que la imagen ha sido eliminada, eliminamos el registro de la base de datos
+                // Eliminar la imagen del sistema de archivos
+                fs.unlink(fullPath, (err) => {
+                    if (err) {
+                        console.error('Error al eliminar la imagen:', err);
+                        // Aunque falle la eliminación de la imagen, seguimos eliminando el material
+                    }
+
+                    // Eliminar el registro de la base de datos una vez que tratamos de eliminar la imagen
+                    const queryDeleteMaterial = 'DELETE FROM Material WHERE id = ?';
+                    db.query(queryDeleteMaterial, [materialId], (err, result) => {
+                        if (err) {
+                            console.error('Error al eliminar el material:', err);
+                            return res.status(500).send('Error al eliminar el material');
+                        }
+                        res.status(200).send('Material eliminado con éxito y se intentó eliminar la imagen.');
+                    });
+                });
+            } else {
+                // Si no hay imagen, eliminamos directamente el material de la base de datos
                 const queryDeleteMaterial = 'DELETE FROM Material WHERE id = ?';
-
                 db.query(queryDeleteMaterial, [materialId], (err, result) => {
                     if (err) {
                         console.error('Error al eliminar el material:', err);
                         return res.status(500).send('Error al eliminar el material');
                     }
-
-                    res.status(200).send('Material eliminado con éxito y imagen eliminada.');
+                    res.status(200).send('Material eliminado con éxito (sin imagen asociada).');
                 });
-            });
+            }
         } else {
             return res.status(404).send('Material no encontrado');
         }
@@ -730,6 +744,69 @@ app.post('/upload', (req, res) => {
 
             res.status(200).send({ message: 'Imagen guardada con éxito y path actualizado en la base de datos', path: imagePath });
         });
+    });
+});
+
+app.get('/movements', (req, res) => {
+    const query = `
+        SELECT 
+            m.id, 
+            m.fechaMovimiento, 
+            u.nombre AS Usuario,
+            mat.nombre AS Material, 
+            d1.nombre AS depositoOrigen, 
+            d2.nombre AS depositoDestino
+        FROM 
+            movimiento m
+        JOIN 
+            usuario u ON m.idUsuario = u.id
+        JOIN
+            material mat ON m.idMaterial = mat.id
+        JOIN 
+            deposito d1 ON m.idDepositoOrigen = d1.id
+        JOIN 
+            deposito d2 ON m.idDepositoDestino = d2.id
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error al obtener los movimientos:', err);
+            res.status(500).json({ error: 'Error al obtener los movimientos' });
+            return;
+        }
+        res.json(results);
+    });
+});
+
+app.post('/addMovements', (req, res) => {
+    const { fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino } = req.body;
+
+    const query = `
+        INSERT INTO movimiento (fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino) 
+        VALUES (?, ?, ?, ?, ?)
+    `;
+
+    db.query(query, [fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino], (err, result) => {
+        if (err) {
+            console.error('Error al agregar el movimiento:', err);
+            res.status(500).json({ error: 'Error al agregar el movimiento' });
+            return;
+        }
+        res.status(200).json({ message: 'Movimiento agregado correctamente' });
+    });
+});
+
+app.get('/deposit-locations-movements', (req, res) => {
+    const query = `SELECT d.id, d.nombre, u.nombre AS ubicacion 
+                FROM deposito d 
+                JOIN ubicacion u ON d.idUbicacion = u.id`;
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error al obtener las ubicaciones de los depósitos:', err);
+            res.status(500).json({ error: 'Error al obtener las ubicaciones' });
+            return;
+        }
+        res.json(results);
     });
 });
 

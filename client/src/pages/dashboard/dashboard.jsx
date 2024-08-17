@@ -1,6 +1,6 @@
 import MainDashboard from "@/components/MainDashboard/MainDashboard"
-import Navbar from "@/components/Navbar/Navbar"
-import Aside from "@/components/Aside/Aside"
+import Navbar from "@/components/Sides/Navbar/Navbar"
+import Aside from "@/components/Sides/Aside/Aside"
 import { motion } from "framer-motion";
 
 function Dashboard() {

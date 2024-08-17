@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Button } from "@/components/Button/Button";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Table/Table";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Pagination/Pagination";
-import FormShelf from '@/components/Forms/FormShelf';
+import { Button } from "@/components/Common/Button/Button";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import FormShelf from '@/components/Shelf/FormShelf';
 
 function Shelve() {
     const [shelves, setShelves] = useState([]);

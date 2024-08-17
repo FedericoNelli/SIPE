@@ -1,7 +1,7 @@
-import { Button } from "@/components/Button/Button";
-import { Input } from "@/components/Input/Input";
-import { Checkbox } from "@/components/Checkbox/Checkbox";
-import { Label } from "@/components/Label/Label";
+import { Button } from "@/components/Common/Button/Button";
+import { Input } from "@/components/Common/Input/Input";
+import { Checkbox } from "@/components/Common/Checkbox/Checkbox";
+import { Label } from "@/components/Common/Label/Label";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -37,7 +37,7 @@ function LoginInput() {
                 } else {
                     localStorage.removeItem('rememberedUser');
                 }
-                navigate('/dshb');  
+                navigate('/dshb');
             } else {
                 setErrorMessage('Usuario y/o contraseña incorrectos.');
             }
@@ -57,10 +57,11 @@ function LoginInput() {
 
     return (
         <motion.div
-            initial={{ x: 400 }}
-            animate={{ x: 0 }}
-            transition={{ type: "spring", stiffness: 100 }}
-            className="mx-auto w-full md:w-40 lg:w-80 xl:w-8/12 space-y-4">
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ type: "tween", duration: 2.5, ease: 'easeInOut' }}
+            className="mx-auto w-full max-w-xs space-y-4"  // Ajustar ancho del formulario
+        >
             <div className="space-y-2">
                 <h1 className="font-bold text-sipe-white text-4xl">Bienvenido a SIPE</h1>
                 <p className="font-thin text-sipe-white">Por favor, entrá con tu cuenta</p>
@@ -90,6 +91,7 @@ function LoginInput() {
                 </form>
             </div>
         </motion.div>
+
     );
 }
 

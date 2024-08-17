@@ -1,10 +1,10 @@
-import Navbar from "@/components/Sides/Navbar/Navbar"
-import Aside from "@/components/Sides/Aside/Aside"
-import User from "@/components/User/User"
+import Navbar from "@/components/Sides/Navbar/Navbar";
+import Aside from "@/components/Sides/Aside/Aside";
+import Movement from "@/components/Movement/Movement";
 import toast, { Toaster } from 'react-hot-toast';
 import { motion } from "framer-motion";
 
-function Users() {
+function Movements() {
     const notify = (type, message) => {
         switch (type) {
             case 'success':
@@ -32,7 +32,7 @@ function Users() {
                     transition={{ duration: 1 }}
                 >
                     <div className="min-h-fit px-12 py-12 flex flex-col justify-center bg-opacity-500 border border-transparent rounded-xl ">
-                        <User notify={notify} />
+                        <Movement notify={notify} />
                     </div>
                 </motion.div>
             </div>
@@ -42,7 +42,7 @@ function Users() {
                 gutter={8}
                 toastOptions={{
                     className: '',
-                    duration: 2500,
+                    duration: 5000,
                     style: {
                         background: '#2C3B4D',
                         color: '#EEE9DF',
@@ -50,7 +50,10 @@ function Users() {
                 }}
             />
         </section>
+
     )
 }
 
-export default Users
+export default Movements;
+
+

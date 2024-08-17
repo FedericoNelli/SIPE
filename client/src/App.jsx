@@ -1,4 +1,4 @@
-import Navbar from "./components/Navbar/Navbar"
+import Navbar from "./components/Sides/Navbar/Navbar"
 import Dashboard from "./pages/Dashboard/Dashboard"
 import Login from "./pages/Login/Login"
 import RecoveryPassword from "./pages/RecoveryPassword/RecoveryPassword"
@@ -11,6 +11,7 @@ import Users from "./pages/Users/Users"
 import CompTesting from "./components/Testing/CompTesting"
 import Shelves from "./pages/Shelves/Shelves"
 import Deposits from "./pages/Deposits/Deposits"
+import Movements from "./pages/Movements/Movements"
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/mtls" element={<PrivateRoute><Materials /></PrivateRoute>} />
           <Route path="/shelf" element={<AdminRoute><Shelves /></AdminRoute>} />
           <Route path="/deposit" element={<AdminRoute><Deposits /></AdminRoute>} />
+          <Route path="/movement" element={<AdminRoute><Movements /></AdminRoute>} />
           <Route path="/dshb" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/user" element={<PrivateRoute><Users /></PrivateRoute>} />
         </Routes>
