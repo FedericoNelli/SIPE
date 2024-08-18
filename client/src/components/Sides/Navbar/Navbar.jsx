@@ -142,7 +142,6 @@ function Navbar() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="p-2 hover:bg-gray-200 rounded-b-lg" onClick={handleLogout}>
                                     Cerrar sesión
-
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

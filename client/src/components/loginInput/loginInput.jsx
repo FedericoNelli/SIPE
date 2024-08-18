@@ -4,16 +4,15 @@ import { Checkbox } from "@/components/Common/Checkbox/Checkbox";
 import { Label } from "@/components/Common/Label/Label";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from 'framer-motion';
 import axios from "axios";
 
-function LoginInput() {
+function LoginInput({ onLoginSuccess }) {
     const [user, setUser] = useState('');
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-    const navigate = useNavigate();
+    const [isLoginSuccessful, setIsLoginSuccessful] = useState(false); // Controla la animación de desaparición
 
     useEffect(() => {
         const savedUser = localStorage.getItem('rememberedUser');
@@ -37,7 +36,10 @@ function LoginInput() {
                 } else {
                     localStorage.removeItem('rememberedUser');
                 }
-                navigate('/dshb');
+                setIsLoginSuccessful(true); // Inicia la animación de desaparición
+                setTimeout(() => {
+                    onLoginSuccess(); // Llama a la función para completar el login
+                }, 1000); // Retrasa la llamada para completar la animación
             } else {
                 setErrorMessage('Usuario y/o contraseña incorrectos.');
             }
@@ -57,10 +59,10 @@ function LoginInput() {
 
     return (
         <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ type: "tween", duration: 2.5, ease: 'easeInOut' }}
-            className="mx-auto w-full max-w-xs space-y-4"  // Ajustar ancho del formulario
+            initial={{ opacity: 1, y: 0 }}
+            animate={isLoginSuccessful ? { opacity: 0 } : { opacity: 1, y: 0 }} // Desaparición suave
+            transition={{ duration: 1, ease: 'easeInOut' }} // Control de la duración de la animación
+            className="mx-auto w-full max-w-xs space-y-4"
         >
             <div className="space-y-2">
                 <h1 className="font-bold text-sipe-white text-4xl">Bienvenido a SIPE</h1>
@@ -91,7 +93,6 @@ function LoginInput() {
                 </form>
             </div>
         </motion.div>
-
     );
 }
 
