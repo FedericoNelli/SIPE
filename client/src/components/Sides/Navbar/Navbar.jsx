@@ -12,7 +12,7 @@ function Navbar() {
     const [notificaciones, setNotificaciones] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
     const [notificationCount, setNotificationCount] = useState(0);
-    const usuarioId = localStorage.getItem('id'); // Obtener el ID del usuario logueado
+    const usuarioId = localStorage.getItem('id');
 
     useEffect(() => {
         const storedUserName = localStorage.getItem('userName');
@@ -24,63 +24,41 @@ function Navbar() {
         const fetchNotificaciones = async () => {
             try {
                 const responseNotifications = await axios.get(`http://localhost:8081/api/notifications/${usuarioId}`);
-                const userNotifications = responseNotifications.data;
-    
-                const responseMaterials = await axios.get('http://localhost:8081/notificaciones-material');
-                const materialNotifications = responseMaterials.data.map(material => ({
-                    id: `material-${material.id}`,
-                    descripcion: material.cantidad === 0
-                        ? `El material ${material.nombre} se ha quedado sin stock.`
-                        : `El material ${material.nombre} ha llegado a su límite de bajo stock.`,
-                    fecha: new Date().toISOString(),
-                    visto: false
-                }));
-    
-                const combinedNotifications = [
-                    ...userNotifications,
-                    ...materialNotifications.filter((matNotif) => 
-                        !userNotifications.some((userNotif) => userNotif.descripcion === matNotif.descripcion)
-                    )
-                ];
-    
-                setNotificaciones(combinedNotifications);
-                setNotificationCount(combinedNotifications.filter(notif => !notif.visto).length);
-    
+                
+                // Limitar a las últimas 5 notificaciones
+                const limitedNotifications = responseNotifications.data.slice(0, 5);
+
+                setNotificaciones(limitedNotifications);
+                setNotificationCount(limitedNotifications.filter(notif => !notif.visto).length);
             } catch (error) {
                 console.error('Error al obtener notificaciones', error);
             }
         };
-    
+
         fetchNotificaciones();
     }, [usuarioId]);
 
     const handleBellClick = async () => {
         setShowNotifications(!showNotifications);
         try {
-            const notificationIds = notificaciones.filter(notif => !notif.visto).map(notif => parseInt(notif.id, 10));
-    
-            if (notificationIds.length > 0) {
-                await axios.post(`http://localhost:8081/api/user-notifications`, {
+            const unseenNotifications = notificaciones.filter(notif => !notif.visto).map(notif => notif.id);
+            if (unseenNotifications.length > 0) {
+                await axios.post(`http://localhost:8081/api/notifications/mark-as-viewed`, {
                     userId: usuarioId,
-                    notificationIds
+                    notificationIds: unseenNotifications
                 });
-    
-                // Actualiza el estado local
+
                 setNotificaciones(prevNotificaciones =>
                     prevNotificaciones.map(notif =>
-                        notificationIds.includes(notif.id) ? { ...notif, visto: true } : notif
+                        unseenNotifications.includes(notif.id) ? { ...notif, visto: true } : notif
                     )
                 );
-    
-                // Actualiza el contador de notificaciones
                 setNotificationCount(0);
             }
         } catch (error) {
             console.error('Error al marcar notificaciones como vistas', error);
         }
     };
-    
-    
 
     const handleChangePassword = () => {
         navigate('/rPsw');
@@ -119,17 +97,22 @@ function Navbar() {
                                     <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-sipe-white bg-red-600 rounded-full">{notificationCount}</span>
                                 )}
                             </DropdownMenuTrigger>
-                            {showNotifications && (
-                                <DropdownMenuContent>
-                                    {notificaciones.map((notif) => (
-                                        <DropdownMenuItem key={notif.id}>
-                                            {notif.descripcion}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            )}
+                                {showNotifications && (
+                                    <DropdownMenuContent>
+                                        {notificaciones.length === 0 ? (
+                                            <p className="p-4 text-sm text-gray-600">No tienes notificaciones</p>
+                                        ) : (
+                                            notificaciones.map((notif) => (
+                                                <DropdownMenuItem key={notif.id}>
+                                                        <p className="text-sm text-gray-800">{notif.descripcion}</p>
+                                                        <p className="text-xs text-gray-500">{new Date(notif.fecha).toLocaleString()}</p> 
+                                                </DropdownMenuItem>
+                                            ))
+                                        )}
+                                    </DropdownMenuContent>
+                                )}
                         </DropdownMenu>
-                    </li>
+                    </li>   
                     <div className="flex flex-row justify-center items-center">
                         <DropdownMenu>
                             <DropdownMenuTrigger className="flex items-center bg-sipe-white rounded-full pe-1">
@@ -157,4 +140,3 @@ function Navbar() {
 }
 
 export default Navbar;
-
