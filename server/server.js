@@ -219,15 +219,52 @@ app.get('/materials', (req, res) => {
     });
 });
 
-// Ruta para agregar un nuevo material
+function handleStockNotifications(nombre, cantidad, bajoStock, callback) {
+    cantidad = Number(cantidad);
+    bajoStock = Number(bajoStock);
+    let descripcion = null;
+
+    if (cantidad === 0) {
+        descripcion = `El material ${nombre} se ha quedado sin stock.`;
+    } else if (cantidad <= bajoStock) {
+        descripcion = `El material ${nombre} ha llegado a su límite de bajo stock.`;
+    } else {
+        return callback(null);
+    }
+
+    db.query(
+        `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
+        [descripcion],
+        (error, result) => {
+            if (error) {
+                console.error('Error al agregar notificación', error);
+                return callback({ mensaje: 'Error al agregar notificación' });
+            }
+
+            const notificacionId = result.insertId;
+
+            db.query(
+                `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
+                 SELECT id, ?, FALSE FROM usuario`,
+                [notificacionId],
+                (error) => {
+                    if (error) {
+                        console.error('Error al relacionar notificación con usuarios', error);
+                        return callback({ mensaje: 'Error al relacionar notificación con usuarios' });
+                    }
+                    return callback(null);
+                }
+            );
+        }
+    );
+}
+
+// Endpoint para agregar un nuevo material
 app.post('/addMaterial', upload.single('imagen'), (req, res) => {
-    const {
-        nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado
-    } = req.body;
+    const { nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado } = req.body;
     const imagen = req.file;
 
-    // Validación de campos obligatorios
-    if (!nombre || !cantidad || !matricula || !idEstado || !idEspacio || !idCategoria || !idDeposito || !ultimoUsuarioId) {
+    if (!nombre || cantidad == null || !matricula || !idEstado || !idEspacio || !idCategoria || !idDeposito || !ultimoUsuarioId) {
         return res.status(400).json({ mensaje: 'Campos obligatorios faltantes' });
     }
 
@@ -242,10 +279,15 @@ app.post('/addMaterial', upload.single('imagen'), (req, res) => {
 
         const materialId = result.insertId;
 
-        // Procesa y guarda la imagen si se ha subido una
-        let imagenPath = null;
+        handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
+            if (error) {
+                return res.status(500).json({ mensaje: 'Error al manejar notificaciones de stock' });
+            }
+            res.status(200).json({ mensaje: 'Material agregado con éxito' });
+        });
+
         if (imagen) {
-            imagenPath = `/uploads/SIPE-img-${materialId}${path.extname(imagen.originalname)}`;
+            const imagenPath = `/uploads/SIPE-img-${materialId}${path.extname(imagen.originalname)}`;
             const newFilePath = path.join(__dirname, 'public', imagenPath);
 
             fs.rename(imagen.path, newFilePath, (err) => {
@@ -254,18 +296,13 @@ app.post('/addMaterial', upload.single('imagen'), (req, res) => {
                     return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
                 }
 
-                const updateQuery = 'UPDATE Material SET imagen = ? WHERE id = ?';
-                db.query(updateQuery, [imagenPath, materialId], (err, result) => {
+                db.query('UPDATE Material SET imagen = ? WHERE id = ?', [imagenPath, materialId], (err) => {
                     if (err) {
                         console.error('Error al actualizar la base de datos con la imagen:', err);
                         return res.status(500).json({ mensaje: 'Error al actualizar la imagen en la base de datos' });
                     }
-
-                    res.status(200).json({ mensaje: 'Material agregado exitosamente', id: materialId });
                 });
             });
-        } else {
-            res.status(200).json({ mensaje: 'Material agregado exitosamente', id: materialId });
         }
     });
 });
@@ -307,21 +344,18 @@ app.get('/materials/search', (req, res) => {
     });
 });
 
-
-// Configurar el transportador de nodemailer
+// Enpoint para configurar el transporte de nodemailer
 const transporter = nodemailer.createTransport({
-    host: 'smtp.ethereal.email',
-    port: 587,
+    service: 'gmail',
     auth: {
-        user: 'marielle.feeney37@ethereal.email',
-        pass: '5czWbD5Q3shja5q67q'
+        user: 'sipe.supp@gmail.com',
+        pass: 'ektg hzdy ndzm dtcp'
     }
 });
 
 // Endpoint para enviar el código de verificación
 app.post('/sendRecoveryCode', (req, res) => {
     const { email } = req.body;
-    console.log(email);
 
     // Verificar si el email existe en la base de datos
     const checkEmailQuery = 'SELECT * FROM usuario WHERE email = ?';
@@ -613,21 +647,6 @@ app.get('/last-material', (req, res) => {
     });
 });
 
-
-// Ruta para obtener materiales con bajo stock o sin stock
-app.get('/notificaciones-material', (req, res) => {
-    const query = `
-        SELECT id, nombre, cantidad, bajoStock
-        FROM material
-        WHERE cantidad <= bajoStock OR cantidad = 0
-    `;
-
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).send('Error al consultar la base de datos');
-        res.json(results);
-    });
-});
-
 app.delete('/materials/:id', (req, res) => {
     const materialId = req.params.id;
 
@@ -681,7 +700,7 @@ app.delete('/materials/:id', (req, res) => {
 });
 
 
-//Endpoint para editar un material
+// Endpoint para editar un material
 app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
     const id = req.params.id;
     // Asegúrate de que los campos sean tomados de req.body o tengan un valor por defecto.
@@ -720,9 +739,17 @@ app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
     query += ` WHERE id = ?`;
     queryParams.push(id);
 
-    db.query(query, queryParams, (err, result) => {
+    db.query(query, values, (err, result) => {
         if (err) {
-            return res.status(500).json({ error: 'Error al actualizar el material', details: err.message });
+            console.error('Error al actualizar el material:', err);
+            return res.status(500).send('Error al actualizar el material');
+        }
+
+        // Verificar si se debe agregar una notificación
+        if (cantidad <= bajoStock || cantidad === 0) {
+            handleStockNotifications(nombre, cantidad, bajoStock, res);
+        } else {
+            res.status(200).send('Material actualizado correctamente');
         }
         res.status(200).send('Material actualizado correctamente');
     });
@@ -918,6 +945,62 @@ app.get('/deposit-locations-movements', (req, res) => {
         res.json(results);
     });
 });
+
+app.get('/api/notifications/:userId', (req, res) => {
+    const { userId } = req.params;
+    db.query(
+        `SELECT n.id, n.descripcion, n.fecha, un.visto
+         FROM notificacion n
+         JOIN usuario_notificacion un ON n.id = un.notificacion_id
+         WHERE un.usuario_id = ?
+         ORDER BY n.fecha DESC`,
+        [userId],
+        (error, results) => {
+            if (error) {
+                console.error(error);
+                res.status(500).json({ message: 'Error al obtener notificaciones' });
+            } else {
+                res.json(results);
+            }
+        }
+    );
+});
+
+app.post('/api/notifications/mark-as-viewed', (req, res) => {
+    const { userId, notificationIds } = req.body;
+
+    if (!userId || !notificationIds || notificationIds.length === 0) {
+        return res.status(400).json({ mensaje: 'Datos incorrectos' });
+    }
+
+    const query = `
+        UPDATE usuario_notificacion
+        SET visto = TRUE
+        WHERE usuario_id = ? AND notificacion_id IN (?)
+    `;
+
+    db.query(query, [userId, notificationIds], (error) => {
+        if (error) {
+            console.error('Error al marcar notificaciones como vistas', error);
+            return res.status(500).json({ mensaje: 'Error al marcar notificaciones como vistas' });
+        }
+        res.status(200).json({ mensaje: 'Notificaciones marcadas como vistas' });
+    });
+});
+
+app.get('/notificaciones-material', (req, res) => {
+    const query = `
+        SELECT id, nombre, cantidad, bajoStock
+        FROM material
+        WHERE cantidad <= bajoStock OR cantidad = 0
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
 
 app.listen(8081, () => {
     console.log(`Servidor corriendo en el puerto 8081`);
