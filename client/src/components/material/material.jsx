@@ -7,6 +7,7 @@ import FormMaterial from '@/components/Material/FormMaterial';
 import ListMaterial from '@/components/Material/ListMaterial';
 import { Search, Filter } from 'lucide-react';
 import FilterModal from '@/components/Common/Filter/FilterModal';
+import { AnimatePresence, motion } from "framer-motion";
 
 function Material({ notify }) {
     const [materials, setMaterials] = useState([]);
@@ -88,11 +89,11 @@ function Material({ notify }) {
     };
 
     const openFilterModal = () => {
-        setIsFilterModalOpen(true); 
+        setIsFilterModalOpen(true);
     };
-    
+
     const closeFilterModal = () => {
-        setIsFilterModalOpen(false); 
+        setIsFilterModalOpen(false);
     };
 
     const openFormModal = () => {
@@ -207,7 +208,7 @@ function Material({ notify }) {
                 )}
 
                 {isFilterModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 flex items-center justify-center z-50">
                         <FilterModal
                             isOpen={isFilterModalOpen}
                             onClose={closeFilterModal}
@@ -223,11 +224,31 @@ function Material({ notify }) {
                     </div>
                 )}
 
-                {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <FormMaterial onClose={closeFormModal} notify={notify} />
-                    </div>
-                )}
+                <AnimatePresence>
+                    {isFormModalOpen && (
+                        <motion.div
+
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
+                        >
+                            <motion.div
+
+                                className="w-[600px] max-w-full h-auto shadow-xl bg-sipe-blue-dark rounded-2xl p-6 relative"
+                                onClick={(e) => e.stopPropagation()}
+                                initial={{ scale: 0.95, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.95, opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                            >
+                                <FormMaterial onClose={closeFormModal} notify={notify} />
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
             </div>
         </div>
     )

@@ -5,6 +5,7 @@ import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Common/Select/Select";
 import { Button } from "@/components/Common/Button/Button";
+import { X } from "lucide-react"; // Importamos el icono de cierre
 
 function FormMaterial({ onClose, notify }) {
     const [depositLocations, setDepositLocations] = useState([]);
@@ -29,6 +30,21 @@ function FormMaterial({ onClose, notify }) {
         ultimoUsuarioId: '',
         ocupado: 1
     });
+
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                onClose(); // Cierra el modal cuando se presiona Escape
+            }
+        };
+
+        document.addEventListener('keydown', handleEscape);
+
+        // Limpia el evento cuando el componente se desmonta
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [onClose]);
 
     useEffect(() => {
         fetch('http://localhost:8081/deposit-locations')
@@ -176,14 +192,16 @@ function FormMaterial({ onClose, notify }) {
         }
     };
 
-
     const handleCancel = () => {
         if (onClose) onClose();
     };
 
     return (
         <>
-            <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl">
+            <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl relative">
+                <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
+                    <X size={14} strokeWidth={4} onClick={onClose} /> {/* Icono de cierre */}
+                </div>
                 <CardHeader>
                     <CardTitle className="text-3xl font-bold mb-2 text-center">Agregar nuevo material</CardTitle>
                     <hr />
@@ -296,7 +314,7 @@ function FormMaterial({ onClose, notify }) {
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="image" className="text-sm font-medium">Imagen</Label>
-                            <Input className="border-b" id="image" type="file" accept="image/*" onChange={handleFileChange} />
+                            <Input className="text-white font-thin px-10 file:text-white pb-10 bg-sipe-blue-light border rounded-xl" id="image" type="file" accept="image/*" onChange={handleFileChange} />
                         </div>
                     </div>
                 </CardContent>

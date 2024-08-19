@@ -699,30 +699,45 @@ app.delete('/materials/:id', (req, res) => {
     });
 });
 
+
 // Endpoint para editar un material
 app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
     const id = req.params.id;
-    const { nombre, cantidad, matricula, idEstado, idCategoria, idDeposito } = req.body;
+    // Asegúrate de que los campos sean tomados de req.body o tengan un valor por defecto.
+    const { nombre, cantidad, matricula, idEstado, idCategoria, idDeposito, idEspacio } = req.body;
     const imagen = req.file ? '/uploads/' + req.file.filename : null;
+
+    // Maneja los valores por defecto si req.body no envía esos campos
+    const queryParams = [
+        nombre || null, 
+        cantidad || null, 
+        matricula || null, 
+        idEstado || null, 
+        idCategoria || null, 
+        idDeposito || null, 
+        idEspacio || null,
+        imagen
+    ];
 
     let query = `
         UPDATE Material SET 
-        nombre = ?, 
-        cantidad = ?, 
-        matricula = ?, 
-        idEstado = ?, 
-        idCategoria = ?, 
-        idDeposito = ?`;
-
-    const values = [nombre, cantidad, matricula, idEstado, idCategoria, idDeposito];
+        nombre = COALESCE(?, nombre), 
+        cantidad = COALESCE(?, cantidad), 
+        matricula = COALESCE(?, matricula), 
+        idEstado = COALESCE(?, idEstado), 
+        idCategoria = COALESCE(?, idCategoria), 
+        idDeposito = COALESCE(?, idDeposito), 
+        idEspacio = COALESCE(?, idEspacio)`;
 
     if (imagen) {
         query += `, imagen = ?`;
-        values.push(imagen);
+    } else {
+        // Si no hay imagen, elimina el último parámetro
+        queryParams.pop();
     }
 
     query += ` WHERE id = ?`;
-    values.push(id);
+    queryParams.push(id);
 
     db.query(query, values, (err, result) => {
         if (err) {
@@ -736,8 +751,13 @@ app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
         } else {
             res.status(200).send('Material actualizado correctamente');
         }
+        res.status(200).send('Material actualizado correctamente');
     });
 });
+
+
+
+
 
 // Ruta para subir la imagen generada desde el canvas
 app.post('/upload', (req, res) => {
@@ -771,24 +791,69 @@ app.post('/upload', (req, res) => {
     });
 });
 
+app.delete('/materiales/:id/imagen', (req, res) => {
+    const materialId = req.params.id;
+
+    // Primero, obtén la información del material para obtener la ruta de la imagen
+    const queryGetImage = 'SELECT imagen FROM Material WHERE id = ?';
+
+    db.query(queryGetImage, [materialId], (err, results) => {
+        if (err) {
+            console.error('Error al obtener la imagen:', err);
+            return res.status(500).send('Error al obtener la imagen');
+        }
+
+        if (results.length > 0) {
+            const imagePath = results[0].imagen;
+
+            if (imagePath) {
+                const fullPath = path.join(__dirname, 'public', imagePath);
+
+                // Elimina la imagen del sistema de archivos
+                fs.unlink(fullPath, (err) => {
+                    if (err) {
+                        console.error('Error al eliminar la imagen:', err);
+                        return res.status(500).send('Error al eliminar la imagen');
+                    }
+
+                    // Actualiza la base de datos para eliminar la referencia a la imagen
+                    const queryDeleteImage = 'UPDATE Material SET imagen = NULL WHERE id = ?';
+                    db.query(queryDeleteImage, [materialId], (err, result) => {
+                        if (err) {
+                            console.error('Error al actualizar la base de datos:', err);
+                            return res.status(500).send('Error al actualizar la base de datos');
+                        }
+                        res.status(200).send('Imagen eliminada correctamente');
+                    });
+                });
+            } else {
+                return res.status(404).send('No hay imagen para eliminar');
+            }
+        } else {
+            return res.status(404).send('Material no encontrado');
+        }
+    });
+});
+
+
+
 app.get('/movements', (req, res) => {
     const query = `
         SELECT 
             m.id, 
             m.fechaMovimiento, 
             u.nombre AS Usuario,
-            mat.nombre AS Material, 
+            m.nombreMaterial, 
+            m.cantidad, 
             d1.nombre AS depositoOrigen, 
             d2.nombre AS depositoDestino
         FROM 
             movimiento m
-        JOIN 
+        LEFT JOIN 
             usuario u ON m.idUsuario = u.id
-        JOIN
-            material mat ON m.idMaterial = mat.id
-        JOIN 
+        LEFT JOIN 
             deposito d1 ON m.idDepositoOrigen = d1.id
-        JOIN 
+        LEFT JOIN 
             deposito d2 ON m.idDepositoDestino = d2.id
     `;
 
@@ -802,23 +867,70 @@ app.get('/movements', (req, res) => {
     });
 });
 
+
+
 app.post('/addMovements', (req, res) => {
-    const { fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino } = req.body;
+    const { idMaterial, idUsuario, idDepositoDestino, cantidadMovida } = req.body;
 
-    const query = `
-        INSERT INTO movimiento (fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino) 
-        VALUES (?, ?, ?, ?, ?)
-    `;
+    // Obtener la información actual del material
+    const queryMaterial = 'SELECT nombre, cantidad, idDeposito FROM Material WHERE id = ?';
 
-    db.query(query, [fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino], (err, result) => {
+    db.query(queryMaterial, [idMaterial], (err, materialResult) => {
         if (err) {
-            console.error('Error al agregar el movimiento:', err);
-            res.status(500).json({ error: 'Error al agregar el movimiento' });
+            console.error('Error al obtener el material:', err);
+            res.status(500).json({ error: 'Error al obtener el material' });
             return;
         }
-        res.status(200).json({ message: 'Movimiento agregado correctamente' });
+
+        if (materialResult.length === 0) {
+            res.status(404).json({ error: 'Material no encontrado' });
+            return;
+        }
+
+        const { nombre, cantidad, idDeposito: idDepositoOrigen } = materialResult[0];
+
+        if (cantidadMovida > cantidad) {
+            res.status(400).json({ error: 'Cantidad insuficiente en el depósito de origen' });
+            return;
+        }
+
+        // Calcular la nueva cantidad después del movimiento
+        const nuevaCantidad = cantidad - cantidadMovida;
+
+        // Actualizar la cantidad y el depósito en la tabla Material
+        const updateMaterialQuery = `
+            UPDATE Material 
+            SET cantidad = ?, idDeposito = ? 
+            WHERE id = ?
+        `;
+
+        db.query(updateMaterialQuery, [nuevaCantidad, idDepositoDestino, idMaterial], (err, updateResult) => {
+            if (err) {
+                console.error('Error al actualizar el material:', err);
+                res.status(500).json({ error: 'Error al actualizar el material' });
+                return;
+            }
+
+            const insertMovementQuery = `
+    INSERT INTO movimiento (idUsuario, nombreMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
+    VALUES (?, ?, ?, ?, ?, NOW())
+`;
+
+            db.query(insertMovementQuery, [idUsuario, nombre, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err, result) => {
+                if (err) {
+                    console.error('Error al agregar el movimiento:', err);
+                    res.status(500).json({ error: 'Error al agregar el movimiento' });
+                    return;
+                }
+
+                res.status(200).json({ message: 'Movimiento registrado y material actualizado correctamente' });
+            });
+        });
     });
 });
+
+
+
 
 app.get('/deposit-locations-movements', (req, res) => {
     const query = `SELECT d.id, d.nombre, u.nombre AS ubicacion 
