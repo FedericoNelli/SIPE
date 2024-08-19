@@ -1,27 +1,18 @@
 import { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/Common/Dropdown/Dropdown-menu";
-import { ChevronDown } from "lucide-react";
-import { Bell } from 'lucide-react';
-import axios from 'axios';
+import { ChevronDown, Bell } from "lucide-react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 function Navbar() {
-    function getDate() {
-        const today = new Date();
-        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        const month = monthNames[today.getMonth()];
-        const year = today.getFullYear();
-        const date = today.getDate();
-        return `${date} de ${month} de ${year}`;
-    }
-
     const navigate = useNavigate();
-    const [currentDate, setCurrentDate] = useState(getDate());
+    const [currentDate, setCurrentDate] = useState(new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }));
     const [userName, setUserName] = useState('Usuario');
     const [initial, setInitial] = useState('');
     const [notificaciones, setNotificaciones] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
     const [notificationCount, setNotificationCount] = useState(0);
+    const usuarioId = localStorage.getItem('id'); // Obtener el ID del usuario logueado
 
     useEffect(() => {
         const storedUserName = localStorage.getItem('userName');
@@ -30,50 +21,66 @@ function Navbar() {
             setInitial(storedUserName.charAt(0).toUpperCase());
         }
 
-        // Obtener notificaciones de materiales
         const fetchNotificaciones = async () => {
             try {
-                const response = await axios.get('http://localhost:8081/notificaciones-material');
-                const sortedNotifications = response.data.reverse().slice(0, 5);
-                setNotificaciones(sortedNotifications);
-
-                const storedNotificationIds = JSON.parse(localStorage.getItem('seenNotificationIds') || '[]');
-                const unseenNotifications = sortedNotifications.filter(notif => !storedNotificationIds.includes(notif.id));
-                setNotificationCount(unseenNotifications.length);
+                const responseNotifications = await axios.get(`http://localhost:8081/api/notifications/${usuarioId}`);
+                const userNotifications = responseNotifications.data;
+    
+                const responseMaterials = await axios.get('http://localhost:8081/notificaciones-material');
+                const materialNotifications = responseMaterials.data.map(material => ({
+                    id: `material-${material.id}`,
+                    descripcion: material.cantidad === 0
+                        ? `El material ${material.nombre} se ha quedado sin stock.`
+                        : `El material ${material.nombre} ha llegado a su límite de bajo stock.`,
+                    fecha: new Date().toISOString(),
+                    visto: false
+                }));
+    
+                const combinedNotifications = [
+                    ...userNotifications,
+                    ...materialNotifications.filter((matNotif) => 
+                        !userNotifications.some((userNotif) => userNotif.descripcion === matNotif.descripcion)
+                    )
+                ];
+    
+                setNotificaciones(combinedNotifications);
+                setNotificationCount(combinedNotifications.filter(notif => !notif.visto).length);
+    
             } catch (error) {
                 console.error('Error al obtener notificaciones', error);
             }
         };
-
+    
         fetchNotificaciones();
-    }, []);
+    }, [usuarioId]);
 
-    const handleBellClick = () => {
+    const handleBellClick = async () => {
         setShowNotifications(!showNotifications);
-        setNotificationCount(0); // Ocultar número de notificaciones después de hacer clic
-
-        // Marcar todas las notificaciones como vistas
-        const seenNotificationIds = notificaciones.map(notif => notif.id);
-        localStorage.setItem('seenNotificationIds', JSON.stringify(seenNotificationIds));
-    };
-
-    const handleOutsideClick = (e) => {
-        if (!e.target.closest('.notification-container')) {
-            setShowNotifications(false);
+        try {
+            const notificationIds = notificaciones.filter(notif => !notif.visto).map(notif => parseInt(notif.id, 10));
+    
+            if (notificationIds.length > 0) {
+                await axios.post(`http://localhost:8081/api/user-notifications`, {
+                    userId: usuarioId,
+                    notificationIds
+                });
+    
+                // Actualiza el estado local
+                setNotificaciones(prevNotificaciones =>
+                    prevNotificaciones.map(notif =>
+                        notificationIds.includes(notif.id) ? { ...notif, visto: true } : notif
+                    )
+                );
+    
+                // Actualiza el contador de notificaciones
+                setNotificationCount(0);
+            }
+        } catch (error) {
+            console.error('Error al marcar notificaciones como vistas', error);
         }
     };
-
-    useEffect(() => {
-        if (showNotifications) {
-            document.addEventListener('click', handleOutsideClick);
-        } else {
-            document.removeEventListener('click', handleOutsideClick);
-        }
-
-        return () => {
-            document.removeEventListener('click', handleOutsideClick);
-        };
-    }, [showNotifications]);
+    
+    
 
     const handleChangePassword = () => {
         navigate('/rPsw');
@@ -81,19 +88,18 @@ function Navbar() {
 
     const handleLogout = async () => {
         try {
-            await fetch('http://localhost:8081/logout', {
-                method: 'POST',
+            await axios.post('http://localhost:8081/logout', {}, {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
 
             const rememberMe = localStorage.getItem('rememberedUser');
             localStorage.clear();
-            localStorage.setItem('rememberedUser', rememberMe);
+            if (rememberMe) {
+                localStorage.setItem('rememberedUser', rememberMe);
+            }
             window.location.href = '/';
-
         } catch (error) {
             console.error('Error al cerrar sesión', error);
         }
@@ -115,11 +121,9 @@ function Navbar() {
                             </DropdownMenuTrigger>
                             {showNotifications && (
                                 <DropdownMenuContent>
-                                    {notificaciones.map((notif, index) => (
-                                        <DropdownMenuItem key={index}>
-                                            {notif.cantidad === 0
-                                                ? `El material ${notif.nombre} se ha quedado sin stock.`
-                                                : `El material ${notif.nombre} ha llegado a su límite de bajo stock.`}
+                                    {notificaciones.map((notif) => (
+                                        <DropdownMenuItem key={notif.id}>
+                                            {notif.descripcion}
                                         </DropdownMenuItem>
                                     ))}
                                 </DropdownMenuContent>
@@ -142,7 +146,6 @@ function Navbar() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="p-2 hover:bg-gray-200 rounded-b-lg" onClick={handleLogout}>
                                     Cerrar sesión
-
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -154,3 +157,4 @@ function Navbar() {
 }
 
 export default Navbar;
+
