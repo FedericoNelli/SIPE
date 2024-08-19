@@ -22,6 +22,7 @@ function UserList() {
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Nombre</TableHead>
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Apellido</TableHead>
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Legajo</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Nombre de Usuario</TableHead>
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Email</TableHead>
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Rol</TableHead>
                     </TableRow>
@@ -32,6 +33,7 @@ function UserList() {
                             <TableCell className="text-center font-light">{user.nombre}</TableCell>
                             <TableCell className="text-center font-light">{user.apellido}</TableCell>
                             <TableCell className="text-center font-light">{user.legajo}</TableCell>
+                            <TableCell className="text-center font-light">{user.nombre_usuario}</TableCell>
                             <TableCell className="text-center font-light">{user.email}</TableCell>
                             <TableCell className="text-center font-light">{user.rol}</TableCell>
                         </TableRow>

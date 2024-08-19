@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CustomCard from '@/components/Common/Cards/CustomCard';
-import { Package, TriangleAlert, Rows3, CornerDownRight, AlignStartVertical, Goal } from 'lucide-react';
+import { Package, TriangleAlert, Rows3, CornerDownRight, AlignStartVertical, Tags } from 'lucide-react';
 
 function MainDashboard() {
     const [totalMaterials, setTotalMaterials] = useState(0);
@@ -88,9 +88,9 @@ function MainDashboard() {
             path: '/informes' 
         },
         { 
-            label: 'Ir a Control de stock',
+            label: 'Ir a Categorias',
             disabled: rol !== 'Administrador',
-            path: '/control-de-stock' 
+            path: '/category'  
         }
     ];
 
@@ -150,10 +150,10 @@ function MainDashboard() {
                     onButtonClick={() => handleButtonClick(buttonSection[3].path)} 
                 />
                 <CustomCard
-                    Icon={Goal}
+                    Icon={Tags}
                     colSpan={1}
-                    title="Último control de stock"
-                    totalElement={new Date().toLocaleDateString()}
+                    title="Cantidad de categorías"
+                    totalElement={'3 categorías'}
                     buttonText={buttonSection[4].label}
                     buttonDisabled={buttonSection[4].disabled}
                     onButtonClick={() => handleButtonClick(buttonSection[4].path)} 

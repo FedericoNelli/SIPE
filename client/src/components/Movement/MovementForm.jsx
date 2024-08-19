@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function FormMovement({ onClose, notify }) {
+function MovementForm({ onClose, notify }) {
     const [formData, setFormData] = useState({
         fechaMovimiento: '',
         idMaterial: '',
@@ -36,7 +36,7 @@ function FormMovement({ onClose, notify }) {
             });
 
         axios.get('http://localhost:8081/deposit-locations-movements')
-            .then(response => { // Verifica los datos que estás recibiendo
+            .then(response => {
                 setDepositos(response.data);
             })
             .catch(error => {
@@ -45,16 +45,15 @@ function FormMovement({ onClose, notify }) {
             });
     }, [notify]);
 
-    // Efecto para actualizar el depósito origen y la cantidad disponible cuando se selecciona un material
     useEffect(() => {
         if (formData.idMaterial) {
             const materialSeleccionado = materiales.find(material => material.id === formData.idMaterial);
             if (materialSeleccionado) {
                 setFormData((prevData) => ({
                     ...prevData,
-                    idDepositoOrigen: materialSeleccionado.idDeposito  // Preselecciona el depósito origen
+                    idDepositoOrigen: materialSeleccionado.idDeposito  
                 }));
-                setCantidadDisponible(materialSeleccionado.cantidad);  // Actualiza la cantidad disponible
+                setCantidadDisponible(materialSeleccionado.cantidad);  
             }
         }
     }, [formData.idMaterial, materiales]);
@@ -241,4 +240,4 @@ function FormMovement({ onClose, notify }) {
     );
 }
 
-export default FormMovement;
+export default MovementForm;

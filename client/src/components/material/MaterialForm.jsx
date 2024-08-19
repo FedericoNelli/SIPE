@@ -5,9 +5,9 @@ import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Common/Select/Select";
 import { Button } from "@/components/Common/Button/Button";
-import { X } from "lucide-react"; // Importamos el icono de cierre
+import { X } from "lucide-react";
 
-function FormMaterial({ onClose, notify }) {
+function MaterialForm({ onClose, notify }) {
     const [depositLocations, setDepositLocations] = useState([]);
     const [depositNames, setDepositNames] = useState([]);
     const [locationId, setLocationId] = useState(null);
@@ -327,4 +327,4 @@ function FormMaterial({ onClose, notify }) {
     );
 }
 
-export default FormMaterial;
+export default MaterialForm;

@@ -7,8 +7,7 @@ function MovementList() {
 
     useEffect(() => {
         axios.get('http://localhost:8081/movements')
-            .then(response => {
-                console.log(response.data);  // Verifica qué datos estás recibiendo
+            .then(response => { // Verifica qué datos estás recibiendo
                 setMovements(response.data);
             })
             .catch(error => {

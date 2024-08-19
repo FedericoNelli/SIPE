@@ -8,7 +8,7 @@ import { Input } from '@/components/Common/Input/Input';
 import { Button } from '@/components/Common/Button/Button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/Common/Select/Select';  // Importa los componentes necesarios
 
-const FormUser = ({ onClose, notify }) => {
+const UserForm = ({ onClose, notify }) => {
     const [formData, setFormData] = useState({
         nombre: '',
         apellido: '',
@@ -213,4 +213,4 @@ const FormUser = ({ onClose, notify }) => {
     );
 };
 
-export default FormUser;
+export default UserForm;

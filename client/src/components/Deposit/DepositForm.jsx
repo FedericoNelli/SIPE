@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function FormDeposit({ onClose, notify }) {
+function DepositForm({ onClose, notify }) {
     const [formData, setFormData] = useState({ nombre: '', idUbicacion: '' });
     const [ubicaciones, setUbicaciones] = useState([]);
 
@@ -114,4 +114,4 @@ function FormDeposit({ onClose, notify }) {
     );
 }
 
-export default FormDeposit;
+export default DepositForm;

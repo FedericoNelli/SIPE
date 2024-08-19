@@ -12,6 +12,7 @@ import CompTesting from "./components/Testing/CompTesting"
 import Shelves from "./pages/Shelves/Shelves"
 import Deposits from "./pages/Deposits/Deposits"
 import Movements from "./pages/Movements/Movements"
+import Categories from "./pages/Categories/Categories"
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <Route path="/testing" element={<CompTesting />} />
           <Route path="/nbr" element={<Navbar />} />
           <Route path="/mtls" element={<PrivateRoute><Materials /></PrivateRoute>} />
+          <Route path="/category" element={<PrivateRoute><Categories /></PrivateRoute>} />
           <Route path="/shelf" element={<AdminRoute><Shelves /></AdminRoute>} />
           <Route path="/deposit" element={<AdminRoute><Deposits /></AdminRoute>} />
           <Route path="/movement" element={<AdminRoute><Movements /></AdminRoute>} />
