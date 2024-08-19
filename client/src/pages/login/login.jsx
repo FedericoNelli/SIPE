@@ -28,7 +28,7 @@ function Login() {
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ type: "tween", duration: 2.5, ease: 'easeInOut' }}
+                transition={{ type: "tween", duration: 2, ease: 'easeInOut' }}
                 onAnimationComplete={openLogin}
             >
                 <motion.div

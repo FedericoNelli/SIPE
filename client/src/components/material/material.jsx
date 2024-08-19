@@ -3,8 +3,8 @@ import axios from 'axios';
 import { Input } from "@/components/Common/Input/Input";
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
-import FormMaterial from '@/components/Material/FormMaterial';
-import ListMaterial from '@/components/Material/ListMaterial';
+import MaterialForm from '@/components/Material/MaterialForm';
+import MaterialList from '@/components/Material/MaterialList';
 import { Search, Filter } from 'lucide-react';
 import FilterModal from '@/components/Common/Filter/FilterModal';
 import { AnimatePresence, motion } from "framer-motion";
@@ -166,7 +166,7 @@ function Material({ notify }) {
                         <Button onClick={openModalSearch} variant="secondary" className="bg-transparent border-sipe-white border text-sipe-white font-semibold px-2 py-2 flex items-center gap-2"> <Search /> Buscar </Button>
                     </div>
                 </div>
-                <ListMaterial materials={currentMaterials} />
+                <MaterialList materials={currentMaterials} />
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
@@ -243,7 +243,7 @@ function Material({ notify }) {
                                 exit={{ scale: 0.95, opacity: 0 }}
                                 transition={{ duration: 0.3 }}
                             >
-                                <FormMaterial onClose={closeFormModal} notify={notify} />
+                                <MaterialForm onClose={closeFormModal} notify={notify} />
                             </motion.div>
                         </motion.div>
                     )}

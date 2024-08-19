@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
-import FormDeposit from '@/components/Deposit/FormDeposit';
-import DepositList from '@/components/Deposit/ListDeposit';
+import DepositForm from '@/components/Deposit/DepositForm';
+import DepositList from '@/components/Deposit/DepositList';
 import axios from 'axios';
 
 function Deposit({ notify }) {
@@ -64,7 +64,7 @@ function Deposit({ notify }) {
                 </div>
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <FormDeposit onClose={closeFormModal} notify={notify} />
+                        <DepositForm onClose={closeFormModal} notify={notify} />
                     </div>
                 )}
             </div>

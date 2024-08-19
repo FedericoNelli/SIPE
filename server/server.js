@@ -134,7 +134,7 @@ app.post('/addUser', (req, res) => {
 app.get('/users', (req, res) => {
     const query = `
         SELECT 
-            u.id, u.nombre, u.apellido, u.legajo, u.email, u.rol FROM Usuario u`;
+            u.id, u.nombre, u.apellido, u.legajo, u.nombre_usuario, u.email, u.rol FROM Usuario u`;
 
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
@@ -451,7 +451,6 @@ app.post('/sendRecoveryCode', (req, res) => {
     });
 });
 
-
 // Endpoint para verificar el código de recuperación
 app.post('/verifyRecoveryCode', (req, res) => {
     const { email, recoveryCode } = req.body;
@@ -751,6 +750,55 @@ app.delete('/materials/:id', (req, res) => {
     });
 });
 
+
+
+//Endpoint para editar un material
+app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
+    const id = req.params.id;
+    // Asegúrate de que los campos sean tomados de req.body o tengan un valor por defecto.
+    const { nombre, cantidad, matricula, idEstado, idCategoria, idDeposito, idEspacio } = req.body;
+    const imagen = req.file ? '/uploads/' + req.file.filename : null;
+
+    // Maneja los valores por defecto si req.body no envía esos campos
+    const queryParams = [
+        nombre || null, 
+        cantidad || null, 
+        matricula || null, 
+        idEstado || null, 
+        idCategoria || null, 
+        idDeposito || null, 
+        idEspacio || null,
+        imagen
+    ];
+
+    let query = `
+        UPDATE Material SET 
+        nombre = COALESCE(?, nombre), 
+        cantidad = COALESCE(?, cantidad), 
+        matricula = COALESCE(?, matricula), 
+        idEstado = COALESCE(?, idEstado), 
+        idCategoria = COALESCE(?, idCategoria), 
+        idDeposito = COALESCE(?, idDeposito), 
+        idEspacio = COALESCE(?, idEspacio)`;
+
+    if (imagen) {
+        query += `, imagen = ?`;
+    } else {
+        // Si no hay imagen, elimina el último parámetro
+        queryParams.pop();
+    }
+
+    query += ` WHERE id = ?`;
+    queryParams.push(id);
+
+    db.query(query, queryParams, (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error al actualizar el material', details: err.message });
+        }
+        res.status(200).send('Material actualizado correctamente');
+    });
+});
+
 // Ruta para subir la imagen generada desde el canvas
 app.post('/upload', (req, res) => {
     const { image, id } = req.body;
@@ -827,8 +875,6 @@ app.delete('/materiales/:id/imagen', (req, res) => {
     });
 });
 
-
-
 app.get('/movements', (req, res) => {
     const query = `
         SELECT 
@@ -860,14 +906,17 @@ app.get('/movements', (req, res) => {
 });
 
 
-
 app.post('/addMovements', (req, res) => {
     const { idMaterial, idUsuario, idDepositoDestino, cantidadMovida } = req.body;
 
-    // Obtener la información actual del material
-    const queryMaterial = 'SELECT nombre, cantidad, idDeposito FROM Material WHERE id = ?';
+    // Obtener toda la información del material en el depósito de origen
+    const queryMaterialOrigen = `
+        SELECT nombre, cantidad, matricula, fechaUltimoEstado, mapa, bajoStock, idEstado, idEspacio, ultimoUsuarioId, idCategoria, idDeposito, ocupado 
+        FROM Material 
+        WHERE id = ?
+    `;
 
-    db.query(queryMaterial, [idMaterial], (err, materialResult) => {
+    db.query(queryMaterialOrigen, [idMaterial], (err, materialResult) => {
         if (err) {
             console.error('Error al obtener el material:', err);
             res.status(500).json({ error: 'Error al obtener el material' });
@@ -875,52 +924,127 @@ app.post('/addMovements', (req, res) => {
         }
 
         if (materialResult.length === 0) {
-            res.status(404).json({ error: 'Material no encontrado' });
+            res.status(404).json({ error: 'Material no encontrado en el depósito de origen' });
             return;
         }
 
-        const { nombre, cantidad, idDeposito: idDepositoOrigen } = materialResult[0];
+        const materialOrigen = materialResult[0];
+        const {
+            nombre, cantidad, matricula, fechaUltimoEstado, mapa, bajoStock,
+            idEstado, idEspacio, ultimoUsuarioId, idCategoria, ocupado
+        } = materialOrigen;
+        const idDepositoOrigen = materialOrigen.idDeposito;
 
         if (cantidadMovida > cantidad) {
             res.status(400).json({ error: 'Cantidad insuficiente en el depósito de origen' });
             return;
         }
 
-        // Calcular la nueva cantidad después del movimiento
-        const nuevaCantidad = cantidad - cantidadMovida;
+        // Calcular la nueva cantidad después del movimiento en el depósito de origen
+        const nuevaCantidadOrigen = cantidad - cantidadMovida;
 
-        // Actualizar la cantidad y el depósito en la tabla Material
-        const updateMaterialQuery = `
+        // Actualizar la cantidad en la tabla Material para el depósito de origen
+        const updateMaterialOrigenQuery = `
             UPDATE Material 
-            SET cantidad = ?, idDeposito = ? 
+            SET cantidad = ? 
             WHERE id = ?
         `;
 
-        db.query(updateMaterialQuery, [nuevaCantidad, idDepositoDestino, idMaterial], (err, updateResult) => {
+        db.query(updateMaterialOrigenQuery, [nuevaCantidadOrigen, idMaterial], (err, updateResult) => {
             if (err) {
-                console.error('Error al actualizar el material:', err);
-                res.status(500).json({ error: 'Error al actualizar el material' });
+                console.error('Error al actualizar el material en el depósito de origen:', err);
+                res.status(500).json({ error: 'Error al actualizar el material en el depósito de origen' });
                 return;
             }
 
-            const insertMovementQuery = `
-    INSERT INTO movimiento (idUsuario, nombreMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
-    VALUES (?, ?, ?, ?, ?, NOW())
-`;
+            // Verificar si el material ya existe en el depósito de destino
+            const queryMaterialDestino = 'SELECT id, cantidad FROM Material WHERE nombre = ? AND idDeposito = ?';
 
-            db.query(insertMovementQuery, [idUsuario, nombre, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err, result) => {
+            db.query(queryMaterialDestino, [nombre, idDepositoDestino], (err, materialDestinoResult) => {
                 if (err) {
-                    console.error('Error al agregar el movimiento:', err);
-                    res.status(500).json({ error: 'Error al agregar el movimiento' });
+                    console.error('Error al verificar el material en el depósito de destino:', err);
+                    res.status(500).json({ error: 'Error al verificar el material en el depósito de destino' });
                     return;
                 }
 
-                res.status(200).json({ message: 'Movimiento registrado y material actualizado correctamente' });
+                if (materialDestinoResult.length > 0) {
+                    // El material ya existe en el depósito de destino, actualizamos la cantidad
+                    const { id: idMaterialDestino, cantidad: cantidadDestino } = materialDestinoResult[0];
+                    const nuevaCantidadDestino = cantidadDestino + cantidadMovida;
+
+                    const updateMaterialDestinoQuery = `
+                        UPDATE Material 
+                        SET cantidad = ? 
+                        WHERE id = ?
+                    `;
+
+                    db.query(updateMaterialDestinoQuery, [nuevaCantidadDestino, idMaterialDestino], (err, updateResult) => {
+                        if (err) {
+                            console.error('Error al actualizar el material en el depósito de destino:', err);
+                            res.status(500).json({ error: 'Error al actualizar el material en el depósito de destino' });
+                            return;
+                        }
+
+                        // Guardar el log del movimiento en la tabla movimiento
+                        const insertMovementQuery = `
+                            INSERT INTO movimiento (idUsuario, nombreMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
+                            VALUES (?, ?, ?, ?, ?, NOW())
+                        `;
+
+                        db.query(insertMovementQuery, [idUsuario, nombre, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err, result) => {
+                            if (err) {
+                                console.error('Error al agregar el movimiento:', err);
+                                res.status(500).json({ error: 'Error al agregar el movimiento' });
+                                return;
+                            }
+
+                            res.status(200).json({ message: 'Movimiento registrado y material actualizado correctamente' });
+                        });
+                    });
+
+                } else {
+                    // El material no existe en el depósito de destino, lo creamos con la cantidad movida
+                    const insertMaterialDestinoQuery = `
+                        INSERT INTO Material (
+                            nombre, cantidad, matricula, fechaUltimoEstado, mapa, bajoStock, idEstado, idEspacio, 
+                            ultimoUsuarioId, idCategoria, idDeposito, ocupado
+                        ) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    `;
+
+                    const valoresInsertMaterial = [
+                        nombre, cantidadMovida, matricula, fechaUltimoEstado, mapa, bajoStock,
+                        idEstado, idEspacio, ultimoUsuarioId, idCategoria, idDepositoDestino, ocupado
+                    ];
+
+                    db.query(insertMaterialDestinoQuery, valoresInsertMaterial, (err, insertResult) => {
+                        if (err) {
+                            console.error('Error al crear el material en el depósito de destino:', err);
+                            res.status(500).json({ error: 'Error al crear el material en el depósito de destino' });
+                            return;
+                        }
+
+                        // Guardar el log del movimiento en la tabla movimiento
+                        const insertMovementQuery = `
+                            INSERT INTO movimiento (idUsuario, nombreMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
+                            VALUES (?, ?, ?, ?, ?, NOW())
+                        `;
+
+                        db.query(insertMovementQuery, [idUsuario, nombre, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err, result) => {
+                            if (err) {
+                                console.error('Error al agregar el movimiento:', err);
+                                res.status(500).json({ error: 'Error al agregar el movimiento' });
+                                return;
+                            }
+
+                            res.status(200).json({ message: 'Movimiento registrado y material creado en el destino correctamente' });
+                        });
+                    });
+                }
             });
         });
     });
 });
-
 
 
 

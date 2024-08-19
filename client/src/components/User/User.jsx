@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
-import FormUser from '@/components/User/FormUser';
-import UserList from '@/components/User/ListUser';
+import UserForm from '@/components/User/UserForm';
+import UserList from '@/components/User/UserList';
 import axios from 'axios';
 
 function User({ notify }) {
@@ -64,7 +64,7 @@ function User({ notify }) {
                 </div>
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <FormUser onClose={closeFormModal} notify={notify} />
+                        <UserForm onClose={closeFormModal} notify={notify} />
                     </div>
                 )}
             </div>

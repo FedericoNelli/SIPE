@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Button } from "@/components/Common/Button/Button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
-import FormShelf from '@/components/Shelf/FormShelf';
+import ShelfForm from '@/components/Shelf/ShelfForm';
 
 function Shelve() {
     const [shelves, setShelves] = useState([]);
@@ -85,7 +85,7 @@ function Shelve() {
                 </div>
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <FormShelf onClose={closeFormModal} />
+                        <ShelfForm onClose={closeFormModal} />
                     </div>
                 )}
             </div>

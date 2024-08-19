@@ -1,21 +1,20 @@
 import { Link, NavLink } from 'react-router-dom';
-import { Home, Box, FileText, Archive, ArrowUpRight, Users, BarChart, Warehouse } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Home, Box, FileText, Archive, ArrowUpRight, Users, Warehouse, Tags } from 'lucide-react';
 
 const sections = [
     { name: 'Dashboard', label: 'Dashboard', icon: <Home />, path: '/dshb', roles: ['Administrador', 'Colaborador'] },
     { name: 'Materiales', label: 'Materiales', icon: <Box />, path: '/mtls', roles: ['Administrador', 'Colaborador'] },
+    { name: 'Categorias', label: 'Categorías', icon: <Tags />, path: '/category', roles: ['Administrador'] },
     { name: 'Estanterias', label: 'Estanterías', icon: <Archive />, path: '/shelf', roles: ['Administrador'] },
     { name: 'Depositos', label: 'Depósitos', icon: <Warehouse />, path: '/deposit', roles: ['Administrador'] },
     { name: 'Movimientos', label: 'Movimientos', icon: <ArrowUpRight />, path: '/movement', roles: ['Administrador'] },
     { name: 'Informes', label: 'Informes', icon: <FileText />, path: '/informes', roles: ['Administrador'] },
     { name: 'Lista de usuarios', label: 'Lista de usuarios', icon: <Users />, path: '/user', roles: ['Administrador'] },
-    { name: 'Control de stock', label: 'Control de stock', icon: <BarChart />, path: '/control-de-stock', roles: ['Administrador'] },
 ];
 
 function Aside() {
     const rol = localStorage.getItem('rol');
-
+    
     return (
         <aside className="bg-sipe-blue-light text-sipe-white min-h-full pl-12 py-8">
             <div>
