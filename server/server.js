@@ -307,6 +307,58 @@ app.post('/addMaterial', upload.single('imagen'), (req, res) => {
     });
 });
 
+// Endpoint para editar un material
+app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
+    const id = req.params.id;
+    const { nombre, cantidad, matricula, bajoStock, idEstado, idCategoria, idDeposito, idEspacio  } = req.body;
+    const imagen = req.file ? '/uploads/' + req.file.filename : null;
+
+    const queryParams = [
+        nombre || null, 
+        cantidad || null, 
+        matricula || null, 
+        idEstado || null, 
+        idCategoria || null, 
+        idDeposito || null, 
+        idEspacio || null,
+        imagen
+    ];
+
+    let query = `
+        UPDATE Material SET 
+        nombre = COALESCE(?, nombre), 
+        cantidad = COALESCE(?, cantidad), 
+        matricula = COALESCE(?, matricula), 
+        idEstado = COALESCE(?, idEstado), 
+        idCategoria = COALESCE(?, idCategoria), 
+        idDeposito = COALESCE(?, idDeposito), 
+        idEspacio = COALESCE(?, idEspacio)`;
+
+    if (imagen) {
+        query += `, imagen = ?`;
+    } else {
+        // Si no hay imagen, elimina el último parámetro
+        queryParams.pop();
+    }
+
+    query += ` WHERE id = ?`;
+    queryParams.push(id);
+
+    db.query(query, queryParams, (err, result) => {
+        if (err) {
+            console.error('Error al actualizar el material:', err);
+            return res.status(500).json({ error: 'Error al actualizar el material', details: err.message });
+        }
+        // Verificar si se debe agregar una notificación
+        handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
+            if (error) {
+                return res.status(500).json({ mensaje: 'Error al manejar notificaciones de stock' });
+            }
+            res.status(200).json({ mensaje: 'Material agregado con éxito' });
+        });
+    });
+});
+
 app.get('/materials/search', (req, res) => {
     const query = req.query.query;
 
@@ -698,66 +750,6 @@ app.delete('/materials/:id', (req, res) => {
         }
     });
 });
-
-
-// Endpoint para editar un material
-app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
-    const id = req.params.id;
-    // Asegúrate de que los campos sean tomados de req.body o tengan un valor por defecto.
-    const { nombre, cantidad, matricula, idEstado, idCategoria, idDeposito, idEspacio } = req.body;
-    const imagen = req.file ? '/uploads/' + req.file.filename : null;
-
-    // Maneja los valores por defecto si req.body no envía esos campos
-    const queryParams = [
-        nombre || null, 
-        cantidad || null, 
-        matricula || null, 
-        idEstado || null, 
-        idCategoria || null, 
-        idDeposito || null, 
-        idEspacio || null,
-        imagen
-    ];
-
-    let query = `
-        UPDATE Material SET 
-        nombre = COALESCE(?, nombre), 
-        cantidad = COALESCE(?, cantidad), 
-        matricula = COALESCE(?, matricula), 
-        idEstado = COALESCE(?, idEstado), 
-        idCategoria = COALESCE(?, idCategoria), 
-        idDeposito = COALESCE(?, idDeposito), 
-        idEspacio = COALESCE(?, idEspacio)`;
-
-    if (imagen) {
-        query += `, imagen = ?`;
-    } else {
-        // Si no hay imagen, elimina el último parámetro
-        queryParams.pop();
-    }
-
-    query += ` WHERE id = ?`;
-    queryParams.push(id);
-
-    db.query(query, values, (err, result) => {
-        if (err) {
-            console.error('Error al actualizar el material:', err);
-            return res.status(500).send('Error al actualizar el material');
-        }
-
-        // Verificar si se debe agregar una notificación
-        if (cantidad <= bajoStock || cantidad === 0) {
-            handleStockNotifications(nombre, cantidad, bajoStock, res);
-        } else {
-            res.status(200).send('Material actualizado correctamente');
-        }
-        res.status(200).send('Material actualizado correctamente');
-    });
-});
-
-
-
-
 
 // Ruta para subir la imagen generada desde el canvas
 app.post('/upload', (req, res) => {

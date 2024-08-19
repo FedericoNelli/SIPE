@@ -24,6 +24,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
         nombre: material?.nombre || '',
         cantidad: material?.cantidad || '',
         matricula: material?.matricula || '',
+        bajoStock: material?.bajoStock || '',
         estado: material?.idEstado || '',
         categoria: material?.idCategoria || '',
         deposito: material?.idDeposito || '',
@@ -37,6 +38,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                 nombre: material.nombre || '',
                 cantidad: material.cantidad || '',
                 matricula: material.matricula || '',
+                bajoStock: material.bajoStock || '',
                 estado: material.idEstado || '',
                 categoria: material.idCategoria || '',
                 deposito: material.idDeposito || '',
@@ -200,12 +202,13 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
     };
 
     const handleSave = async () => {
-        const { nombre, cantidad, matricula, estado, categoria, deposito, imagen } = formData;
+        const { nombre, cantidad, matricula, bajoStock, estado, categoria, deposito, imagen } = formData;
     
         const formDataToSend = new FormData();
         if (nombre) formDataToSend.append('nombre', nombre);
         if (cantidad) formDataToSend.append('cantidad', cantidad);
         if (matricula) formDataToSend.append('matricula', matricula);
+        if (bajoStock) formDataToSend.append('bajoStock', bajoStock);
         if (estado) formDataToSend.append('idEstado', estado);
         if (categoria) formDataToSend.append('idCategoria', categoria);
         if (deposito) formDataToSend.append('idDeposito', deposito);
