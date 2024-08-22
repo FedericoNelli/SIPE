@@ -21,12 +21,10 @@ function MaterialForm({ onClose, notify }) {
         cantidad: '',
         matricula: '',
         bajoStock: '',
-        estado: '',
         espacio: '',
         categoria: '',
         deposito: '',
         imagen: null,
-        mapa: '',
         ultimoUsuarioId: '',
         ocupado: 1
     });
@@ -134,9 +132,9 @@ function MaterialForm({ onClose, notify }) {
     };
 
     const handleSave = async () => {
-        const { nombre, cantidad, matricula, bajoStock, estado, espacio, categoria, deposito, imagen, ocupado } = formData;
+        const { nombre, cantidad, matricula, bajoStock, espacio, categoria, deposito, imagen, ocupado } = formData;
 
-        if (!nombre || !cantidad || !matricula || !bajoStock || !estado || !espacio || !categoria || !deposito) {
+        if (!nombre || !cantidad || !matricula || !bajoStock || !espacio || !categoria || !deposito) {
             notify('error', 'Por favor completa todos los campos');
             return;
         }
@@ -156,7 +154,6 @@ function MaterialForm({ onClose, notify }) {
         formDataToSend.append('cantidad', cantidad);
         formDataToSend.append('matricula', matricula);
         formDataToSend.append('bajoStock', bajoStock);
-        formDataToSend.append('idEstado', estado);
         formDataToSend.append('idEspacio', espacio);
         formDataToSend.append('idCategoria', categoria);
         formDataToSend.append('idDeposito', deposito);
@@ -255,7 +252,7 @@ function MaterialForm({ onClose, notify }) {
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
+                        {/* <div className="grid gap-2">
                             <Label htmlFor="estado" className="text-sm font-medium">Estado</Label>
                             <Select id="estado" onValueChange={(value) => handleSelectChange('estado', value)}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
@@ -267,20 +264,20 @@ function MaterialForm({ onClose, notify }) {
                                     ))}
                                 </SelectContent>
                             </Select>
-                        </div>
+                        </div> */}
                         <div className="grid gap-2">
                             <Label htmlFor="cantidad" className="text-sm font-medium">Cantidad</Label>
                             <Input className="border-b" id="cantidad" type="number" placeholder="Ingresa la cantidad" value={formData.cantidad} onChange={handleInputChange} min="0" />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="bajoStock" className="text-sm font-medium">Bajo stock</Label>
+                            <Input className="border-b" id="bajoStock" type="number" placeholder="Ingresa el umbral de bajo stock" value={formData.bajoStock} onChange={handleInputChange} min="0" />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="matricula" className="text-sm font-medium">Matrícula</Label>
                             <Input className="border-b" id="matricula" placeholder="Ingresa la matrícula" value={formData.matricula} onChange={handleInputChange} />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="bajoStock" className="text-sm font-medium">Bajo stock</Label>
-                            <Input className="border-b" id="bajoStock" type="number" placeholder="Ingresa el umbral de bajo stock" value={formData.bajoStock} onChange={handleInputChange} min="0" />
                         </div>
                     </div>
                     <div className="grid gap-4">
