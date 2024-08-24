@@ -320,14 +320,32 @@ function handleStockNotifications(nombre, cantidad, bajoStock, callback) {
     );
 }
 
-// Endpoint para agregar un nuevo material
+function assignStatus (cantidad, bajoStock) {
+
+    // Convertir a números para asegurar que las comparaciones sean correctas
+    cantidad = parseInt(cantidad, 10);
+    bajoStock = parseInt(bajoStock, 10);
+
+    if (cantidad > bajoStock) {
+        return 1; // Disponible
+    } else if (cantidad <= bajoStock && cantidad > 0){
+        return 3; // Bajo stock
+    } else if (cantidad === 0) {
+        return 4; // Sin stock
+    }
+
+}
+
 app.post('/addMaterial', upload.single('imagen'), (req, res) => {
-    const { nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado } = req.body;
+    const { nombre, matricula, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado } = req.body;
+    let { cantidad, bajoStock } = req.body;
     const imagen = req.file;
 
-    if (!nombre || cantidad == null || !matricula || !idEstado || !idEspacio || !idCategoria || !idDeposito || !ultimoUsuarioId) {
+    if (!nombre || cantidad == null || !matricula || !idEspacio || !idCategoria || !idDeposito || !ultimoUsuarioId) {
         return res.status(400).json({ mensaje: 'Campos obligatorios faltantes' });
     }
+
+    let idEstado = assignStatus(cantidad, bajoStock);
 
     const insertQuery = `INSERT INTO Material (nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     const values = [nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado];
@@ -368,11 +386,79 @@ app.post('/addMaterial', upload.single('imagen'), (req, res) => {
     });
 });
 
+//Endpoint para obtener detalles del material
+app.get('/materials/:id', (req, res) => {
+    const id = req.params.id;
+
+    const query = `
+    SELECT 
+        m.id, 
+        m.nombre, 
+        m.cantidad, 
+        m.imagen, 
+        m.matricula, 
+        DATE_FORMAT(m.fechaUltimoEstado, '%d-%m-%Y') AS fechaUltimoEstado, 
+        m.mapa, 
+        m.bajoStock, 
+        m.idEstado, 
+        es.descripcion AS estadoDescripcion, 
+        m.idCategoria, 
+        c.descripcion AS categoriaNombre,
+        m.idDeposito, 
+        d.nombre AS depositoNombre,
+        u.id AS ubicacionId,
+        u.nombre AS ubicacionNombre, 
+        m.idEspacio, 
+        e.numeroEspacio,
+        et.id AS estanteriaId,  
+        et.cantidad_estante AS cantidadEstante,   
+        et.cantidad_division AS cantidadDivision, 
+        e.fila AS estanteEstanteria,                
+        e.columna AS divisionEstanteria,             
+        p.numero AS pasilloNumero,
+        l.descripcion AS lado
+    FROM 
+        Material m
+    LEFT JOIN 
+        Deposito d ON m.idDeposito = d.id
+    LEFT JOIN 
+        Ubicacion u ON d.idUbicacion = u.id
+    LEFT JOIN 
+        Estado es ON m.idEstado = es.id
+    LEFT JOIN 
+        Categoria c ON m.idCategoria = c.id
+    LEFT JOIN 
+        Espacio e ON m.idEspacio = e.id
+    LEFT JOIN 
+        Estanteria et ON e.idEstanteria = et.id
+    LEFT JOIN 
+        Pasillo p ON et.idPasillo = p.id
+    LEFT JOIN 
+        Lado l ON et.idLado = l.id
+    WHERE 
+        m.id = ?`;
+
+    db.query(query, [id], (err, results) => {
+        if (err) {
+            console.error('Error al obtener el material:', err);
+            return res.status(500).json({ mensaje: 'Error al obtener el material' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ mensaje: 'Material no encontrado' });
+        }
+        res.status(200).json(results[0]);
+    });
+});
+
 // Endpoint para editar un material
 app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
     const id = req.params.id;
-    const { nombre, cantidad, matricula, bajoStock, idEstado, idCategoria, idDeposito, idEspacio, eliminarImagen } = req.body;
+    const { nombre, cantidad, matricula, bajoStock, idCategoria, idDeposito, idEspacio, eliminarImagen } = req.body;
     const nuevaImagen = req.file ? '/uploads/' + req.file.filename : null;
+    let { idEstado } = req.body;
+    let idEstadoComp = idEstado;
+
+    idEstado = assignStatus(cantidad, bajoStock);
 
     // Primero, obtener la imagen existente si existe
     db.query('SELECT imagen FROM Material WHERE id = ?', [id], (err, results) => {
@@ -397,14 +483,14 @@ app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
         ];
 
         let query = `
-            UPDATE Material SET 
-            nombre = COALESCE(?, nombre), 
+            UPDATE Material SET
+            nombre = COALESCE(?, nombre),
             cantidad = COALESCE(?, cantidad),
             bajoStock = COALESCE(?, bajoStock), 
-            matricula = COALESCE(?, matricula), 
-            idEstado = COALESCE(?, idEstado), 
-            idCategoria = COALESCE(?, idCategoria), 
-            idDeposito = COALESCE(?, idDeposito), 
+            matricula = COALESCE(?, matricula),
+            idEstado = COALESCE(?, idEstado),
+            idCategoria = COALESCE(?, idCategoria),
+            idDeposito = COALESCE(?, idDeposito),
             idEspacio = COALESCE(?, idEspacio)`;
 
         if (nuevaImagen) {
@@ -444,13 +530,17 @@ app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
                     }
                 });
             }
-
-            handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
-                if (error) {
-                    return res.status(500).json({ mensaje: 'Error al manejar notificaciones de stock' });
-                }
+            
+            if (idEstado != idEstadoComp) {
+                handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
+                    if (error) {
+                        return res.status(500).json({ mensaje: 'Error al manejar notificaciones de stock' });
+                    }
+                    res.status(200).json({ mensaje: 'Material actualizado con éxito' });
+                });
+            } else {
                 res.status(200).json({ mensaje: 'Material actualizado con éxito' });
-            });
+            };
         });
     });
 });
@@ -502,7 +592,6 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Endpoint para enviar el código de verificación
 app.post('/sendRecoveryCode', (req, res) => {
     const { email } = req.body;
 
@@ -529,20 +618,33 @@ app.post('/sendRecoveryCode', (req, res) => {
                 return res.status(500).send('Error al actualizar el código de recuperación');
             }
 
-            // Enviar el código de recuperación por correo electrónico
-            const mailOptions = {
-                from: 'marielle.feeney37@ethereal.email',
-                to: email,
-                subject: 'Código de recuperación de contraseña',
-                text: `Tu código de recuperación es: ${recoveryCode}`
-            };
-
-            transporter.sendMail(mailOptions, (error, info) => {
-                if (error) {
-                    console.error('Error al enviar el correo electrónico:', error);
-                    return res.status(500).send('Error al enviar el correo electrónico');
+            // Leer la plantilla HTML
+            const templatePath = path.join(__dirname, '/TemplateMail/TemplateMail');
+            fs.readFile(templatePath, 'utf-8', (err, data) => {
+                if (err) {
+                    console.error('Error al leer la plantilla HTML:', err);
+                    return res.status(500).send('Error al leer la plantilla HTML');
                 }
-                res.status(200).send('Correo de recuperación enviado');
+
+                // Reemplazar el código de recuperación en la plantilla HTML
+                const customizedTemplate = data.replace('ABCDE', recoveryCode);
+
+                // Configurar las opciones del correo con el contenido HTML
+                const mailOptions = {
+                    from: 'sipe.supp@gmail.com',
+                    to: email,
+                    subject: 'Código de recuperación de contraseña',
+                    html: customizedTemplate // Enviar el HTML personalizado
+                };
+
+                // Enviar el correo
+                transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        console.error('Error al enviar el correo electrónico:', error);
+                        return res.status(500).send('Error al enviar el correo electrónico');
+                    }
+                    res.status(200).send('Correo de recuperación enviado');
+                });
             });
         });
     });
