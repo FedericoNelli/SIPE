@@ -37,11 +37,11 @@ const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 } // Limitar el tamaño a 10 MB
 });
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
-
 
 db.connect((err) => {
     if (err) throw err;
@@ -97,22 +97,18 @@ app.post('/addUser', (req, res) => {
     }
 
     if (!req.headers.authorization) {
-        console.log('No Authorization header');
         return res.status(401).send("Authorization header missing");
     }
 
     const token = req.headers.authorization.split(' ')[1];
-    console.log('Token recibido:', token);
-
     let decoded;
     try {
         decoded = jwt.verify(token, SECRET_KEY);
     } catch (err) {
-        return res.status(401).send("Token invalido");
+        return res.status(401).send("Token inválido");
     }
 
     if (decoded.rol !== 'Administrador') {
-        console.log('Usuario no es administrador:', decoded.rol);
         return res.status(403).send('Permiso denegado');
     }
 
@@ -124,7 +120,6 @@ app.post('/addUser', (req, res) => {
     const query = 'INSERT INTO usuario SET ?';
     db.query(query, user, (err, result) => {
         if (err) {
-            console.log('Error al insertar en la base de datos:', err);
             return res.status(500).send("Error al crear el usuario");
         }
         res.status(200).send('Usuario creado');
@@ -134,7 +129,8 @@ app.post('/addUser', (req, res) => {
 app.get('/users', (req, res) => {
     const query = `
         SELECT 
-            u.id, u.nombre, u.apellido, u.legajo, u.nombre_usuario, u.email, u.rol FROM Usuario u`;
+            u.id, u.nombre, u.apellido, u.legajo, u.nombre_usuario, u.email, u.rol 
+        FROM Usuario u`;
 
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
@@ -193,7 +189,7 @@ app.get('/materials', (req, res) => {
         Lado l ON et.idLado = l.id
     LEFT JOIN 
         Usuario uu ON m.ultimoUsuarioId = uu.id
-`;
+    `;
 
     const filters = [];
     if (ubicacion) {
@@ -218,6 +214,71 @@ app.get('/materials', (req, res) => {
         res.json(results);
     });
 });
+
+//Este endpoint trae la lista de materiales por ID, se usa en EditarMaterial
+app.get('/materials/:id', (req, res) => {
+    const id = req.params.id;
+
+    const query = `
+    SELECT 
+        m.id, 
+        m.nombre, 
+        m.cantidad, 
+        m.imagen, 
+        m.matricula, 
+        DATE_FORMAT(m.fechaUltimoEstado, '%d-%m-%Y') AS fechaUltimoEstado, 
+        m.mapa, 
+        m.bajoStock, 
+        m.idEstado, 
+        es.descripcion AS estadoDescripcion, 
+        m.idCategoria, 
+        c.descripcion AS categoriaNombre,
+        m.idDeposito, 
+        d.nombre AS depositoNombre,
+        u.id AS ubicacionId,
+        u.nombre AS ubicacionNombre, 
+        m.idEspacio, 
+        e.numeroEspacio,
+        et.id AS estanteriaId,  
+        et.cantidad_estante AS cantidadEstante,   
+        et.cantidad_division AS cantidadDivision, 
+        e.fila AS estanteEstanteria,                
+        e.columna AS divisionEstanteria,             
+        p.numero AS pasilloNumero,
+        l.descripcion AS lado
+    FROM 
+        Material m
+    LEFT JOIN 
+        Deposito d ON m.idDeposito = d.id
+    LEFT JOIN 
+        Ubicacion u ON d.idUbicacion = u.id
+    LEFT JOIN 
+        Estado es ON m.idEstado = es.id
+    LEFT JOIN 
+        Categoria c ON m.idCategoria = c.id
+    LEFT JOIN 
+        Espacio e ON m.idEspacio = e.id
+    LEFT JOIN 
+        Estanteria et ON e.idEstanteria = et.id
+    LEFT JOIN 
+        Pasillo p ON et.idPasillo = p.id
+    LEFT JOIN 
+        Lado l ON et.idLado = l.id
+    WHERE 
+        m.id = ?`;
+
+    db.query(query, [id], (err, results) => {
+        if (err) {
+            console.error('Error al obtener el material:', err);
+            return res.status(500).json({ mensaje: 'Error al obtener el material' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ mensaje: 'Material no encontrado' });
+        }
+        res.status(200).json(results[0]);
+    });
+});
+
 
 function handleStockNotifications(nombre, cantidad, bajoStock, callback) {
     cantidad = Number(cantidad);
@@ -245,7 +306,7 @@ function handleStockNotifications(nombre, cantidad, bajoStock, callback) {
 
             db.query(
                 `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
-                 SELECT id, ?, FALSE FROM usuario`,
+                SELECT id, ?, FALSE FROM usuario`,
                 [notificacionId],
                 (error) => {
                     if (error) {
@@ -310,54 +371,90 @@ app.post('/addMaterial', upload.single('imagen'), (req, res) => {
 // Endpoint para editar un material
 app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
     const id = req.params.id;
-    const { nombre, cantidad, matricula, bajoStock, idEstado, idCategoria, idDeposito, idEspacio  } = req.body;
-    const imagen = req.file ? '/uploads/' + req.file.filename : null;
+    const { nombre, cantidad, matricula, bajoStock, idEstado, idCategoria, idDeposito, idEspacio, eliminarImagen } = req.body;
+    const nuevaImagen = req.file ? '/uploads/' + req.file.filename : null;
 
-    const queryParams = [
-        nombre || null, 
-        cantidad || null, 
-        matricula || null, 
-        idEstado || null, 
-        idCategoria || null, 
-        idDeposito || null, 
-        idEspacio || null,
-        imagen
-    ];
-
-    let query = `
-        UPDATE Material SET 
-        nombre = COALESCE(?, nombre), 
-        cantidad = COALESCE(?, cantidad), 
-        matricula = COALESCE(?, matricula), 
-        idEstado = COALESCE(?, idEstado), 
-        idCategoria = COALESCE(?, idCategoria), 
-        idDeposito = COALESCE(?, idDeposito), 
-        idEspacio = COALESCE(?, idEspacio)`;
-
-    if (imagen) {
-        query += `, imagen = ?`;
-    } else {
-        // Si no hay imagen, elimina el último parámetro
-        queryParams.pop();
-    }
-
-    query += ` WHERE id = ?`;
-    queryParams.push(id);
-
-    db.query(query, queryParams, (err, result) => {
+    // Primero, obtener la imagen existente si existe
+    db.query('SELECT imagen FROM Material WHERE id = ?', [id], (err, results) => {
         if (err) {
-            console.error('Error al actualizar el material:', err);
-            return res.status(500).json({ error: 'Error al actualizar el material', details: err.message });
+            console.error('Error al obtener la imagen actual del material:', err);
+            return res.status(500).json({ error: 'Error al obtener la imagen actual del material' });
         }
-        // Verificar si se debe agregar una notificación
-        handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
-            if (error) {
-                return res.status(500).json({ mensaje: 'Error al manejar notificaciones de stock' });
+
+        const imagenActual = results.length > 0 ? results[0].imagen : null;
+
+        // Construir la consulta de actualización con los parámetros que se han enviado
+        const queryParams = [
+            nombre || null,
+            cantidad || null,
+            bajoStock || null,
+            matricula || null,
+            idEstado || null,
+            idCategoria || null,
+            idDeposito || null,
+            idEspacio || null,
+            nuevaImagen
+        ];
+
+        let query = `
+            UPDATE Material SET 
+            nombre = COALESCE(?, nombre), 
+            cantidad = COALESCE(?, cantidad),
+            bajoStock = COALESCE(?, bajoStock), 
+            matricula = COALESCE(?, matricula), 
+            idEstado = COALESCE(?, idEstado), 
+            idCategoria = COALESCE(?, idCategoria), 
+            idDeposito = COALESCE(?, idDeposito), 
+            idEspacio = COALESCE(?, idEspacio)`;
+
+        if (nuevaImagen) {
+            query += `, imagen = ?`;
+        } else if (eliminarImagen === 'true' && imagenActual) {
+            query += `, imagen = NULL`;
+            queryParams.pop(); // No incluir nuevaImagen ya que se está eliminando
+        } else {
+            queryParams.pop(); // No incluir nuevaImagen si no se está eliminando ni agregando
+        }
+
+        query += ` WHERE id = ?`;
+        queryParams.push(id);
+
+        db.query(query, queryParams, (err, result) => {
+            if (err) {
+                console.error('Error al actualizar el material:', err);
+                return res.status(500).json({ error: 'Error al actualizar el material', details: err.message });
             }
-            res.status(200).json({ mensaje: 'Material agregado con éxito' });
+
+            // Si se sube una nueva imagen, eliminar la imagen anterior
+            if (nuevaImagen && imagenActual) {
+                const fullPath = path.join(__dirname, 'public', imagenActual);
+                fs.unlink(fullPath, (err) => {
+                    if (err) {
+                        console.error('Error al eliminar la imagen anterior:', err);
+                    }
+                });
+            }
+
+            // Si se marca para eliminar y no hay nueva imagen, eliminar la imagen actual
+            if (eliminarImagen === 'true' && imagenActual && !nuevaImagen) {
+                const fullPath = path.join(__dirname, 'public', imagenActual);
+                fs.unlink(fullPath, (err) => {
+                    if (err) {
+                        console.error('Error al eliminar la imagen marcada para eliminación:', err);
+                    }
+                });
+            }
+
+            handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
+                if (error) {
+                    return res.status(500).json({ mensaje: 'Error al manejar notificaciones de stock' });
+                }
+                res.status(200).json({ mensaje: 'Material actualizado con éxito' });
+            });
         });
     });
 });
+
 
 app.get('/materials/search', (req, res) => {
     const query = req.query.query;
@@ -529,14 +626,15 @@ app.post('/addDeposit', (req, res) => {
 
 app.get('/deposits', (req, res) => {
     const query = `
-        SELECT d.id, d.nombre, d.idUbicacion, u.nombre AS nombreUbicacion FROM Deposito d LEFT JOIN Ubicacion u ON d.idUbicacion = u.id`;
+        SELECT d.id, d.nombre, d.idUbicacion, u.nombre AS nombreUbicacion 
+        FROM Deposito d 
+        LEFT JOIN Ubicacion u ON d.idUbicacion = u.id`;
 
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json(results);
     });
 });
-
 
 app.get('/deposit-names', (req, res) => {
     const locationId = req.query.locationId;
@@ -550,7 +648,7 @@ app.get('/deposit-names', (req, res) => {
     });
 });
 
-//Obtener Ubicación
+// Obtener Ubicación
 app.get('/deposit-locations', (req, res) => {
     const query = 'SELECT id, nombre FROM Ubicacion';
     db.query(query, (err, results) => {
@@ -559,7 +657,7 @@ app.get('/deposit-locations', (req, res) => {
     });
 });
 
-//Obtener Depósitos
+// Obtener Depósitos
 app.get('/depo-names', (req, res) => {
     const query = 'SELECT id, nombre FROM Deposito';
     db.query(query, (err, results) => {
@@ -568,7 +666,7 @@ app.get('/depo-names', (req, res) => {
     });
 });
 
-//Obtener Categorías
+// Obtener Categorías
 app.get('/categories', (req, res) => {
     const query = 'SELECT id, descripcion FROM Categoria';
     db.query(query, (err, results) => {
@@ -577,7 +675,26 @@ app.get('/categories', (req, res) => {
     });
 });
 
-//Obtener Estados
+app.post('/addCategory', (req, res) => {
+    const { descripcion } = req.body;
+
+    if (!descripcion) {
+        return res.status(400).json({ message: 'La descripción es obligatoria' });
+    }
+
+    const query = 'INSERT INTO Categoria (descripcion) VALUES (?)';
+    const values = [descripcion];
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al insertar categoría:', err);
+            return res.status(500).json({ message: 'Error al agregar categoría' });
+        }
+        res.status(200).json({ message: 'Categoría agregada exitosamente' });
+    });
+});
+
+// Obtener Estados
 app.get('/statuses', (req, res) => {
     const query = 'SELECT id, descripcion FROM Estado';
     db.query(query, (err, results) => {
@@ -670,7 +787,7 @@ app.get('/low-stock-materials', (req, res) => {
     });
 });
 
-//Endpoint para obtener la cantidad total de estanterías
+// Endpoint para obtener la cantidad total de estanterías
 app.get('/total-estanterias', (req, res) => {
     const query = 'SELECT COUNT(*) AS total FROM Estanteria';
 
@@ -680,11 +797,9 @@ app.get('/total-estanterias', (req, res) => {
     });
 });
 
-
-//Endpoint para obtener el último material ingresado, basado en la fecha del último estado
+// Endpoint para obtener el último material ingresado, basado en la fecha del último estado
 app.get('/last-material', (req, res) => {
     const query = 'SELECT nombre, fechaUltimoEstado FROM Material ORDER BY fechaUltimoEstado DESC LIMIT 1';
-
     db.query(query, (err, results) => {
         if (err) {
             return res.status(500).send('Error al consultar la base de datos');
@@ -747,55 +862,6 @@ app.delete('/materials/:id', (req, res) => {
         } else {
             return res.status(404).send('Material no encontrado');
         }
-    });
-});
-
-
-
-//Endpoint para editar un material
-app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
-    const id = req.params.id;
-    // Asegúrate de que los campos sean tomados de req.body o tengan un valor por defecto.
-    const { nombre, cantidad, matricula, idEstado, idCategoria, idDeposito, idEspacio } = req.body;
-    const imagen = req.file ? '/uploads/' + req.file.filename : null;
-
-    // Maneja los valores por defecto si req.body no envía esos campos
-    const queryParams = [
-        nombre || null, 
-        cantidad || null, 
-        matricula || null, 
-        idEstado || null, 
-        idCategoria || null, 
-        idDeposito || null, 
-        idEspacio || null,
-        imagen
-    ];
-
-    let query = `
-        UPDATE Material SET 
-        nombre = COALESCE(?, nombre), 
-        cantidad = COALESCE(?, cantidad), 
-        matricula = COALESCE(?, matricula), 
-        idEstado = COALESCE(?, idEstado), 
-        idCategoria = COALESCE(?, idCategoria), 
-        idDeposito = COALESCE(?, idDeposito), 
-        idEspacio = COALESCE(?, idEspacio)`;
-
-    if (imagen) {
-        query += `, imagen = ?`;
-    } else {
-        // Si no hay imagen, elimina el último parámetro
-        queryParams.pop();
-    }
-
-    query += ` WHERE id = ?`;
-    queryParams.push(id);
-
-    db.query(query, queryParams, (err, result) => {
-        if (err) {
-            return res.status(500).json({ error: 'Error al actualizar el material', details: err.message });
-        }
-        res.status(200).send('Material actualizado correctamente');
     });
 });
 
@@ -904,7 +970,6 @@ app.get('/movements', (req, res) => {
         res.json(results);
     });
 });
-
 
 app.post('/addMovements', (req, res) => {
     const { idMaterial, idUsuario, idDepositoDestino, cantidadMovida } = req.body;
@@ -1046,8 +1111,6 @@ app.post('/addMovements', (req, res) => {
     });
 });
 
-
-
 app.get('/deposit-locations-movements', (req, res) => {
     const query = `SELECT d.id, d.nombre, u.nombre AS ubicacion 
                 FROM deposito d 
@@ -1066,10 +1129,10 @@ app.get('/api/notifications/:userId', (req, res) => {
     const { userId } = req.params;
     db.query(
         `SELECT n.id, n.descripcion, n.fecha, un.visto
-         FROM notificacion n
-         JOIN usuario_notificacion un ON n.id = un.notificacion_id
-         WHERE un.usuario_id = ?
-         ORDER BY n.fecha DESC`,
+            FROM notificacion n
+            JOIN usuario_notificacion un ON n.id = un.notificacion_id
+            WHERE un.usuario_id = ?
+            ORDER BY n.fecha DESC`,
         [userId],
         (error, results) => {
             if (error) {
@@ -1116,7 +1179,6 @@ app.get('/notificaciones-material', (req, res) => {
         res.json(results);
     });
 });
-
 
 app.listen(8081, () => {
     console.log(`Servidor corriendo en el puerto 8081`);
