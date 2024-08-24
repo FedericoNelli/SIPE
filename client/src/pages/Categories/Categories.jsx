@@ -1,7 +1,7 @@
 import React from 'react'
 import Navbar from "@/components/Sides/Navbar/Navbar";
 import Aside from "@/components/Sides/Aside/Aside";
-import Movement from "@/components/Movement/Movement";
+import Category from "@/components/Category/Category";
 import { motion } from "framer-motion"
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -32,7 +32,7 @@ function Categories() {
                     transition={{ duration: 1 }}
                 >
                     <div className="min-h-fit px-12 py-12 flex flex-col justify-center bg-opacity-500 border border-transparent rounded-xl ">
-                        <Movement notify={notify} />
+                        <Category notify={notify} />
                     </div>
                 </motion.div>
             </div>

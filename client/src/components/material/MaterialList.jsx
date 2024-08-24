@@ -74,7 +74,7 @@ function MaterialList({ materials }) {
                                 </Badge>
                             </TableCell>
                             <TableCell className="text-center font-light">
-                                {material.cantidad} unidades
+                            {material.cantidad} {material.cantidad === 1 ? "unidad" : "unidades"}
                             </TableCell>
                             <TableCell className="text-center font-light">
                                 {material.ubicacionNombre}

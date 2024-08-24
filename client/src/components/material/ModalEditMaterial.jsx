@@ -6,7 +6,7 @@ import { Input } from "@/components/Common/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Common/Select/Select";
 import { Button } from "@/components/Common/Button/Button";
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react'; // Agregado para el botón de cierre
+import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function ModalEditMaterial({ isOpen, onClose, notify, material }) {
@@ -112,7 +112,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
     }, [locationId]);
 
     const handleInputChange = (e) => {
-        e.stopPropagation(); 
+        e.stopPropagation();
         const { id, value } = e.target;
         setFormData((prevData) => ({
             ...prevData,
@@ -133,7 +133,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
 
     const handleShelfChange = (value) => {
         setSelectedShelf(value);
-        setSelectedSpace('');  
+        setSelectedSpace('');
     };
 
     const handleSpaceChange = (value) => {
@@ -146,7 +146,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
             fileInput.value = '';
         }
     };
-
+    
     const handleFileChange = (e) => {
         e.stopPropagation(); 
         const file = e.target.files[0];
@@ -223,6 +223,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
             });
         }
     };
+    
 
     const handleSave = async () => {
         const { nombre, cantidad, matricula, bajoStock, estado, categoria, deposito, imagen } = formData;
@@ -277,12 +278,12 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
     };
 
     const handleCancel = () => {
-        setIsVisible(false); 
+        setIsVisible(false);
     };
 
     useEffect(() => {
         if (!isVisible && onClose) {
-            const timer = setTimeout(onClose, 300); 
+            const timer = setTimeout(onClose, 300);
             return () => clearTimeout(timer);
         }
     }, [isVisible, onClose]);
@@ -306,9 +307,9 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                         exit={{ scale: 0.8, opacity: 0 }}
                         transition={{ duration: 0.3 }}
                         className="relative bg-sipe-blue-dark text-sipe-white p-4 rounded-xl w-full max-w-4xl"
-                        onClick={(e) => e.stopPropagation()} 
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        
+
                         <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
                             <X size={14} strokeWidth={4} onClick={handleCancel} />
                         </div>
@@ -371,7 +372,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                     <div className="grid gap-2">
+                                    <div className="grid gap-2">
                                         <Label htmlFor="cantidad" className="text-sm font-medium">Cantidad</Label>
                                         <Input className="border-b" id="cantidad" type="number" placeholder="Ingresa la cantidad" value={formData.cantidad} onChange={handleInputChange} min="0" />
                                     </div>
