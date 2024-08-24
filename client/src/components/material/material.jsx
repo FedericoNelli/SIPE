@@ -119,7 +119,7 @@ function Material({ notify }) {
             filtered = filtered.filter(material => material.estadoDescripcion === filters.estado);
         }
         if (filters.categoria) {
-            filtered = filtered.filter(material => material.categoriaDescripcion === filters.categoria);
+            filtered = filtered.filter(material => material.categoriaNombre === filters.categoria);
         }
         if (filters.ubicacion) {
             filtered = filtered.filter(material => material.ubicacionNombre === filters.ubicacion);
