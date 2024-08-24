@@ -146,11 +146,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
             fileInput.value = '';
         }
     };
-<<<<<<< HEAD
     
-=======
-
->>>>>>> developer
     const handleFileChange = (e) => {
         e.stopPropagation(); 
         const file = e.target.files[0];
@@ -376,24 +372,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-<<<<<<< HEAD
                                     <div className="grid gap-2">
-                                        <Label htmlFor="estado" className="text-sm font-medium">Estado</Label>
-                                        <Select id="estado" value={formData.estado} onValueChange={(value) => handleSelectChange('estado', value)}>
-                                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                                <SelectValue placeholder="Selecciona el estado" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {statuses.map(status => (
-                                                    <SelectItem key={status.id} value={status.id}>{status.descripcion}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="grid gap-2">
-=======
-                                     <div className="grid gap-2">
->>>>>>> developer
                                         <Label htmlFor="cantidad" className="text-sm font-medium">Cantidad</Label>
                                         <Input className="border-b" id="cantidad" type="number" placeholder="Ingresa la cantidad" value={formData.cantidad} onChange={handleInputChange} min="0" />
                                     </div>
@@ -403,10 +382,6 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="bajoStock" className="text-sm font-medium">Bajo Stock</Label>
-                                        <Input className="border-b" id="bajoStock" type="number" placeholder="Ingresa el valor de bajo stock" value={formData.bajoStock} onChange={handleInputChange} min="0" />
-                                    </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="shelf" className="text-sm font-medium">Estantería</Label>
                                         <Select
@@ -424,29 +399,6 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                                             </SelectContent>
                                         </Select>
                                     </div>
-<<<<<<< HEAD
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="space" className="text-sm font-medium">Espacio</Label>
-                                        <Select
-                                            id="space"
-                                            value={selectedSpace}
-                                            onValueChange={(value) => handleSpaceChange(value)}
-                                        >
-                                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                                <SelectValue>{selectedSpace ? spaces.find(space => space.id === selectedSpace)?.numeroEspacio : "Selecciona el espacio"}</SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {spaces.map(space => (
-                                                    <SelectItem key={space.id} value={space.id} disabled={space.ocupado}>
-                                                        {`Espacio ${space.numeroEspacio}`}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-=======
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="grid gap-2">
                                                 <Label htmlFor="space" className="text-sm font-medium">Espacio</Label>
@@ -473,7 +425,6 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                                                 <Label className="text-sm font-medium">Estado actual: {statuses.find(status => status.id === formData.estado)?.descripcion || "Estado no disponible"}</Label> 
                                             </div>
                                         </div>
->>>>>>> developer
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="image" className="text-sm font-medium">Imagen</Label>

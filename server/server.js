@@ -10,11 +10,20 @@ const app = express();
 const fs = require('fs');
 const SECRET_KEY = 'peron74';
 
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: '',
     database: 'sipe'
+});
+db.connect((err) => {
+    if (err) throw err;
+    console.log('Conectado a la base de datos');
 });
 
 // Configuración de multer para almacenar archivos en public/uploads
@@ -38,15 +47,6 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 } // Limitar el tamaño a 10 MB
 });
 
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
-
-db.connect((err) => {
-    if (err) throw err;
-    console.log('Conectado a la base de datos');
-});
 
 const getNextImageNumber = (callback) => {
     const query = 'SELECT COUNT(*) AS count FROM Material WHERE imagen IS NOT NULL';
@@ -58,6 +58,94 @@ const getNextImageNumber = (callback) => {
         callback(null, count + 1);
     });
 };
+
+
+function handleStockNotifications(nombre, cantidad, bajoStock, callback) {
+    cantidad = Number(cantidad);
+    bajoStock = Number(bajoStock);
+    let descripcion = null;
+
+    if (cantidad === 0) {
+        descripcion = `El material ${nombre} se ha quedado sin stock.`;
+    } else if (cantidad <= bajoStock) {
+        descripcion = `El material ${nombre} ha llegado a su límite de bajo stock.`;
+    } else {
+        return callback(null);
+    }
+
+    db.query(
+        `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
+        [descripcion],
+        (error, result) => {
+            if (error) {
+                console.error('Error al agregar notificación', error);
+                return callback({ mensaje: 'Error al agregar notificación' });
+            }
+
+            const notificacionId = result.insertId;
+
+            db.query(
+                `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
+                SELECT id, ?, FALSE FROM usuario`,
+                [notificacionId],
+                (error) => {
+                    if (error) {
+                        console.error('Error al relacionar notificación con usuarios', error);
+                        return callback({ mensaje: 'Error al relacionar notificación con usuarios' });
+                    }
+                    return callback(null);
+                }
+            );
+        }
+    );
+}
+
+function notifyNewMaterialCreation(nombre, deposito, callback) {
+    const descripcion = `Se ha creado el material '${nombre}' en el depósito '${deposito}' ya que no existía.`;
+    
+    db.query(
+        `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
+        [descripcion],
+        (error, result) => {
+            if (error) {
+                console.error('Error al agregar notificación de nuevo material', error);
+                return callback({ mensaje: 'Error al agregar notificación de nuevo material' });
+            }
+
+            const notificacionId = result.insertId;
+
+            db.query(
+                `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
+                SELECT id, ?, FALSE FROM usuario`,
+                [notificacionId],
+                (error) => {
+                    if (error) {
+                        console.error('Error al relacionar notificación de nuevo material con usuarios', error);
+                        return callback({ mensaje: 'Error al relacionar notificación de nuevo material con usuarios' });
+                    }
+                    return callback(null);
+                }
+            );
+        }
+    );
+}
+
+
+function assignStatus (cantidad, bajoStock) {
+
+    // Convertir a números para asegurar que las comparaciones sean correctas
+    cantidad = parseInt(cantidad, 10);
+    bajoStock = parseInt(bajoStock, 10);
+
+    if (cantidad > bajoStock) {
+        return 1; // Disponible
+    } else if (cantidad <= bajoStock && cantidad > 0){
+        return 2; // Bajo stock
+    } else if (cantidad === 0) {
+        return 3; // Sin stock
+    }
+
+}
 
 // Consulta a la base de datos para verificar usuario y contraseña
 app.post('/login', (req, res) => {
@@ -280,61 +368,6 @@ app.get('/materials/:id', (req, res) => {
 });
 
 
-function handleStockNotifications(nombre, cantidad, bajoStock, callback) {
-    cantidad = Number(cantidad);
-    bajoStock = Number(bajoStock);
-    let descripcion = null;
-
-    if (cantidad === 0) {
-        descripcion = `El material ${nombre} se ha quedado sin stock.`;
-    } else if (cantidad <= bajoStock) {
-        descripcion = `El material ${nombre} ha llegado a su límite de bajo stock.`;
-    } else {
-        return callback(null);
-    }
-
-    db.query(
-        `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
-        [descripcion],
-        (error, result) => {
-            if (error) {
-                console.error('Error al agregar notificación', error);
-                return callback({ mensaje: 'Error al agregar notificación' });
-            }
-
-            const notificacionId = result.insertId;
-
-            db.query(
-                `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
-                SELECT id, ?, FALSE FROM usuario`,
-                [notificacionId],
-                (error) => {
-                    if (error) {
-                        console.error('Error al relacionar notificación con usuarios', error);
-                        return callback({ mensaje: 'Error al relacionar notificación con usuarios' });
-                    }
-                    return callback(null);
-                }
-            );
-        }
-    );
-}
-
-function assignStatus (cantidad, bajoStock) {
-
-    // Convertir a números para asegurar que las comparaciones sean correctas
-    cantidad = parseInt(cantidad, 10);
-    bajoStock = parseInt(bajoStock, 10);
-
-    if (cantidad > bajoStock) {
-        return 1; // Disponible
-    } else if (cantidad <= bajoStock && cantidad > 0){
-        return 3; // Bajo stock
-    } else if (cantidad === 0) {
-        return 4; // Sin stock
-    }
-
-}
 
 app.post('/addMaterial', upload.single('imagen'), (req, res) => {
     const { nombre, matricula, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado } = req.body;
@@ -1102,116 +1135,153 @@ app.post('/addMovements', (req, res) => {
         } = materialOrigen;
         const idDepositoOrigen = materialOrigen.idDeposito;
 
-        if (cantidadMovida > cantidad) {
+        const cantidadMovidaNumero = Number(cantidadMovida);
+        const cantidadNumero = Number(cantidad);
+
+        if (cantidadMovidaNumero > cantidadNumero) {
             res.status(400).json({ error: 'Cantidad insuficiente en el depósito de origen' });
             return;
         }
 
-        // Calcular la nueva cantidad después del movimiento en el depósito de origen
-        const nuevaCantidadOrigen = cantidad - cantidadMovida;
+        const nuevaCantidadOrigen = cantidadNumero - cantidadMovidaNumero;
+        const nuevoEstadoOrigen = assignStatus(nuevaCantidadOrigen, bajoStock);
 
-        // Actualizar la cantidad en la tabla Material para el depósito de origen
         const updateMaterialOrigenQuery = `
             UPDATE Material 
-            SET cantidad = ? 
+            SET cantidad = ?, idEstado = ? 
             WHERE id = ?
         `;
 
-        db.query(updateMaterialOrigenQuery, [nuevaCantidadOrigen, idMaterial], (err, updateResult) => {
+        db.query(updateMaterialOrigenQuery, [nuevaCantidadOrigen, nuevoEstadoOrigen, idMaterial], (err, updateResult) => {
             if (err) {
                 console.error('Error al actualizar el material en el depósito de origen:', err);
                 res.status(500).json({ error: 'Error al actualizar el material en el depósito de origen' });
                 return;
             }
 
-            // Verificar si el material ya existe en el depósito de destino
-            const queryMaterialDestino = 'SELECT id, cantidad FROM Material WHERE nombre = ? AND idDeposito = ?';
-
-            db.query(queryMaterialDestino, [nombre, idDepositoDestino], (err, materialDestinoResult) => {
-                if (err) {
-                    console.error('Error al verificar el material en el depósito de destino:', err);
-                    res.status(500).json({ error: 'Error al verificar el material en el depósito de destino' });
+            handleStockNotifications(nombre, nuevaCantidadOrigen, bajoStock, (error) => {
+                if (error) {
+                    console.error('Error al manejar notificaciones de stock en origen:', error);
+                    res.status(500).json({ error: 'Error al manejar notificaciones de stock en origen' });
                     return;
                 }
 
-                if (materialDestinoResult.length > 0) {
-                    // El material ya existe en el depósito de destino, actualizamos la cantidad
-                    const { id: idMaterialDestino, cantidad: cantidadDestino } = materialDestinoResult[0];
-                    const nuevaCantidadDestino = cantidadDestino + cantidadMovida;
+                const queryMaterialDestino = 'SELECT id, cantidad FROM Material WHERE nombre = ? AND idDeposito = ?';
 
-                    const updateMaterialDestinoQuery = `
-                        UPDATE Material 
-                        SET cantidad = ? 
-                        WHERE id = ?
-                    `;
+                db.query(queryMaterialDestino, [nombre, idDepositoDestino], (err, materialDestinoResult) => {
+                    if (err) {
+                        console.error('Error al verificar el material en el depósito de destino:', err);
+                        res.status(500).json({ error: 'Error al verificar el material en el depósito de destino' });
+                        return;
+                    }
 
-                    db.query(updateMaterialDestinoQuery, [nuevaCantidadDestino, idMaterialDestino], (err, updateResult) => {
-                        if (err) {
-                            console.error('Error al actualizar el material en el depósito de destino:', err);
-                            res.status(500).json({ error: 'Error al actualizar el material en el depósito de destino' });
-                            return;
-                        }
+                    if (materialDestinoResult.length > 0) {
+                        const { id: idMaterialDestino, cantidad: cantidadDestino } = materialDestinoResult[0];
+                        const nuevaCantidadDestino = Number(cantidadDestino) + cantidadMovidaNumero;
+                        const nuevoEstadoDestino = assignStatus(nuevaCantidadDestino, bajoStock);
 
-                        // Guardar el log del movimiento en la tabla movimiento
-                        const insertMovementQuery = `
-                            INSERT INTO movimiento (idUsuario, nombreMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
-                            VALUES (?, ?, ?, ?, ?, NOW())
+                        const updateMaterialDestinoQuery = `
+                            UPDATE Material 
+                            SET cantidad = ?, idEstado = ? 
+                            WHERE id = ?
                         `;
 
-                        db.query(insertMovementQuery, [idUsuario, nombre, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err, result) => {
+                        db.query(updateMaterialDestinoQuery, [nuevaCantidadDestino, nuevoEstadoDestino, idMaterialDestino], (err, updateResult) => {
                             if (err) {
-                                console.error('Error al agregar el movimiento:', err);
-                                res.status(500).json({ error: 'Error al agregar el movimiento' });
+                                console.error('Error al actualizar el material en el depósito de destino:', err);
+                                res.status(500).json({ error: 'Error al actualizar el material en el depósito de destino' });
                                 return;
                             }
 
-                            res.status(200).json({ message: 'Movimiento registrado y material actualizado correctamente' });
+                            handleStockNotifications(nombre, nuevaCantidadDestino, bajoStock, (error) => {
+                                if (error) {
+                                    console.error('Error al manejar notificaciones de stock en destino:', error);
+                                    res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
+                                    return;
+                                }
+
+                                const insertMovementQuery = `
+                                    INSERT INTO movimiento (idUsuario, nombreMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
+                                    VALUES (?, ?, ?, ?, ?, NOW())
+                                `;
+
+                                db.query(insertMovementQuery, [idUsuario, nombre, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err, result) => {
+                                    if (err) {
+                                        console.error('Error al agregar el movimiento:', err);
+                                        res.status(500).json({ error: 'Error al agregar el movimiento' });
+                                        return;
+                                    }
+
+                                    res.status(200).json({ message: 'Movimiento registrado y material actualizado correctamente' });
+                                });
+                            });
                         });
-                    });
 
-                } else {
-                    // El material no existe en el depósito de destino, lo creamos con la cantidad movida
-                    const insertMaterialDestinoQuery = `
-                        INSERT INTO Material (
-                            nombre, cantidad, matricula, fechaUltimoEstado, mapa, bajoStock, idEstado, idEspacio, 
-                            ultimoUsuarioId, idCategoria, idDeposito, ocupado
-                        ) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    `;
+                    } else {
+                        const nuevoEstadoDestino = assignStatus(cantidadMovidaNumero, bajoStock);
 
-                    const valoresInsertMaterial = [
-                        nombre, cantidadMovida, matricula, fechaUltimoEstado, mapa, bajoStock,
-                        idEstado, idEspacio, ultimoUsuarioId, idCategoria, idDepositoDestino, ocupado
-                    ];
-
-                    db.query(insertMaterialDestinoQuery, valoresInsertMaterial, (err, insertResult) => {
-                        if (err) {
-                            console.error('Error al crear el material en el depósito de destino:', err);
-                            res.status(500).json({ error: 'Error al crear el material en el depósito de destino' });
-                            return;
-                        }
-
-                        // Guardar el log del movimiento en la tabla movimiento
-                        const insertMovementQuery = `
-                            INSERT INTO movimiento (idUsuario, nombreMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
-                            VALUES (?, ?, ?, ?, ?, NOW())
+                        const insertMaterialDestinoQuery = `
+                            INSERT INTO Material (
+                                nombre, cantidad, matricula, fechaUltimoEstado, mapa, bajoStock, idEstado, idEspacio, 
+                                ultimoUsuarioId, idCategoria, idDeposito, ocupado
+                            ) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         `;
 
-                        db.query(insertMovementQuery, [idUsuario, nombre, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err, result) => {
+                        const valoresInsertMaterial = [
+                            nombre, cantidadMovidaNumero, matricula, fechaUltimoEstado, mapa, bajoStock,
+                            nuevoEstadoDestino, idEspacio, ultimoUsuarioId, idCategoria, idDepositoDestino, ocupado
+                        ];
+
+                        db.query(insertMaterialDestinoQuery, valoresInsertMaterial, (err, insertResult) => {
                             if (err) {
-                                console.error('Error al agregar el movimiento:', err);
-                                res.status(500).json({ error: 'Error al agregar el movimiento' });
+                                console.error('Error al crear el material en el depósito de destino:', err);
+                                res.status(500).json({ error: 'Error al crear el material en el depósito de destino' });
                                 return;
                             }
 
-                            res.status(200).json({ message: 'Movimiento registrado y material creado en el destino correctamente' });
+                            // Notificar sobre la creación de un nuevo material
+                            notifyNewMaterialCreation(nombre, idDepositoDestino, (error) => {
+                                if (error) {
+                                    console.error('Error al manejar notificación de nuevo material:', error);
+                                    res.status(500).json({ error: 'Error al manejar notificación de nuevo material' });
+                                    return;
+                                }
+
+                                handleStockNotifications(nombre, cantidadMovidaNumero, bajoStock, (error) => {
+                                    if (error) {
+                                        console.error('Error al manejar notificaciones de stock en destino:', error);
+                                        res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
+                                        return;
+                                    }
+
+                                    const insertMovementQuery = `
+                                        INSERT INTO movimiento (idUsuario, nombreMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
+                                        VALUES (?, ?, ?, ?, ?, NOW())
+                                    `;
+
+                                    db.query(insertMovementQuery, [idUsuario, nombre, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err, result) => {
+                                        if (err) {
+                                            console.error('Error al agregar el movimiento:', err);
+                                            res.status(500).json({ error: 'Error al agregar el movimiento' });
+                                            return;
+                                        }
+
+                                        res.status(200).json({ message: 'Movimiento registrado y material creado en el destino correctamente' });
+                                    });
+                                });
+                            });
                         });
-                    });
-                }
+                    }
+                });
             });
         });
     });
 });
+
+
+
+
 
 app.get('/deposit-locations-movements', (req, res) => {
     const query = `SELECT d.id, d.nombre, u.nombre AS ubicacion 
