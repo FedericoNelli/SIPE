@@ -139,9 +139,14 @@ function MaterialForm({ onClose, notify }) {
             return;
         }
 
+        const fechaAlta = new Date();
+        fechaAlta.setHours(fechaAlta.getHours() - 3);
+        const fechaAltaFormatoISO = fechaAlta.toISOString().slice(0, 19).replace('T', ' ');
+
         const fechaUltimoEstado = new Date();
         fechaUltimoEstado.setHours(fechaUltimoEstado.getHours() - 3);
         const fechaFormatoISO = fechaUltimoEstado.toISOString().slice(0, 19).replace('T', ' ');
+
         const ultimoUsuarioId = localStorage.getItem('id');
 
         if (!ultimoUsuarioId) {
@@ -157,6 +162,7 @@ function MaterialForm({ onClose, notify }) {
         formDataToSend.append('idEspacio', espacio);
         formDataToSend.append('idCategoria', categoria);
         formDataToSend.append('idDeposito', deposito);
+        formDataToSend.append('fechaAlta', fechaAltaFormatoISO);
         formDataToSend.append('fechaUltimoEstado', fechaFormatoISO);
         formDataToSend.append('ultimoUsuarioId', ultimoUsuarioId);
         formDataToSend.append('ocupado', ocupado);
