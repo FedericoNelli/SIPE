@@ -10,10 +10,9 @@ function MaterialList({ materials }) {
     const [shelves, setShelves] = useState([]);
 
     const sipeBadges = {
-        "disponible": "#88B04B",
-        "en-uso": "#5D8AA8",
+        "en-stock": "#88B04B",
         "sin-stock": "#D9534F",
-        "bajo-stock": "#FF8C42"
+        "bajo-stock": "#E6C327"
     };
 
     const handleCellClick = useCallback((material) => {

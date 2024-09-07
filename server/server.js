@@ -237,7 +237,6 @@ app.get('/materials', (req, res) => {
         m.imagen, 
         m.matricula, 
         DATE_FORMAT(m.fechaUltimoEstado, '%d-%m-%Y') AS fechaUltimoEstado, 
-        m.mapa, 
         m.bajoStock, 
         m.idEstado, 
         m.idEspacio, 
@@ -314,8 +313,8 @@ app.get('/materials/:id', (req, res) => {
         m.cantidad, 
         m.imagen, 
         m.matricula, 
-        DATE_FORMAT(m.fechaUltimoEstado, '%d-%m-%Y') AS fechaUltimoEstado, 
-        m.mapa, 
+        DATE_FORMAT(m.fechaUltimoEstado, '%d-%m-%Y') AS fechaUltimoEstado,
+        DATE_FORMAT(m.fechaAlta, '%d-%m-%Y') AS fechaAlta,  
         m.bajoStock, 
         m.idEstado, 
         es.descripcion AS estadoDescripcion, 
@@ -370,7 +369,7 @@ app.get('/materials/:id', (req, res) => {
 
 
 app.post('/addMaterial', upload.single('imagen'), (req, res) => {
-    const { nombre, matricula, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado } = req.body;
+    const { nombre, matricula, idEspacio, idCategoria, idDeposito, fechaAlta, fechaUltimoEstado, ultimoUsuarioId, ocupado } = req.body;
     let { cantidad, bajoStock } = req.body;
     const imagen = req.file;
 
@@ -380,8 +379,8 @@ app.post('/addMaterial', upload.single('imagen'), (req, res) => {
 
     let idEstado = assignStatus(cantidad, bajoStock);
 
-    const insertQuery = `INSERT INTO Material (nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    const values = [nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaUltimoEstado, ultimoUsuarioId, ocupado];
+    const insertQuery = `INSERT INTO Material (nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaAlta, fechaUltimoEstado, ultimoUsuarioId, ocupado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const values = [nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaAlta, fechaUltimoEstado, ultimoUsuarioId, ocupado];
 
     db.query(insertQuery, values, (err, result) => {
         if (err) {
@@ -430,8 +429,8 @@ app.get('/materials/:id', (req, res) => {
         m.cantidad, 
         m.imagen, 
         m.matricula, 
-        DATE_FORMAT(m.fechaUltimoEstado, '%d-%m-%Y') AS fechaUltimoEstado, 
-        m.mapa, 
+        DATE_FORMAT(m.fechaUltimoEstado, '%d-%m-%Y') AS fechaUltimoEstado,
+        DATE_FORMAT(m.fechaAlta, '%d-%m-%Y') AS fechaAlta,  
         m.bajoStock, 
         m.idEstado, 
         es.descripcion AS estadoDescripcion, 
@@ -486,7 +485,7 @@ app.get('/materials/:id', (req, res) => {
 // Endpoint para editar un material
 app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
     const id = req.params.id;
-    const { nombre, cantidad, matricula, bajoStock, idCategoria, idDeposito, idEspacio, eliminarImagen } = req.body;
+    const { nombre, cantidad, matricula, fechaUltimoEstado, bajoStock, idCategoria, idDeposito, idEspacio, eliminarImagen } = req.body;
     const nuevaImagen = req.file ? '/uploads/' + req.file.filename : null;
     let { idEstado } = req.body;
     let idEstadoComp = idEstado;
@@ -508,6 +507,7 @@ app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
             cantidad || null,
             bajoStock || null,
             matricula || null,
+            fechaUltimoEstado || null,
             idEstado || null,
             idCategoria || null,
             idDeposito || null,
@@ -521,6 +521,7 @@ app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
             cantidad = COALESCE(?, cantidad),
             bajoStock = COALESCE(?, bajoStock), 
             matricula = COALESCE(?, matricula),
+            fechaUltimoEstado = COALESCE(?, NOW()),
             idEstado = COALESCE(?, idEstado),
             idCategoria = COALESCE(?, idCategoria),
             idDeposito = COALESCE(?, idDeposito),
@@ -584,8 +585,8 @@ app.get('/materials/search', (req, res) => {
 
     const searchQuery = `
         SELECT 
-            m.id, m.nombre, m.cantidad, m.imagen, m.matricula, m.fechaUltimoEstado, 
-            m.mapa, m.bajoStock, m.idEstado, m.idEspacio, m.ultimoUsuarioId, 
+            m.id, m.nombre, m.cantidad, m.imagen, m.matricula, m.fechaAlta, m.fechaUltimoEstado, 
+            m.bajoStock, m.idEstado, m.idEspacio, m.ultimoUsuarioId, 
             m.idCategoria, m.idDeposito, 
             d.nombre AS depositoNombre, 
             u.nombre AS ubicacionNombre, 
@@ -1000,38 +1001,6 @@ app.delete('/materials/:id', (req, res) => {
     });
 });
 
-// Ruta para subir la imagen generada desde el canvas
-app.post('/upload', (req, res) => {
-    const { image, id } = req.body;
-
-    if (!image || !id) {
-        return res.status(400).send('Faltan parámetros obligatorios');
-    }
-
-    const base64Data = image.replace(/^data:image\/png;base64,/, "");
-    const filePath = path.join(__dirname, 'public', 'uploads', `SIPE-map-${id}.png`);
-
-    fs.writeFile(filePath, base64Data, 'base64', (err) => {
-        if (err) {
-            console.error('Error al guardar la imagen:', err);
-            return res.status(500).send('Error al guardar la imagen');
-        }
-
-        // Guardar el path en la base de datos
-        const imagePath = `/uploads/SIPE-map-${id}.png`;
-        const updateQuery = 'UPDATE Material SET mapa = ? WHERE id = ?';
-
-        db.query(updateQuery, [imagePath, id], (err, result) => {
-            if (err) {
-                console.error('Error al actualizar la base de datos:', err);
-                return res.status(500).send('Error al actualizar la base de datos');
-            }
-
-            res.status(200).send({ message: 'Imagen guardada con éxito y path actualizado en la base de datos', path: imagePath });
-        });
-    });
-});
-
 app.delete('/materiales/:id/imagen', (req, res) => {
     const materialId = req.params.id;
 
@@ -1111,7 +1080,7 @@ app.post('/addMovements', (req, res) => {
 
     // Obtener toda la información del material en el depósito de origen
     const queryMaterialOrigen = `
-        SELECT nombre, cantidad, matricula, fechaUltimoEstado, mapa, bajoStock, idEstado, idEspacio, ultimoUsuarioId, idCategoria, idDeposito, ocupado 
+        SELECT nombre, cantidad, matricula, fechaUltimoEstado, bajoStock, idEstado, idEspacio, ultimoUsuarioId, idCategoria, idDeposito, ocupado 
         FROM Material 
         WHERE id = ?
     `;
@@ -1130,7 +1099,7 @@ app.post('/addMovements', (req, res) => {
 
         const materialOrigen = materialResult[0];
         const {
-            nombre, cantidad, matricula, fechaUltimoEstado, mapa, bajoStock,
+            nombre, cantidad, matricula, fechaUltimoEstado, bajoStock,
             idEstado, idEspacio, ultimoUsuarioId, idCategoria, ocupado
         } = materialOrigen;
         const idDepositoOrigen = materialOrigen.idDeposito;
@@ -1222,14 +1191,14 @@ app.post('/addMovements', (req, res) => {
 
                         const insertMaterialDestinoQuery = `
                             INSERT INTO Material (
-                                nombre, cantidad, matricula, fechaUltimoEstado, mapa, bajoStock, idEstado, idEspacio, 
+                                nombre, cantidad, matricula, fechaUltimoEstado, bajoStock, idEstado, idEspacio, 
                                 ultimoUsuarioId, idCategoria, idDeposito, ocupado
                             ) 
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         `;
 
                         const valoresInsertMaterial = [
-                            nombre, cantidadMovidaNumero, matricula, fechaUltimoEstado, mapa, bajoStock,
+                            nombre, cantidadMovidaNumero, matricula, fechaUltimoEstado, bajoStock,
                             nuevoEstadoDestino, idEspacio, ultimoUsuarioId, idCategoria, idDepositoDestino, ocupado
                         ];
 
