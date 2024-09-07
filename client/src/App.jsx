@@ -13,6 +13,7 @@ import Shelves from "./pages/Shelves/Shelves"
 import Deposits from "./pages/Deposits/Deposits"
 import Movements from "./pages/Movements/Movements"
 import Categories from "./pages/Categories/Categories"
+import Locations from "./pages/Locations/Locations" 
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="/movement" element={<AdminRoute><Movements /></AdminRoute>} />
           <Route path="/dshb" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/user" element={<PrivateRoute><Users /></PrivateRoute>} />
+          <Route path="/locations" element={<AdminRoute><Locations /></AdminRoute>} />
         </Routes>
       </BrowserRouter>
     </>
