@@ -7,14 +7,13 @@ import { Input } from "@/components/Common/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Common/Select/Select";
 import { Button } from "@/components/Common/Button/Button";
 
-function FormShelve({ onClose, notify }) {
+function AisleForm({ onClose }) {
     const [aisles, setAisles] = useState([]);
-    const [sides, setSides] = useState([]);
     const [formData, setFormData] = useState({
-        cantidad_estante: '',
-        cantidad_division: '',
-        idPasillo: '',
-        idLado: ''
+        numero: '',
+        idDeposito: '',
+        idLado1: 1,
+        idLado2: 2
     });
 
     useEffect(() => {
@@ -23,12 +22,6 @@ function FormShelve({ onClose, notify }) {
             .then(response => response.json())
             .then(data => setAisles(data))
             .catch(error => console.error('Error fetching aisles:', error));
-
-        // Fetch sides data
-        fetch('http://localhost:8081/sides')
-            .then(response => response.json())
-            .then(data => setSides(data))
-            .catch(error => console.error('Error fetching sides:', error));
     }, []);
 
     const handleChange = (e) => {
@@ -49,7 +42,7 @@ function FormShelve({ onClose, notify }) {
     };
 
     const handleSubmit = () => {
-        fetch('http://localhost:8081/addShelf', {
+        fetch('http://localhost:8081/addAisle', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -59,10 +52,10 @@ function FormShelve({ onClose, notify }) {
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
-                    toast.error("Error al agregar Estantería")
+                    toast.error("Error al agregar pasillo")
                     console.error('Error:', data.error);
                 } else {
-                    toast.success("Estantería creada con éxito!!")
+                    toast.success("Pasillo creada con éxito!!")
                     console.log('Success:', data.message);
                     onClose(); // Cierra el formulario después de agregar
                     setTimeout(() => {
@@ -84,64 +77,37 @@ function FormShelve({ onClose, notify }) {
             <ToastContainer />
             <Card className="bg-sipe-blue-dark text-sipe-white p-4">
                 <CardHeader>
-                    <CardTitle className="text-3xl text-center font-bold mb-2">Agregar nueva estantería</CardTitle>
+                    <CardTitle className="text-3xl text-center font-bold mb-2">Agregar nuevo pasillo</CardTitle>
                     <hr className="text-sipe-gray" />
                 </CardHeader>
                 <CardContent className="flex flex-col space-y-10">
-                    <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
-                            <Label htmlFor="cantidad_estante" className="text-sm font-medium">
-                                Cantidad de estantes
+                            <Label htmlFor="numero" className="text-sm font-medium">
+                                Número
                             </Label>
                             <Input
                                 className="border-b"
-                                id="cantidad_estante"
-                                name="cantidad_estante"
+                                id="numero"
+                                name="numero"
                                 type="number"
                                 placeholder="Ingresa la cantidad de estantes"
-                                value={formData.cantidad_estante}
-                                onChange={handleChange}
-                                min="0"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-2">
-                            <Label htmlFor="cantidad_division" className="text-sm font-medium">
-                                Cantidad de divisiones
-                            </Label>
-                            <Input
-                                className="border-b"
-                                id="cantidad_division"
-                                name="cantidad_division"
-                                type="number"
-                                placeholder="Ingresa la cantidad de divisiones"
-                                value={formData.cantidad_division}
+                                value={formData.numero}
                                 onChange={handleChange}
                                 min="0"
                             />
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <Label className="text-sm font-medium">Ubicación</Label>
+                        <Label className="text-sm font-medium">Depósito</Label>
                         <div className="flex w-full gap-4">
-                            <Select id="aisle" onValueChange={(value) => handleSelectChange('idPasillo', value)}>
+                            <Select id="aisle" onValueChange={(value) => handleSelectChange('idDeposito', value)}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Pasillo" />
+                                    <SelectValue placeholder="Seleccione el depósito" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {aisles.map((aisle) => (
-                                        <SelectItem key={aisle.id} value={aisle.id}>{aisle.numero}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select id="aisle-side" onValueChange={(value) => handleSelectChange('idLado', value)}>
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Lado de pasillo" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {sides.map((side) => (
-                                        <SelectItem key={side.id} value={side.id}>{side.descripcion}</SelectItem>
+                                        <SelectItem key={aisle.id} value={aisle.id}>{aisle.nombreDeposito}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -161,4 +127,4 @@ function FormShelve({ onClose, notify }) {
     )
 }
 
-export default FormShelve;
+export default AisleForm;

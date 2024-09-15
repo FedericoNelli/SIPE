@@ -13,8 +13,8 @@ const sections = [
         icon: <Archive />,
         roles: ['Administrador'],
         subMenu: [
-            { name: 'Estanterías', path: '/shelf' },
             { name: 'Pasillos', path: '/aisle' },
+            { name: 'Estanterías', path: '/shelf' },
             { name: 'Lados', path: '/side' }
         ]
     },

@@ -741,6 +741,43 @@ app.get('/shelves', (req, res) => {
     });
 });
 
+// Endpoint para agregar un nuevo pasillo
+app.post('/addAisle', (req, res) => {
+    const { numero, idDeposito, idLado1, idLado2 } = req.body;
+
+    if (!idDeposito || !idLado1 || !idLado2) {
+        return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+
+    const query = 'INSERT INTO Pasillo (numero, idDeposito, idLado1, idLado2) VALUES (?, ?, ?, ?)';
+    const values = [numero, idDeposito, idLado1, idLado2];
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al insertar pasillo:', err);
+            return res.status(500).json({ error: 'Error al agregar pasillo', details: err });
+        }
+        res.status(200).json({ message: 'Pasillo agregado exitosamente', result });
+    });
+});
+
+app.get('/aisle', (req, res) => {
+    const query = `
+        SELECT 
+            p.id, p.numero, p.idDeposito,
+            d.Nombre AS nombreDeposito
+        FROM 
+            Pasillo p
+        LEFT JOIN 
+            Deposito d ON p.idDeposito = d.id
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
 app.post('/addDeposit', (req, res) => {
     const { nombre, idUbicacion } = req.body;
 
@@ -781,6 +818,26 @@ app.get('/deposit-names', (req, res) => {
     db.query(query, [locationId], (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json(results);
+    });
+});
+
+// Endpoint para agregar ubicación
+app.post('/addLocation', (req, res) => {
+    const { nombre} = req.body;
+
+    if (!nombre) {
+        return res.status(400).json({ message: 'El Nombre es obligatorio' });
+    }
+
+    const query = 'INSERT INTO Ubicacion (nombre) VALUES (?)';
+    const values = [nombre];
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al insertar ubicación:', err);
+            return res.status(500).json({ message: 'Error al agregar ubicación' });
+        }
+        res.status(200).json({ message: 'Ubicación agregada exitosamente' });
     });
 });
 
@@ -887,10 +944,30 @@ app.get('/spaces/:shelfId', (req, res) => {
 
 // Endpoint para obtener los pasillos
 app.get('/aisles', (req, res) => {
-    const query = 'SELECT id, numero FROM Pasillo';
+    const query = 'SELECT id, numero, FROM Pasillo';
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json(results);
+    });
+});
+
+// Endpoint para agregar un nuevo lado
+app.post('/addSide', (req, res) => {
+    const { descripcion } = req.body;
+
+    if (!descripcion) {
+        return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+
+    const query = 'INSERT INTO Lado (descripcion) VALUES (?)';
+    const values = [descripcion];
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al insertar lado:', err);
+            return res.status(500).json({ error: 'Error al agregar lado', details: err });
+        }
+        res.status(200).json({ message: 'Lado agregado exitosamente', result });
     });
 });
 

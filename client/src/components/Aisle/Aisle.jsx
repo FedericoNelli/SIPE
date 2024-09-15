@@ -3,27 +3,27 @@ import axios from 'axios';
 import { Button } from "@/components/Common/Button/Button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
-import ShelfForm from '@/components/Shelf/ShelfForm';
+import ShelfForm from '@/components/Aisle/AisleForm';
 
-function Shelf( notify ) {
-    const [shelves, setShelves] = useState([]);
+function Aisle() {
+    const [aisles, setAisles] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 
     useEffect(() => {
-        axios.get('http://localhost:8081/shelves')
+        axios.get('http://localhost:8081/aisle')
             .then(response => {
-                setShelves(response.data);
+                setAisles(response.data);
             })
             .catch(error => {
-                console.error('Error fetching shelves:', error);
+                console.error('Error fetching aisles:', error);
             });
     }, []);
 
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentShelves = shelves.slice(indexOfFirstItem, indexOfLastItem);
+    const currentaisles = aisles.slice(indexOfFirstItem, indexOfLastItem);
 
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -41,8 +41,8 @@ function Shelf( notify ) {
             <div className="relative z-20">
                 <div className="flex justify-between w-full text-sipe-white font-bold pt-7 px-10">
                     <div className="flex flex-col mb-5">
-                        <h1 className="text-3xl font-bold">Estanterías</h1>
-                        <h3 className="text-md font-thin">Listado completo de estanterías</h3>
+                        <h1 className="text-3xl font-bold">Pasillos</h1>
+                        <h3 className="text-md font-thin">Listado completo de pasillos</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
                         <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
@@ -51,21 +51,17 @@ function Shelf( notify ) {
                 <Table className="w-full text-white">
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Estanteria</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad de estantes</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad de divisiones</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Pasillo</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Lado</TableHead>
+                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Pasillo</TableHead>
+                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Número</TableHead>
+                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Depósito</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {currentShelves.map(shelve => (
-                            <TableRow key={shelve.id}>
-                                <TableCell className="text-center font-light">Estanteria {shelve.id}</TableCell>
-                                <TableCell className="text-center font-light">{shelve.cantidad_estante}</TableCell>
-                                <TableCell className="text-center font-light">{shelve.cantidad_division}</TableCell>
-                                <TableCell className="text-center font-light">{shelve.numeroPasillo}</TableCell>
-                                <TableCell className="text-center font-light">{shelve.direccionLado}</TableCell>
+                        {currentaisles.map(aisle => (
+                            <TableRow key={aisle.id}>
+                                <TableCell className="text-center font-light">Pasillo {aisle.id}</TableCell>
+                                <TableCell className="text-center font-light">{aisle.numero}</TableCell>
+                                <TableCell className="text-center font-light">{aisle.nombreDeposito}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -73,7 +69,7 @@ function Shelf( notify ) {
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
-                            {[...Array(Math.ceil(shelves.length / itemsPerPage)).keys()].map(page => (
+                            {[...Array(Math.ceil(aisles.length / itemsPerPage)).keys()].map(page => (
                                 <PaginationItem key={page + 1}>
                                     <PaginationLink href="#" onClick={() => paginate(page + 1)} isActive={currentPage === page + 1}>
                                         {page + 1}
@@ -85,7 +81,7 @@ function Shelf( notify ) {
                 </div>
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <ShelfForm onClose={closeFormModal} notify={notify} />
+                        <ShelfForm onClose={closeFormModal} />
                     </div>
                 )}
             </div>
@@ -93,4 +89,4 @@ function Shelf( notify ) {
     );
 }
 
-export default Shelf;
+export default Aisle;
