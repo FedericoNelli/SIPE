@@ -10,10 +10,12 @@ import { AdminRoute, PrivateRoute, PublicRoute } from "./routes/routes"
 import Users from "./pages/Users/Users"
 import { CompTesting } from "./components/Testing/CompTesting"
 import Shelves from "./pages/Shelves/Shelves"
+import Aisles from "./pages/Aisles/Aisles"
+import Sides from "./pages/Sides/Sides"
 import Deposits from "./pages/Deposits/Deposits"
+import Locations from "./pages/Locations/Locations"
 import Movements from "./pages/Movements/Movements"
 import Categories from "./pages/Categories/Categories"
-import Locations from "./pages/Locations/Locations" 
 
 function App() {
   return (
@@ -29,6 +31,8 @@ function App() {
           <Route path="/mtls" element={<PrivateRoute><Materials /></PrivateRoute>} />
           <Route path="/category" element={<PrivateRoute><Categories /></PrivateRoute>} />
           <Route path="/shelf" element={<AdminRoute><Shelves /></AdminRoute>} />
+          <Route path="/aisle" element={<AdminRoute><Aisles /></AdminRoute>} />
+          <Route path="/side" element={<AdminRoute><Sides /></AdminRoute>} />
           <Route path="/deposit" element={<AdminRoute><Deposits /></AdminRoute>} />
           <Route path="/movement" element={<AdminRoute><Movements /></AdminRoute>} />
           <Route path="/dshb" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
