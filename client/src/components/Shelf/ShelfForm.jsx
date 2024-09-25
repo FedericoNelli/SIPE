@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Common/Select/Select";
 import { Button } from "@/components/Common/Button/Button";
+import axios from 'axios';
 
-function FormShelve({ onClose, notify }) {
+function ShelfForm({ onClose, onSubmit, notify }) {
     const [aisles, setAisles] = useState([]);
     const [sides, setSides] = useState([]);
     const [formData, setFormData] = useState({
@@ -18,28 +17,30 @@ function FormShelve({ onClose, notify }) {
     });
 
     useEffect(() => {
-        // Fetch aisles data
-        fetch('http://localhost:8081/aisle')
-            .then(response => response.json())
-            .then(data => setAisles(data))
-            .catch(error => console.error('Error fetching aisles:', error));
+        axios.get('http://localhost:8081/aisle')
+            .then(response => {
+                setAisles(response.data);
+            })
+            .catch(error => {
+                console.error('Error fetching aisles:', error);
+                notify('error', 'Error al cargar pasillos');
+            });
+    }, [notify]);
+    
 
-        // Fetch sides data
-        fetch('http://localhost:8081/sides')
-            .then(response => response.json())
-            .then(data => setSides(data))
+    const fetchSidesByAisle = (aisleId) => {
+        axios.get(`http://localhost:8081/sides/${aisleId}`)
+            .then(response => setSides(response.data))
             .catch(error => console.error('Error fetching sides:', error));
-    }, []);
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-
         setFormData((prevData) => ({
             ...prevData,
             [name]: value
         }));
     };
-
 
     const handleSelectChange = (name, value) => {
         setFormData((prevData) => ({
@@ -48,32 +49,52 @@ function FormShelve({ onClose, notify }) {
         }));
     };
 
-    const handleSubmit = () => {
-        fetch('http://localhost:8081/addShelf', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    toast.error("Error al agregar Estantería")
-                    console.error('Error:', data.error);
-                } else {
-                    toast.success("Estantería creada con éxito!!")
-                    console.log('Success:', data.message);
-                    onClose(); // Cierra el formulario después de agregar
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2500);
+    const handleSubmit = async () => {
+        try {
+            // Validación para asegurarse de que las cantidades sean mayores que 0
+            if (formData.cantidad_estante <= 0) {
+                notify('error', "La cantidad de estantes debe ser mayor que 0");
+                return;
+            }
+    
+            if (formData.cantidad_division <= 0) {
+                notify('error', "La cantidad de divisiones debe ser mayor que 0");
+                return;
+            }
+    
+            const response = await axios.post('http://localhost:8081/addShelf', formData);
+    
+            if (response.status !== 200 || response.data.error) {
+                throw new Error(response.data.error || "Error al agregar estantería");
+            }
+    
+            notify('success', "¡Estantería creada con éxito!");
+    
+            if (onClose) onClose();
+            
+            // Ejecuta onSubmit con el delay
+            setTimeout(() => {
+                if (onSubmit) onSubmit(); // Ejecutar onSubmit después del delay
+                
+                // Verificar si no estamos en el tutorial y recargar la página
+                const isInTutorial = localStorage.getItem('inTutorial');
+                if (!isInTutorial || isInTutorial === 'false') {
+                    window.location.reload(); // Recargar la página si no estamos en el tutorial
                 }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
+            }, 2000);
+        } catch (error) {
+            console.error('Error al agregar la estantería:', error);
+        
+            // Verificar si el error tiene una respuesta del backend y mostrar su mensaje
+            if (error.response && error.response.data && error.response.data.error) {
+                notify('error', error.response.data.error);
+            } else {
+                notify('error', error.message || "Error al agregar estantería");
+            }
+        }
     };
+    
+    
 
     const handleCancel = () => {
         if (onClose) onClose(); // Llama a la función de cierre pasada como prop
@@ -81,7 +102,6 @@ function FormShelve({ onClose, notify }) {
 
     return (
         <>
-            <ToastContainer />
             <Card className="bg-sipe-blue-dark text-sipe-white p-4">
                 <CardHeader>
                     <CardTitle className="text-3xl text-center font-bold mb-2">Agregar nueva estantería</CardTitle>
@@ -125,7 +145,13 @@ function FormShelve({ onClose, notify }) {
                     <div className="flex items-center gap-4">
                         <Label className="text-sm font-medium">Ubicación</Label>
                         <div className="flex w-full gap-4">
-                            <Select id="aisle" onValueChange={(value) => handleSelectChange('idPasillo', value)}>
+                            <Select
+                                id="aisle"
+                                onValueChange={(value) => {
+                                    handleSelectChange('idPasillo', value);
+                                    fetchSidesByAisle(value); // Fetch sides based on aisle selection
+                                }}
+                            >
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Pasillo" />
                                 </SelectTrigger>
@@ -135,7 +161,10 @@ function FormShelve({ onClose, notify }) {
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Select id="aisle-side" onValueChange={(value) => handleSelectChange('idLado', value)}>
+                            <Select
+                                id="aisle-side"
+                                onValueChange={(value) => handleSelectChange('idLado', value)}
+                            >
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Lado de pasillo" />
                                 </SelectTrigger>
@@ -161,4 +190,4 @@ function FormShelve({ onClose, notify }) {
     )
 }
 
-export default FormShelve;
+export default ShelfForm;

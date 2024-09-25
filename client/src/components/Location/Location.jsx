@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
-import DepositForm from '@/components/Location/LocationForm';
-import DepositList from '@/components/Location/LocationList';
 import axios from 'axios';
+import LocationForm from '@/components/Location/LocationForm';
+import LocationList from './LocationList';
 
 function Location({ notify }) {
     const [locations, setlocations] = useState([]);
@@ -48,7 +48,7 @@ function Location({ notify }) {
                         <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
                     </div>
                 </div>
-                <DepositList locations={currentlocations} />
+                <LocationList locations={currentlocations} />
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
@@ -64,7 +64,7 @@ function Location({ notify }) {
                 </div>
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <DepositForm onClose={closeFormModal} notify={notify} />
+                        <LocationForm onClose={closeFormModal} notify={notify} />
                     </div>
                 )}
             </div>

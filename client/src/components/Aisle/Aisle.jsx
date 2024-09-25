@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Button } from "@/components/Common/Button/Button";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
-import ShelfForm from '@/components/Aisle/AisleForm';
+import AisleForm from '@/components/Aisle/AisleForm';
+import AisleList from './AisleList';
 
-function Aisle() {
+function Aisle( {notify} ) {
     const [aisles, setAisles] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
@@ -48,24 +48,7 @@ function Aisle() {
                         <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
                     </div>
                 </div>
-                <Table className="w-full text-white">
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Pasillo</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Número</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Depósito</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {currentaisles.map(aisle => (
-                            <TableRow key={aisle.id}>
-                                <TableCell className="text-center font-light">Pasillo {aisle.id}</TableCell>
-                                <TableCell className="text-center font-light">{aisle.numero}</TableCell>
-                                <TableCell className="text-center font-light">{aisle.nombreDeposito}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                <AisleList aisles={currentaisles} />
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
@@ -81,7 +64,7 @@ function Aisle() {
                 </div>
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <ShelfForm onClose={closeFormModal} />
+                        <AisleForm onClose={closeFormModal} notify={notify} />
                     </div>
                 )}
             </div>

@@ -41,7 +41,7 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
             return;
         }
         try {
-            const response = await axios.delete(`http://localhost:8081/materials/${selectedMaterial.id}`);
+            const response = await axios.delete(`http://localhost:8081/materials/delete/${selectedMaterial.id}`);
             onClose();
             toast.success("Material eliminado con éxito!");
             window.location.reload();
@@ -110,7 +110,7 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
                                         <p><strong>ID:</strong> {selectedMaterial.id}</p>
                                         <p><strong>Depósito:</strong> {selectedMaterial.depositoNombre}</p>
                                         <p><strong>Estado:</strong> {selectedMaterial.estadoDescripcion}</p>
-                                        <p><strong>Cantidad:</strong> {selectedMaterial.cantidad} unidades</p>
+                                        <p><strong>Cantidad:</strong> {selectedMaterial.cantidad} {selectedMaterial.cantidad === 1 ? 'unidad' : 'unidades'}</p>
                                     </div>
                                     <div className="flex flex-col justify-start gap-1">
                                         <p><strong>Matrícula:</strong> {selectedMaterial.matricula}</p>
