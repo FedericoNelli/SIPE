@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function DepositForm({ onClose, notify }) {
+function DepositForm({ onClose, onSubmit, notify }) {
     const [formData, setFormData] = useState({ nombre: '', idUbicacion: '' });
     const [ubicaciones, setUbicaciones] = useState([]);
 
@@ -49,14 +49,23 @@ function DepositForm({ onClose, notify }) {
     
             if (onClose) onClose();
     
+            // Ejecuta onSubmit con el delay
             setTimeout(() => {
-                window.location.reload();
-            }, 2500);
+                if (onSubmit) onSubmit(); // Ejecutar onSubmit después del delay
+                
+                // Verificar si no estamos en el tutorial y recargar la página
+                const isInTutorial = localStorage.getItem('inTutorial');
+                if (!isInTutorial || isInTutorial === 'false') {
+                    window.location.reload(); // Recargar la página si no estamos en el tutorial
+                }
+            }, 2000); // Ajusta el delay a 2.5 segundos
+    
         } catch (error) {
             console.error('Error al agregar el depósito:', error);
             notify('error', error.message || "Error al agregar depósito");
         }
     };
+    
 
     const handleCancel = () => {
         if (onClose) onClose();

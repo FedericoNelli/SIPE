@@ -19,6 +19,8 @@ function MovementForm({ onClose, notify }) {
     const [usuarios, setUsuarios] = useState([]);
     const [depositos, setDepositos] = useState([]);
     const [cantidadDisponible, setCantidadDisponible] = useState('');
+    const [maxDatetime, setMaxDatetime] = useState('');
+
 
     useEffect(() => {
         axios.get('http://localhost:8081/materials')
@@ -51,16 +53,32 @@ function MovementForm({ onClose, notify }) {
             if (materialSeleccionado) {
                 setFormData((prevData) => ({
                     ...prevData,
-                    idDepositoOrigen: materialSeleccionado.idDeposito  
+                    idDepositoOrigen: materialSeleccionado.idDeposito
                 }));
-                setCantidadDisponible(materialSeleccionado.cantidad);  
+                setCantidadDisponible(materialSeleccionado.cantidad);
             }
         }
     }, [formData.idMaterial, materiales]);
 
+    useEffect(() => {
+        // Actualiza el valor máximo de la fecha y hora al cargar el componente
+        const now = new Date();
+        setMaxDatetime(now.toISOString().slice(0, 16));
+    }, []);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
 
+        if (name === "fechaMovimiento") {
+            const now = new Date();
+            const selectedDate = new Date(value);
+
+            // Verifica que la fecha y hora no sean futuras
+            if (selectedDate > now) {
+                notify('error', 'La hora seleccionada no puede ser futura');
+                return;
+            }
+        }
         // Verificación para que la cantidad movida no sea mayor a la cantidad disponible
         if (name === "cantidadMovida" && value > cantidadDisponible) {
             notify('error', 'La cantidad a mover no puede ser mayor a la disponible');
@@ -122,6 +140,7 @@ function MovementForm({ onClose, notify }) {
                             type="datetime-local"
                             value={formData.fechaMovimiento}
                             onChange={handleInputChange}
+                            max={maxDatetime} // Establece la fecha y hora máxima al momento actual
                         />
                     </div>
                     <div className="flex items-center gap-2">
@@ -163,7 +182,7 @@ function MovementForm({ onClose, notify }) {
                             type="number"
                             value={formData.cantidadMovida}
                             onChange={handleInputChange}
-                            max={cantidadDisponible} 
+                            max={cantidadDisponible}
                         />
                     </div>
                     <div className="flex items-center gap-2">

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Button } from "@/components/Common/Button/Button";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import ShelfForm from '@/components/Shelf/ShelfForm';
+import ShelfList from './ShelfList';
 
-function Shelf( notify ) {
+function Shelf({ notify }) {
     const [shelves, setShelves] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
@@ -48,28 +48,7 @@ function Shelf( notify ) {
                         <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
                     </div>
                 </div>
-                <Table className="w-full text-white">
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Estanteria</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad de estantes</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad de divisiones</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Pasillo</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Lado</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {currentShelves.map(shelve => (
-                            <TableRow key={shelve.id}>
-                                <TableCell className="text-center font-light">Estanteria {shelve.id}</TableCell>
-                                <TableCell className="text-center font-light">{shelve.cantidad_estante}</TableCell>
-                                <TableCell className="text-center font-light">{shelve.cantidad_division}</TableCell>
-                                <TableCell className="text-center font-light">{shelve.numeroPasillo}</TableCell>
-                                <TableCell className="text-center font-light">{shelve.direccionLado}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                <ShelfList shelves={currentShelves} />
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>

@@ -7,12 +7,12 @@ import { useState, useEffect } from "react";
 import { motion } from 'framer-motion';
 import axios from "axios";
 
-function LoginInput({ onLoginSuccess }) {
+function LoginInput({ onLoginSuccess, onFirstLogin }) {
     const [user, setUser] = useState('');
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
-    const [isLoginSuccessful, setIsLoginSuccessful] = useState(false); // Controla la animación de desaparición
+    const [isLoginSuccessful, setIsLoginSuccessful] = useState(false);
 
     useEffect(() => {
         const savedUser = localStorage.getItem('rememberedUser');
@@ -27,31 +27,33 @@ function LoginInput({ onLoginSuccess }) {
         try {
             const res = await axios.post('http://localhost:8081/login', { user, password });
             if (res.data.token) {
+                // Guardar los valores necesarios en localStorage
                 localStorage.setItem('token', res.data.token);
                 localStorage.setItem('id', res.data.id);
                 localStorage.setItem('userName', res.data.nombre);
                 localStorage.setItem('rol', res.data.rol);
-                if (rememberMe) {
-                    localStorage.setItem('rememberedUser', user);
+                localStorage.setItem('firstLogin', res.data.firstLogin ? '1' : '0');
+
+                // Dependiendo de si es el primer login o no, llama la función adecuada
+                if (res.data.firstLogin) {
+                    onFirstLogin(); // Llama a la función para el primer login
                 } else {
-                    localStorage.removeItem('rememberedUser');
+                    onLoginSuccess(); // Llama a la función de éxito del login normal
                 }
-                setIsLoginSuccessful(true); // Inicia la animación de desaparición
-                setTimeout(() => {
-                    onLoginSuccess(); // Llama a la función para completar el login
-                }, 1000); // Retrasa la llamada para completar la animación
             } else {
                 setErrorMessage('Usuario y/o contraseña incorrectos.');
             }
         } catch (err) {
-            console.log(err);
+            console.error('Error durante el inicio de sesión:', err);
             setErrorMessage('Usuario y/o contraseña incorrectos.');
         }
     }
-
+    
     function handleCheckboxChange(isChecked) {
         setRememberMe(isChecked);
-        if (!isChecked) {
+        if (isChecked) {
+            localStorage.setItem('rememberedUser', user);
+        } else {
             localStorage.removeItem('rememberedUser');
             setUser('');
         }
@@ -60,8 +62,8 @@ function LoginInput({ onLoginSuccess }) {
     return (
         <motion.div
             initial={{ opacity: 1, y: 0 }}
-            animate={isLoginSuccessful ? { opacity: 0 } : { opacity: 1, y: 0 }} // Desaparición suave
-            transition={{ duration: 1, ease: 'easeInOut' }} // Control de la duración de la animación
+            animate={isLoginSuccessful ? { opacity: 0 } : { opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease: 'easeInOut' }}
             className="mx-auto w-full max-w-xs space-y-4"
         >
             <div className="space-y-2">

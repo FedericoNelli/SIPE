@@ -47,184 +47,144 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 } // Limitar el tamaño a 10 MB
 });
 
+app.get('/materials/search', (req, res) => {
+    const query = req.query.query;
 
-const getNextImageNumber = (callback) => {
-    const query = 'SELECT COUNT(*) AS count FROM Material WHERE imagen IS NOT NULL';
-    db.query(query, (err, results) => {
-        if (err) {
-            return callback(err, null);
-        }
-        const count = results[0].count;
-        callback(null, count + 1);
-    });
-};
+    const searchQuery = `
+        SELECT 
+            m.id, 
+            m.nombre, 
+            m.cantidad, 
+            m.imagen, 
+            m.matricula, 
+            DATE_FORMAT(m.fechaUltimoEstado, '%d-%m-%Y') AS fechaUltimoEstado,
+            DATE_FORMAT(m.fechaAlta, '%d-%m-%Y') AS fechaAlta,  
+            m.bajoStock, 
+            m.idEstado, 
+            es.descripcion AS estadoDescripcion, 
+            m.ultimoUsuarioId,
+            m.idCategoria, 
+            c.descripcion AS categoriaNombre,
+            m.idDeposito, 
+            d.nombre AS depositoNombre,
+            u.id AS ubicacionId,
+            u.nombre AS ubicacionNombre, 
+            m.idEspacio, 
+            e.numeroEspacio,
+            et.id AS estanteriaId,  
+            et.cantidad_estante AS cantidadEstante,   
+            et.cantidad_division AS cantidadDivision, 
+            e.fila AS estanteEstanteria,                
+            e.columna AS divisionEstanteria,             
+            p.numero AS pasilloNumero,
+            l.descripcion AS lado,
+            COALESCE(us.nombre_usuario, 'No disponible') AS ultimoUsuarioNombre  -- Usar COALESCE para evitar valores null
+        FROM 
+            Material m
+        LEFT JOIN 
+            Deposito d ON m.idDeposito = d.id
+        LEFT JOIN 
+            Ubicacion u ON d.idUbicacion = u.id
+        LEFT JOIN 
+            Estado es ON m.idEstado = es.id
+        LEFT JOIN 
+            Categoria c ON m.idCategoria = c.id
+        LEFT JOIN 
+            Espacio e ON m.idEspacio = e.id
+        LEFT JOIN 
+            Estanteria et ON e.idEstanteria = et.id
+        LEFT JOIN 
+            Pasillo p ON et.idPasillo = p.id
+        LEFT JOIN 
+            Lado l ON et.idLado = l.id
+        LEFT JOIN 
+            Usuario us ON m.ultimoUsuarioId = us.id 
+        WHERE 
+            m.nombre LIKE ?`;
 
+    const likeQuery = `%${query}%`;
 
-function handleStockNotifications(nombre, cantidad, bajoStock, callback) {
-    cantidad = Number(cantidad);
-    bajoStock = Number(bajoStock);
-    let descripcion = null;
-
-    if (cantidad === 0) {
-        descripcion = `El material ${nombre} se ha quedado sin stock.`;
-    } else if (cantidad <= bajoStock) {
-        descripcion = `El material ${nombre} ha llegado a su límite de bajo stock.`;
-    } else {
-        return callback(null);
-    }
-
-    db.query(
-        `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
-        [descripcion],
-        (error, result) => {
-            if (error) {
-                console.error('Error al agregar notificación', error);
-                return callback({ mensaje: 'Error al agregar notificación' });
-            }
-
-            const notificacionId = result.insertId;
-
-            db.query(
-                `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
-                SELECT id, ?, FALSE FROM usuario`,
-                [notificacionId],
-                (error) => {
-                    if (error) {
-                        console.error('Error al relacionar notificación con usuarios', error);
-                        return callback({ mensaje: 'Error al relacionar notificación con usuarios' });
-                    }
-                    return callback(null);
-                }
-            );
-        }
-    );
-}
-
-function notifyNewMaterialCreation(nombre, deposito, callback) {
-    const descripcion = `Se ha creado el material '${nombre}' en el depósito '${deposito}' ya que no existía.`;
-    
-    db.query(
-        `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
-        [descripcion],
-        (error, result) => {
-            if (error) {
-                console.error('Error al agregar notificación de nuevo material', error);
-                return callback({ mensaje: 'Error al agregar notificación de nuevo material' });
-            }
-
-            const notificacionId = result.insertId;
-
-            db.query(
-                `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
-                SELECT id, ?, FALSE FROM usuario`,
-                [notificacionId],
-                (error) => {
-                    if (error) {
-                        console.error('Error al relacionar notificación de nuevo material con usuarios', error);
-                        return callback({ mensaje: 'Error al relacionar notificación de nuevo material con usuarios' });
-                    }
-                    return callback(null);
-                }
-            );
-        }
-    );
-}
-
-
-function assignStatus (cantidad, bajoStock) {
-
-    // Convertir a números para asegurar que las comparaciones sean correctas
-    cantidad = parseInt(cantidad, 10);
-    bajoStock = parseInt(bajoStock, 10);
-
-    if (cantidad > bajoStock) {
-        return 1; // Disponible
-    } else if (cantidad <= bajoStock && cantidad > 0){
-        return 2; // Bajo stock
-    } else if (cantidad === 0) {
-        return 3; // Sin stock
-    }
-
-}
-
-// Consulta a la base de datos para verificar usuario y contraseña
-app.post('/login', (req, res) => {
-    const { user, password } = req.body;
-
-    const query = 'SELECT * FROM usuario WHERE nombre_usuario = ?';
-    db.query(query, [user], (err, results) => {
+    db.query(searchQuery, [likeQuery], (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
 
         if (results.length === 0) {
-            return res.status(401).send('Usuario no encontrado');
+            return res.status(200).json({ message: 'Material no encontrado' });
         }
 
-        const user = results[0];
-        const isPasswordValid = bcrypt.compareSync(password, user.contrasenia);
-
-        if (!isPasswordValid) {
-            return res.status(401).send('Contraseña incorrecta');
-        }
-
-        // Generar y devolver el token JWT
-        const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '1h' });
-        res.json({ token, nombre: user.nombre, rol: user.rol, id: user.id });
-    });
-});
-
-app.post('/logout', (req, res) => {
-    res.status(200).send('Logout exitoso');
-});
-
-// Endpoint para agregar usuarios
-app.post('/addUser', (req, res) => {
-    const { nombre, apellido, legajo, nombre_usuario, contrasenia, email, rol } = req.body;
-
-    if (!nombre || !apellido || !legajo || !nombre_usuario || !contrasenia || !email || !rol) {
-        return res.status(400).json({ message: 'Faltan campos obligatorios' });
-    }
-
-    if (!req.headers.authorization) {
-        return res.status(401).send("Authorization header missing");
-    }
-
-    const token = req.headers.authorization.split(' ')[1];
-    let decoded;
-    try {
-        decoded = jwt.verify(token, SECRET_KEY);
-    } catch (err) {
-        return res.status(401).send("Token inválido");
-    }
-
-    if (decoded.rol !== 'Administrador') {
-        return res.status(403).send('Permiso denegado');
-    }
-
-    const salt = bcrypt.genSaltSync(10);
-    const passwordHash = bcrypt.hashSync(contrasenia, salt);
-
-    const user = { nombre, apellido, legajo, nombre_usuario, contrasenia: passwordHash, email, rol };
-
-    const query = 'INSERT INTO usuario SET ?';
-    db.query(query, user, (err, result) => {
-        if (err) {
-            return res.status(500).send("Error al crear el usuario");
-        }
-        res.status(200).send('Usuario creado');
-    });
-});
-
-app.get('/users', (req, res) => {
-    const query = `
-        SELECT 
-            u.id, u.nombre, u.apellido, u.legajo, u.nombre_usuario, u.email, u.rol 
-        FROM Usuario u`;
-
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json(results);
     });
 });
+
+//Endpoint para obtener detalles del material
+app.get('/materials/details/:id', (req, res) => {
+    const id = req.params.id;
+    console.log(`Recibiendo petición para el material con ID: ${id}`);  // <-- Aquí
+
+    const query = `
+    SELECT 
+        m.id, 
+        m.nombre, 
+        m.cantidad, 
+        m.imagen, 
+        m.matricula, 
+        DATE_FORMAT(m.fechaUltimoEstado, '%d-%m-%Y') AS fechaUltimoEstado,
+        DATE_FORMAT(m.fechaAlta, '%d-%m-%Y') AS fechaAlta,  
+        m.bajoStock, 
+        m.idEstado, 
+        es.descripcion AS estadoDescripcion,
+        m.ultimoUsuarioId, 
+        m.idCategoria, 
+        c.descripcion AS categoriaNombre,
+        m.idDeposito, 
+        d.nombre AS depositoNombre,
+        u.id AS ubicacionId,
+        u.nombre AS ubicacionNombre, 
+        m.idEspacio, 
+        e.numeroEspacio,
+        et.id AS estanteriaId,  
+        et.cantidad_estante AS cantidadEstante,   
+        et.cantidad_division AS cantidadDivision, 
+        e.fila AS estanteEstanteria,                
+        e.columna AS divisionEstanteria,             
+        p.numero AS pasilloNumero,
+        l.descripcion AS lado,
+        COALESCE(uu.nombre_usuario, 'No disponible') AS ultimoUsuarioNombre  
+    FROM 
+        Material m
+    LEFT JOIN 
+        Deposito d ON m.idDeposito = d.id
+    LEFT JOIN 
+        Ubicacion u ON d.idUbicacion = u.id
+    LEFT JOIN 
+        Estado es ON m.idEstado = es.id
+    LEFT JOIN 
+        Categoria c ON m.idCategoria = c.id
+    LEFT JOIN 
+        Espacio e ON m.idEspacio = e.id
+    LEFT JOIN 
+        Estanteria et ON e.idEstanteria = et.id
+    LEFT JOIN 
+        Pasillo p ON et.idPasillo = p.id
+    LEFT JOIN 
+        Lado l ON et.idLado = l.id
+    LEFT JOIN 
+        Usuario uu ON m.ultimoUsuarioId = uu.id  
+    WHERE 
+        m.id = ?`;
+
+    db.query(query, [id], (err, results) => {
+        if (err) {
+            console.error('Error al obtener el material:', err);
+            return res.status(500).json({ mensaje: 'Error al obtener el material' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ mensaje: 'Material no encontrado' });
+        }
+
+        res.status(200).json(results[0]);  // <-- Enviar los resultados
+    });
+});
+
 
 app.get('/materials', (req, res) => {
     const { ubicacion, deposito, categoria, estado } = req.query;
@@ -368,120 +328,6 @@ app.get('/materials/:id', (req, res) => {
 
 
 
-app.post('/addMaterial', upload.single('imagen'), (req, res) => {
-    const { nombre, matricula, idEspacio, idCategoria, idDeposito, fechaAlta, fechaUltimoEstado, ultimoUsuarioId, ocupado } = req.body;
-    let { cantidad, bajoStock } = req.body;
-    const imagen = req.file;
-
-    if (!nombre || cantidad == null || !matricula || !idEspacio || !idCategoria || !idDeposito || !ultimoUsuarioId) {
-        return res.status(400).json({ mensaje: 'Campos obligatorios faltantes' });
-    }
-
-    let idEstado = assignStatus(cantidad, bajoStock);
-
-    const insertQuery = `INSERT INTO Material (nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaAlta, fechaUltimoEstado, ultimoUsuarioId, ocupado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    const values = [nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaAlta, fechaUltimoEstado, ultimoUsuarioId, ocupado];
-
-    db.query(insertQuery, values, (err, result) => {
-        if (err) {
-            console.error('Error al insertar material:', err);
-            return res.status(500).json({ mensaje: 'Error al insertar material' });
-        }
-
-        const materialId = result.insertId;
-
-        handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
-            if (error) {
-                return res.status(500).json({ mensaje: 'Error al manejar notificaciones de stock' });
-            }
-            res.status(200).json({ mensaje: 'Material agregado con éxito' });
-        });
-
-        if (imagen) {
-            const imagenPath = `/uploads/SIPE-img-${materialId}${path.extname(imagen.originalname)}`;
-            const newFilePath = path.join(__dirname, 'public', imagenPath);
-
-            fs.rename(imagen.path, newFilePath, (err) => {
-                if (err) {
-                    console.error('Error al renombrar la imagen:', err);
-                    return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
-                }
-
-                db.query('UPDATE Material SET imagen = ? WHERE id = ?', [imagenPath, materialId], (err) => {
-                    if (err) {
-                        console.error('Error al actualizar la base de datos con la imagen:', err);
-                        return res.status(500).json({ mensaje: 'Error al actualizar la imagen en la base de datos' });
-                    }
-                });
-            });
-        }
-    });
-});
-
-//Endpoint para obtener detalles del material
-app.get('/materials/:id', (req, res) => {
-    const id = req.params.id;
-
-    const query = `
-    SELECT 
-        m.id, 
-        m.nombre, 
-        m.cantidad, 
-        m.imagen, 
-        m.matricula, 
-        DATE_FORMAT(m.fechaUltimoEstado, '%d-%m-%Y') AS fechaUltimoEstado,
-        DATE_FORMAT(m.fechaAlta, '%d-%m-%Y') AS fechaAlta,  
-        m.bajoStock, 
-        m.idEstado, 
-        es.descripcion AS estadoDescripcion, 
-        m.idCategoria, 
-        c.descripcion AS categoriaNombre,
-        m.idDeposito, 
-        d.nombre AS depositoNombre,
-        u.id AS ubicacionId,
-        u.nombre AS ubicacionNombre, 
-        m.idEspacio, 
-        e.numeroEspacio,
-        et.id AS estanteriaId,  
-        et.cantidad_estante AS cantidadEstante,   
-        et.cantidad_division AS cantidadDivision, 
-        e.fila AS estanteEstanteria,                
-        e.columna AS divisionEstanteria,             
-        p.numero AS pasilloNumero,
-        l.descripcion AS lado
-    FROM 
-        Material m
-    LEFT JOIN 
-        Deposito d ON m.idDeposito = d.id
-    LEFT JOIN 
-        Ubicacion u ON d.idUbicacion = u.id
-    LEFT JOIN 
-        Estado es ON m.idEstado = es.id
-    LEFT JOIN 
-        Categoria c ON m.idCategoria = c.id
-    LEFT JOIN 
-        Espacio e ON m.idEspacio = e.id
-    LEFT JOIN 
-        Estanteria et ON e.idEstanteria = et.id
-    LEFT JOIN 
-        Pasillo p ON et.idPasillo = p.id
-    LEFT JOIN 
-        Lado l ON et.idLado = l.id
-    WHERE 
-        m.id = ?`;
-
-    db.query(query, [id], (err, results) => {
-        if (err) {
-            console.error('Error al obtener el material:', err);
-            return res.status(500).json({ mensaje: 'Error al obtener el material' });
-        }
-        if (results.length === 0) {
-            return res.status(404).json({ mensaje: 'Material no encontrado' });
-        }
-        res.status(200).json(results[0]);
-    });
-});
-
 // Endpoint para editar un material
 app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
     const id = req.params.id;
@@ -564,7 +410,7 @@ app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
                     }
                 });
             }
-            
+
             if (idEstado != idEstadoComp) {
                 handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
                     if (error) {
@@ -580,42 +426,436 @@ app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
 });
 
 
-app.get('/materials/search', (req, res) => {
-    const query = req.query.query;
+app.post('/addMaterial', upload.single('imagen'), (req, res) => {
+    const { nombre, matricula, idEspacio, idCategoria, idDeposito, fechaAlta, fechaUltimoEstado, ultimoUsuarioId, ocupado } = req.body;
+    let { cantidad, bajoStock } = req.body;
+    const imagen = req.file;
 
-    const searchQuery = `
+    if (!nombre || cantidad == null || !matricula || !idEspacio || !idCategoria || !idDeposito || !ultimoUsuarioId) {
+        return res.status(400).json({ mensaje: 'Campos obligatorios faltantes' });
+    }
+
+    let idEstado = assignStatus(cantidad, bajoStock);
+
+    const insertQuery = `INSERT INTO Material (nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaAlta, fechaUltimoEstado, ultimoUsuarioId, ocupado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const values = [nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaAlta, fechaUltimoEstado, ultimoUsuarioId, ocupado];
+
+    db.query(insertQuery, values, (err, result) => {
+        if (err) {
+            console.error('Error al insertar material:', err);
+            return res.status(500).json({ mensaje: 'Error al insertar material' });
+        }
+
+        const materialId = result.insertId;
+
+        handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
+            if (error) {
+                return res.status(500).json({ mensaje: 'Error al manejar notificaciones de stock' });
+            }
+            res.status(200).json({ mensaje: 'Material agregado con éxito' });
+        });
+
+        if (imagen) {
+            const imagenPath = `/uploads/SIPE-img-${materialId}${path.extname(imagen.originalname)}`;
+            const newFilePath = path.join(__dirname, 'public', imagenPath);
+
+            fs.rename(imagen.path, newFilePath, (err) => {
+                if (err) {
+                    console.error('Error al renombrar la imagen:', err);
+                    return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
+                }
+
+                db.query('UPDATE Material SET imagen = ? WHERE id = ?', [imagenPath, materialId], (err) => {
+                    if (err) {
+                        console.error('Error al actualizar la base de datos con la imagen:', err);
+                        return res.status(500).json({ mensaje: 'Error al actualizar la imagen en la base de datos' });
+                    }
+                });
+            });
+        }
+    });
+});
+
+app.delete('/materials/delete/:id', (req, res) => {
+    const materialId = req.params.id;
+
+    // Primero, obtenemos la información del material para obtener el path de la imagen
+    const queryGetImage = 'SELECT imagen FROM Material WHERE id = ?';
+
+    db.query(queryGetImage, [materialId], (err, results) => {
+        if (err) {
+            console.error('Error al obtener la imagen:', err);
+            return res.status(500).send('Error al obtener la imagen');
+        }
+
+        if (results.length > 0) {
+            const imagePath = results[0].imagen; // Obtener el path de la imagen
+
+            if (imagePath) {
+                const fullPath = path.join(__dirname, 'public', imagePath); // Construir la ruta completa
+
+                // Eliminar la imagen del sistema de archivos
+                fs.unlink(fullPath, (err) => {
+                    if (err) {
+                        console.error('Error al eliminar la imagen:', err);
+                        // Aunque falle la eliminación de la imagen, seguimos eliminando el material
+                    }
+
+                    // Eliminar el registro de la base de datos una vez que tratamos de eliminar la imagen
+                    const queryDeleteMaterial = 'DELETE FROM Material WHERE id = ?';
+                    db.query(queryDeleteMaterial, [materialId], (err, result) => {
+                        if (err) {
+                            console.error('Error al eliminar el material:', err);
+                            return res.status(500).send('Error al eliminar el material');
+                        }
+                        res.status(200).send('Material eliminado con éxito y se intentó eliminar la imagen.');
+                    });
+                });
+            } else {
+                // Si no hay imagen, eliminamos directamente el material de la base de datos
+                const queryDeleteMaterial = 'DELETE FROM Material WHERE id = ?';
+                db.query(queryDeleteMaterial, [materialId], (err, result) => {
+                    if (err) {
+                        console.error('Error al eliminar el material:', err);
+                        return res.status(500).send('Error al eliminar el material');
+                    }
+                    res.status(200).send('Material eliminado con éxito (sin imagen asociada).');
+                });
+            }
+        } else {
+            return res.status(404).send('Material no encontrado');
+        }
+    });
+});
+
+app.delete('/materiales/:id/imagen', (req, res) => {
+    const materialId = req.params.id;
+
+    // Primero, obtén la información del material para obtener la ruta de la imagen
+    const queryGetImage = 'SELECT imagen FROM Material WHERE id = ?';
+
+    db.query(queryGetImage, [materialId], (err, results) => {
+        if (err) {
+            console.error('Error al obtener la imagen:', err);
+            return res.status(500).send('Error al obtener la imagen');
+        }
+
+        if (results.length > 0) {
+            const imagePath = results[0].imagen;
+
+            if (imagePath) {
+                const fullPath = path.join(__dirname, 'public', imagePath);
+
+                // Elimina la imagen del sistema de archivos
+                fs.unlink(fullPath, (err) => {
+                    if (err) {
+                        console.error('Error al eliminar la imagen:', err);
+                        return res.status(500).send('Error al eliminar la imagen');
+                    }
+
+                    // Actualiza la base de datos para eliminar la referencia a la imagen
+                    const queryDeleteImage = 'UPDATE Material SET imagen = NULL WHERE id = ?';
+                    db.query(queryDeleteImage, [materialId], (err, result) => {
+                        if (err) {
+                            console.error('Error al actualizar la base de datos:', err);
+                            return res.status(500).send('Error al actualizar la base de datos');
+                        }
+                        res.status(200).send('Imagen eliminada correctamente');
+                    });
+                });
+            } else {
+                return res.status(404).send('No hay imagen para eliminar');
+            }
+        } else {
+            return res.status(404).send('Material no encontrado');
+        }
+    });
+});
+
+
+
+
+const getNextImageNumber = (callback) => {
+    const query = 'SELECT COUNT(*) AS count FROM Material WHERE imagen IS NOT NULL';
+    db.query(query, (err, results) => {
+        if (err) {
+            return callback(err, null);
+        }
+        const count = results[0].count;
+        callback(null, count + 1);
+    });
+};
+
+
+function handleStockNotifications(nombre, cantidad, bajoStock, callback) {
+    cantidad = Number(cantidad);
+    bajoStock = Number(bajoStock);
+    let descripcion = null;
+
+    if (cantidad === 0) {
+        descripcion = `El material ${nombre} se ha quedado sin stock.`;
+    } else if (cantidad <= bajoStock) {
+        descripcion = `El material ${nombre} ha llegado a su límite de bajo stock.`;
+    } else {
+        return callback(null);
+    }
+
+    db.query(
+        `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
+        [descripcion],
+        (error, result) => {
+            if (error) {
+                console.error('Error al agregar notificación', error);
+                return callback({ mensaje: 'Error al agregar notificación' });
+            }
+
+            const notificacionId = result.insertId;
+
+            db.query(
+                `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
+                SELECT id, ?, FALSE FROM usuario`,
+                [notificacionId],
+                (error) => {
+                    if (error) {
+                        console.error('Error al relacionar notificación con usuarios', error);
+                        return callback({ mensaje: 'Error al relacionar notificación con usuarios' });
+                    }
+                    return callback(null);
+                }
+            );
+        }
+    );
+}
+
+function notifyNewMaterialCreation(nombre, deposito, callback) {
+    const descripcion = `Se ha creado el material '${nombre}' en el depósito '${deposito}' ya que no existía.`;
+
+    db.query(
+        `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
+        [descripcion],
+        (error, result) => {
+            if (error) {
+                console.error('Error al agregar notificación de nuevo material', error);
+                return callback({ mensaje: 'Error al agregar notificación de nuevo material' });
+            }
+
+            const notificacionId = result.insertId;
+
+            db.query(
+                `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
+                SELECT id, ?, FALSE FROM usuario`,
+                [notificacionId],
+                (error) => {
+                    if (error) {
+                        console.error('Error al relacionar notificación de nuevo material con usuarios', error);
+                        return callback({ mensaje: 'Error al relacionar notificación de nuevo material con usuarios' });
+                    }
+                    return callback(null);
+                }
+            );
+        }
+    );
+}
+
+
+function assignStatus(cantidad, bajoStock) {
+
+    // Convertir a números para asegurar que las comparaciones sean correctas
+    cantidad = parseInt(cantidad, 10);
+    bajoStock = parseInt(bajoStock, 10);
+
+    if (cantidad > bajoStock) {
+        return 1; // Disponible
+    } else if (cantidad <= bajoStock && cantidad > 0) {
+        return 2; // Bajo stock
+    } else if (cantidad === 0) {
+        return 3; // Sin stock
+    }
+
+}
+
+// Endpoint para verificar si es necesario mostrar el tutorial
+// Cambia la ruta para incluir el parámetro de ID del usuario
+app.get('/check-tutorial-status/:id', (req, res) => {
+    const userId = req.params.id; // Obtén el userId del parámetro de la URL
+    // Verificamos si es el primer login del usuario
+    const queryUser = 'SELECT firstLogin FROM usuario WHERE id = ?';
+    db.query(queryUser, [userId], (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        if (results.length === 0) return res.status(404).send('Usuario no encontrado'); // Maneja el caso donde no se encuentra el usuario
+
+        const firstLogin = results[0].firstLogin;
+
+        if (firstLogin === 1) {
+            // Verificamos si ya existen datos en las tablas clave
+            const queryCounts = `
+                SELECT
+                    (SELECT COUNT(*) FROM Ubicacion) AS ubicacionCount, 
+                    (SELECT COUNT(*) FROM Deposito) AS depositoCount,
+                    (SELECT COUNT(*) FROM Categoria) AS categoriaCount,
+                    (SELECT COUNT(*) FROM Pasillo) AS pasilloCount,
+                    (SELECT COUNT(*) FROM Estanteria) AS estanteriaCount
+            `;
+            db.query(queryCounts, (err, results) => {
+                if (err) return res.status(500).send('Error al consultar las tablas clave');
+
+                const { ubicacionCount, depositoCount, categoriaCount, pasilloCount, estanteriaCount } = results[0];
+
+                // Si alguna tabla está vacía, activamos el tutorial para esa parte
+                const needsTutorial = {
+                    ubicacion: ubicacionCount === 0,
+                    deposito: depositoCount === 0,
+                    categoria: categoriaCount === 0,
+                    pasillo: pasilloCount === 0,
+                    estanteria: estanteriaCount === 0
+                };
+
+                res.json({ showTutorial: true, steps: needsTutorial });
+            });
+        } else {
+            res.json({ showTutorial: false });
+        }
+    });
+});
+
+
+// Cambiar de POST a PATCH, ya que estamos realizando una actualización
+app.patch('/complete-tutorial/:id', (req, res) => {
+    const userId = req.params.id; // Obtén el userId del parámetro de la URL
+
+    if (!userId) {
+        return res.status(400).json({ message: 'El ID del usuario es obligatorio' });
+    }
+
+    // Actualiza el campo `firstLogin` a `0`
+    const query = 'UPDATE usuario SET firstLogin = 0 WHERE id = ?';
+
+    db.query(query, [userId], (err, result) => {
+        if (err) {
+            console.error('Error al actualizar el estado del tutorial:', err);
+            return res.status(500).json({ message: 'Error al completar el tutorial' });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        res.status(200).json({ message: 'Tutorial completado con éxito' });
+    });
+});
+
+
+
+// Consulta a la base de datos para verificar usuario y contraseña
+app.post('/login', (req, res) => {
+    const { user, password } = req.body;
+
+    const query = 'SELECT * FROM usuario WHERE nombre_usuario = ?';
+    db.query(query, [user], (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+
+        if (results.length === 0) {
+            return res.status(401).send('Usuario no encontrado');
+        }
+
+        const user = results[0];
+        const isPasswordValid = bcrypt.compareSync(password, user.contrasenia);
+
+        if (!isPasswordValid) {
+            return res.status(401).send('Contraseña incorrecta');
+        }
+
+        // Generar y devolver el token JWT
+        const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '1h' });
+
+        // Verificar si es el primer login
+        const firstLogin = user.firstLogin;
+
+        res.json({
+            token,
+            nombre: user.nombre,
+            rol: user.rol,
+            id: user.id,
+            firstLogin // Indicar si es el primer login
+        });
+    });
+});
+
+app.post('/logout', (req, res) => {
+    res.status(200).send('Logout exitoso');
+});
+
+// Endpoint para agregar usuarios
+app.post('/addUser', (req, res) => {
+    const { nombre, apellido, legajo, nombre_usuario, contrasenia, email, rol } = req.body;
+
+    if (!nombre || !apellido || !legajo || !nombre_usuario || !contrasenia || !email || !rol) {
+        return res.status(400).json({ message: 'Faltan campos obligatorios' });
+    }
+
+    if (!req.headers.authorization) {
+        return res.status(401).send("Authorization header missing");
+    }
+
+    const token = req.headers.authorization.split(' ')[1];
+    let decoded;
+    try {
+        decoded = jwt.verify(token, SECRET_KEY);
+    } catch (err) {
+        return res.status(401).send("Token inválido");
+    }
+
+    if (decoded.rol !== 'Administrador') {
+        return res.status(403).send('Permiso denegado');
+    }
+
+    // Verificar si el tutorial ya está completo
+    const tutorialQuery = 'SELECT firstLogin FROM usuario WHERE rol = "Administrador" LIMIT 1';
+    db.query(tutorialQuery, (err, result) => {
+        if (err) {
+            return res.status(500).send("Error al verificar el estado del tutorial");
+        }
+
+        // Si el tutorial ya está completo, se establecerá `firstLogin` en 0
+        const isTutorialComplete = result[0]?.firstLogin === 0;
+
+        const salt = bcrypt.genSaltSync(10);
+        const passwordHash = bcrypt.hashSync(contrasenia, salt);
+
+        const user = { 
+            nombre, 
+            apellido, 
+            legajo, 
+            nombre_usuario, 
+            contrasenia: passwordHash, 
+            email, 
+            rol, 
+            firstLogin: isTutorialComplete ? 0 : 1 
+        };
+
+        const query = 'INSERT INTO usuario SET ?';
+        db.query(query, user, (err, result) => {
+            if (err) {
+                return res.status(500).send("Error al crear el usuario");
+            }
+            res.status(200).send('Usuario creado');
+        });
+    });
+});
+
+
+app.get('/users', (req, res) => {
+    const query = `
         SELECT 
-            m.id, m.nombre, m.cantidad, m.imagen, m.matricula, m.fechaAlta, m.fechaUltimoEstado, 
-            m.bajoStock, m.idEstado, m.idEspacio, m.ultimoUsuarioId, 
-            m.idCategoria, m.idDeposito, 
-            d.nombre AS depositoNombre, 
-            u.nombre AS ubicacionNombre, 
-            es.descripcion AS estadoDescripcion, 
-            c.descripcion AS categoriaDescripcion,
-            e.numeroEspacio
-        FROM 
-            Material m
-        LEFT JOIN 
-            Deposito d ON m.idDeposito = d.id
-        LEFT JOIN 
-            Ubicacion u ON d.idUbicacion = u.id
-        LEFT JOIN 
-            Estado es ON m.idEstado = es.id
-        LEFT JOIN 
-            Categoria c ON m.idCategoria = c.id
-        LEFT JOIN 
-            Espacio e ON m.idEspacio = e.id           
-        WHERE 
-            m.nombre LIKE ?
-    `;
+            u.id, u.nombre, u.apellido, u.legajo, u.nombre_usuario, u.email, u.rol 
+        FROM Usuario u`;
 
-    const likeQuery = `${query}%`;
-
-    db.query(searchQuery, [likeQuery], (err, results) => {
+    db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json(results);
     });
 });
+
 
 // Enpoint para configurar el transporte de nodemailer
 const transporter = nodemailer.createTransport({
@@ -745,12 +985,16 @@ app.get('/shelves', (req, res) => {
 app.post('/addAisle', (req, res) => {
     const { numero, idDeposito, idLado1, idLado2 } = req.body;
 
-    if (!idDeposito || !idLado1 || !idLado2) {
-        return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    if (!numero || !idDeposito || !idLado1) {
+        return res.status(400).json({ error: 'Todos los campos requeridos deben estar completos' });
     }
 
-    const query = 'INSERT INTO Pasillo (numero, idDeposito, idLado1, idLado2) VALUES (?, ?, ?, ?)';
-    const values = [numero, idDeposito, idLado1, idLado2];
+    const query = `
+        INSERT INTO Pasillo (numero, idDeposito, idLado1, idLado2)
+        VALUES (?, ?, ?, ?)
+    `;
+
+    const values = [numero, idDeposito, idLado1, idLado2 || null]; // Si no hay `idLado2`, insertar `null`
 
     db.query(query, values, (err, result) => {
         if (err) {
@@ -761,15 +1005,23 @@ app.post('/addAisle', (req, res) => {
     });
 });
 
+
 app.get('/aisle', (req, res) => {
     const query = `
         SELECT 
-            p.id, p.numero, p.idDeposito,
-            d.Nombre AS nombreDeposito
+            p.id, p.numero, d.Nombre AS nombreDeposito, u.nombre AS ubicacionDeposito,
+            COALESCE(l1.descripcion, 'Sin lado') AS lado1Descripcion, 
+            COALESCE(l2.descripcion, 'Sin lado') AS lado2Descripcion
         FROM 
             Pasillo p
         LEFT JOIN 
             Deposito d ON p.idDeposito = d.id
+        LEFT JOIN 
+            Lado l1 ON p.idLado1 = l1.id
+        LEFT JOIN 
+            Lado l2 ON p.idLado2 = l2.id
+        LEFT JOIN 
+            Ubicacion u ON d.idUbicacion = u.id
     `;
 
     db.query(query, (err, results) => {
@@ -777,6 +1029,9 @@ app.get('/aisle', (req, res) => {
         res.json(results);
     });
 });
+
+
+
 
 app.post('/addDeposit', (req, res) => {
     const { nombre, idUbicacion } = req.body;
@@ -823,7 +1078,7 @@ app.get('/deposit-names', (req, res) => {
 
 // Endpoint para agregar ubicación
 app.post('/addLocation', (req, res) => {
-    const { nombre} = req.body;
+    const { nombre } = req.body;
 
     if (!nombre) {
         return res.status(400).json({ message: 'El Nombre es obligatorio' });
@@ -887,6 +1142,15 @@ app.post('/addCategory', (req, res) => {
     });
 });
 
+app.get('/total-categories', (req, res) => {
+    const query = 'SELECT COUNT(id) AS total FROM Categoria';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json({ total: results[0].total });
+    });
+});
+
+
 // Obtener Estados
 app.get('/statuses', (req, res) => {
     const query = 'SELECT id, descripcion FROM Estado';
@@ -942,14 +1206,7 @@ app.get('/spaces/:shelfId', (req, res) => {
     });
 });
 
-// Endpoint para obtener los pasillos
-app.get('/aisles', (req, res) => {
-    const query = 'SELECT id, numero, FROM Pasillo';
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).send('Error al consultar la base de datos');
-        res.json(results);
-    });
-});
+
 
 // Endpoint para agregar un nuevo lado
 app.post('/addSide', (req, res) => {
@@ -979,6 +1236,32 @@ app.get('/sides', (req, res) => {
         res.json(results);
     });
 });
+
+// Endpoint para obtener los lados asociados a un pasillo
+app.get('/sides/:aisleId', (req, res) => {
+    const { aisleId } = req.params;
+
+    const query = `
+        SELECT l.id, l.descripcion
+        FROM Lado l
+        JOIN Pasillo p ON (p.idLado1 = l.id OR p.idLado2 = l.id)
+        WHERE p.id = ?
+    `;
+
+    db.query(query, [aisleId], (err, results) => {
+        if (err) {
+            console.error('Error al obtener los lados asociados al pasillo:', err);
+            return res.status(500).json({ mensaje: 'Error al obtener los lados' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron lados para este pasillo' });
+        }
+
+        res.status(200).json(results);
+    });
+});
+
 
 // Endpoint para obtener la cantidad total de materiales
 app.get('/total-materials', (req, res) => {
@@ -1019,108 +1302,15 @@ app.get('/last-material', (req, res) => {
         }
 
         if (results.length === 0) {
-            return res.status(404).send('No se encontró ningún material');
+            return res.json({ message: 'No se encontró ningún material', material: null });
         }
 
         res.json({ nombre: results[0].nombre });
     });
 });
 
-app.delete('/materials/:id', (req, res) => {
-    const materialId = req.params.id;
 
-    // Primero, obtenemos la información del material para obtener el path de la imagen
-    const queryGetImage = 'SELECT imagen FROM Material WHERE id = ?';
 
-    db.query(queryGetImage, [materialId], (err, results) => {
-        if (err) {
-            console.error('Error al obtener la imagen:', err);
-            return res.status(500).send('Error al obtener la imagen');
-        }
-
-        if (results.length > 0) {
-            const imagePath = results[0].imagen; // Obtener el path de la imagen
-
-            if (imagePath) {
-                const fullPath = path.join(__dirname, 'public', imagePath); // Construir la ruta completa
-
-                // Eliminar la imagen del sistema de archivos
-                fs.unlink(fullPath, (err) => {
-                    if (err) {
-                        console.error('Error al eliminar la imagen:', err);
-                        // Aunque falle la eliminación de la imagen, seguimos eliminando el material
-                    }
-
-                    // Eliminar el registro de la base de datos una vez que tratamos de eliminar la imagen
-                    const queryDeleteMaterial = 'DELETE FROM Material WHERE id = ?';
-                    db.query(queryDeleteMaterial, [materialId], (err, result) => {
-                        if (err) {
-                            console.error('Error al eliminar el material:', err);
-                            return res.status(500).send('Error al eliminar el material');
-                        }
-                        res.status(200).send('Material eliminado con éxito y se intentó eliminar la imagen.');
-                    });
-                });
-            } else {
-                // Si no hay imagen, eliminamos directamente el material de la base de datos
-                const queryDeleteMaterial = 'DELETE FROM Material WHERE id = ?';
-                db.query(queryDeleteMaterial, [materialId], (err, result) => {
-                    if (err) {
-                        console.error('Error al eliminar el material:', err);
-                        return res.status(500).send('Error al eliminar el material');
-                    }
-                    res.status(200).send('Material eliminado con éxito (sin imagen asociada).');
-                });
-            }
-        } else {
-            return res.status(404).send('Material no encontrado');
-        }
-    });
-});
-
-app.delete('/materiales/:id/imagen', (req, res) => {
-    const materialId = req.params.id;
-
-    // Primero, obtén la información del material para obtener la ruta de la imagen
-    const queryGetImage = 'SELECT imagen FROM Material WHERE id = ?';
-
-    db.query(queryGetImage, [materialId], (err, results) => {
-        if (err) {
-            console.error('Error al obtener la imagen:', err);
-            return res.status(500).send('Error al obtener la imagen');
-        }
-
-        if (results.length > 0) {
-            const imagePath = results[0].imagen;
-
-            if (imagePath) {
-                const fullPath = path.join(__dirname, 'public', imagePath);
-
-                // Elimina la imagen del sistema de archivos
-                fs.unlink(fullPath, (err) => {
-                    if (err) {
-                        console.error('Error al eliminar la imagen:', err);
-                        return res.status(500).send('Error al eliminar la imagen');
-                    }
-
-                    // Actualiza la base de datos para eliminar la referencia a la imagen
-                    const queryDeleteImage = 'UPDATE Material SET imagen = NULL WHERE id = ?';
-                    db.query(queryDeleteImage, [materialId], (err, result) => {
-                        if (err) {
-                            console.error('Error al actualizar la base de datos:', err);
-                            return res.status(500).send('Error al actualizar la base de datos');
-                        }
-                        res.status(200).send('Imagen eliminada correctamente');
-                    });
-                });
-            } else {
-                return res.status(404).send('No hay imagen para eliminar');
-            }
-        } else {
-            return res.status(404).send('Material no encontrado');
-        }
-    });
-});
 
 app.get('/movements', (req, res) => {
     const query = `
@@ -1324,9 +1514,6 @@ app.post('/addMovements', (req, res) => {
         });
     });
 });
-
-
-
 
 
 app.get('/deposit-locations-movements', (req, res) => {

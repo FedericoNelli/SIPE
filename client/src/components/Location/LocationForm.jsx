@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Common/Select/Select";
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function LocationForm({ onClose, notify }) {
+function LocationForm({ onClose, onSubmit, notify }) {
     const [formData, setFormData] = useState({ nombre: '', idUbicacion: '' });
     const [ubicaciones, setUbicaciones] = useState([]);
 
@@ -30,12 +29,6 @@ function LocationForm({ onClose, notify }) {
         }));
     };
 
-    const handleSelectChange = (value) => {
-        setFormData((prevData) => ({
-            ...prevData,
-            idUbicacion: value
-        }));
-    };
 
     const handleSubmit = async () => {
         try {
@@ -48,10 +41,17 @@ function LocationForm({ onClose, notify }) {
             notify('success', "¡Ubicación agregada correctamente!");
     
             if (onClose) onClose();
-    
+            
+            // Ejecuta onSubmit con el delay
             setTimeout(() => {
-                window.location.reload();
-            }, 2500);
+                if (onSubmit) onSubmit(); // Ejecutar onSubmit después del delay
+                
+                // Verificar si no estamos en el tutorial y recargar la página
+                const isInTutorial = localStorage.getItem('inTutorial');
+                if (!isInTutorial || isInTutorial === 'false') {
+                    window.location.reload(); // Recargar la página si no estamos en el tutorial
+                }
+            }, 2000);
         } catch (error) {
             console.error('Error al agregar el Ubicación:', error);
             notify('error', error.message || "Error al agregar Ubicación");

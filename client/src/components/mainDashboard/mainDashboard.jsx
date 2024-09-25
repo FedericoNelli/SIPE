@@ -9,12 +9,13 @@ function MainDashboard() {
     const [lowStockMaterials, setLowStockMaterials] = useState(0);
     const [totalEstanterias, setTotalEstanterias] = useState(0);
     const [lastMaterial, setLastMaterial] = useState('');
+    const [totalCategorias, setTotalCategorias] = useState(0); // Nuevo estado
     const [updateTrigger, setUpdateTrigger] = useState(false);
     
     const navigate = useNavigate(); 
 
     const triggerUpdate = () => { 
-        setUpdateTrigger(prev => !prev); //Esta función se agrega para poder forzar al re-renderizado, pq rompia las tarjetas inlcusive vaciando caché. Esta puesto el trigger en cada useEffect como dependencia, y cada vez que se navegue, tmb se ejecuta
+        setUpdateTrigger(prev => !prev);
     };
 
     useEffect(() => {
@@ -63,6 +64,18 @@ function MainDashboard() {
             }
         };
         fetchLastMaterial();
+    }, [updateTrigger]);
+
+    useEffect(() => {
+        const fetchTotalCategorias = async () => { // Nueva llamada al endpoint
+            try {
+                const response = await axios.get('http://localhost:8081/total-categories');
+                setTotalCategorias(response.data.total);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+        fetchTotalCategorias();
     }, [updateTrigger]);
 
     const rol = localStorage.getItem('rol');
@@ -153,7 +166,7 @@ function MainDashboard() {
                     Icon={Tags}
                     colSpan={1}
                     title="Cantidad de categorías"
-                    totalElement={'3 categorías'}
+                    totalElement={`${totalCategorias} categorías`} // Mostrar el total dinámico
                     buttonText={buttonSection[4].label}
                     buttonDisabled={buttonSection[4].disabled}
                     onButtonClick={() => handleButtonClick(buttonSection[4].path)} 

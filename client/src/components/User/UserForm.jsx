@@ -36,7 +36,11 @@ const UserForm = ({ onClose, notify }) => {
 
     const handleAddUser = async (e) => {
         e.preventDefault();
-
+        const emailRegex = /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+        if (!emailRegex.test(formData.email)) {
+            notify('error', 'El correo electrónico debe ser válido');
+            return;
+        }
         const token = localStorage.getItem('token');
         const data = { ...formData };
 

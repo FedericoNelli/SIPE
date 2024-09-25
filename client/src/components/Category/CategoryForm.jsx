@@ -5,8 +5,10 @@ import { Input } from "@/components/Common/Input/Input";
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function CategoryForm({ onClose, notify }) {
+function CategoryForm({ onClose, onSubmit, notify }) {
     const [formData, setFormData] = useState({ descripcion: '' });
+
+    
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -27,10 +29,17 @@ function CategoryForm({ onClose, notify }) {
             notify('success', "¡Categoría agregada correctamente!");
     
             if (onClose) onClose();
-    
+            
+            // Ejecuta onSubmit con el delay
             setTimeout(() => {
-                window.location.reload();
-            }, 2500);
+                if (onSubmit) onSubmit(); // Ejecutar onSubmit después del delay
+                
+                // Verificar si no estamos en el tutorial y recargar la página
+                const isInTutorial = localStorage.getItem('inTutorial');
+                if (!isInTutorial || isInTutorial === 'false') {
+                    window.location.reload(); // Recargar la página si no estamos en el tutorial
+                }
+            }, 2000);
         } catch (error) {
             console.error('Error al agregar la categoría:', error);
             notify('error', error.message || "Error al agregar categoría");
