@@ -71,7 +71,8 @@ app.get('/materials/search', (req, res) => {
             u.nombre AS ubicacionNombre, 
             m.idEspacio, 
             e.numeroEspacio,
-            et.id AS estanteriaId,  
+            et.id AS estanteriaId,
+            et.numero AS estanteriaNumero,  
             et.cantidad_estante AS cantidadEstante,   
             et.cantidad_division AS cantidadDivision, 
             e.fila AS estanteEstanteria,                
@@ -118,7 +119,6 @@ app.get('/materials/search', (req, res) => {
 //Endpoint para obtener detalles del material
 app.get('/materials/details/:id', (req, res) => {
     const id = req.params.id;
-    console.log(`Recibiendo petición para el material con ID: ${id}`);  // <-- Aquí
 
     const query = `
     SELECT 
@@ -141,7 +141,8 @@ app.get('/materials/details/:id', (req, res) => {
         u.nombre AS ubicacionNombre, 
         m.idEspacio, 
         e.numeroEspacio,
-        et.id AS estanteriaId,  
+        et.id AS estanteriaId,
+        et.numero AS estanteriaNumero,  
         et.cantidad_estante AS cantidadEstante,   
         et.cantidad_division AS cantidadDivision, 
         e.fila AS estanteEstanteria,                
@@ -207,7 +208,8 @@ app.get('/materials', (req, res) => {
         u.nombre AS ubicacionNombre, 
         es.descripcion AS estadoDescripcion, 
         c.descripcion AS categoriaNombre,
-        et.id AS estanteriaId,                 
+        et.id AS estanteriaId,
+        et.numero AS estanteriaNumero,                 
         et.cantidad_estante AS cantidadEstante,   
         et.cantidad_division AS cantidadDivision,   
         e.fila AS estanteEstanteria,                
@@ -286,7 +288,8 @@ app.get('/materials/:id', (req, res) => {
         u.nombre AS ubicacionNombre, 
         m.idEspacio, 
         e.numeroEspacio,
-        et.id AS estanteriaId,  
+        et.id AS estanteriaId,
+        et.numero as estanteriaNumero,  
         et.cantidad_estante AS cantidadEstante,   
         et.cantidad_division AS cantidadDivision, 
         e.fila AS estanteEstanteria,                
@@ -766,7 +769,7 @@ app.post('/login', (req, res) => {
         }
 
         // Generar y devolver el token JWT
-        const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '1h' });
+        const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '5h' });
 
         // Verificar si es el primer login
         const firstLogin = user.firstLogin;
@@ -822,15 +825,15 @@ app.post('/addUser', (req, res) => {
         const salt = bcrypt.genSaltSync(10);
         const passwordHash = bcrypt.hashSync(contrasenia, salt);
 
-        const user = { 
-            nombre, 
-            apellido, 
-            legajo, 
-            nombre_usuario, 
-            contrasenia: passwordHash, 
-            email, 
-            rol, 
-            firstLogin: isTutorialComplete ? 0 : 1 
+        const user = {
+            nombre,
+            apellido,
+            legajo,
+            nombre_usuario,
+            contrasenia: passwordHash,
+            email,
+            rol,
+            firstLogin: isTutorialComplete ? 0 : 1
         };
 
         const query = 'INSERT INTO usuario SET ?';
@@ -964,7 +967,7 @@ app.post('/changePassword', (req, res) => {
 app.get('/shelves', (req, res) => {
     const query = `
         SELECT 
-            e.id, e.cantidad_estante, e.cantidad_division, e.idPasillo, e.idLado, 
+            e.id, e.numero, e.cantidad_estante, e.cantidad_division, e.idPasillo, e.idLado, 
             p.numero AS numeroPasillo, 
             l.descripcion AS direccionLado 
         FROM 
@@ -1162,14 +1165,14 @@ app.get('/statuses', (req, res) => {
 
 // Endpoint para agregar una nueva estantería
 app.post('/addShelf', (req, res) => {
-    const { cantidad_estante, cantidad_division, idPasillo, idLado } = req.body;
+    const { numero, cantidad_estante, cantidad_division, idPasillo, idLado } = req.body;
 
-    if (!cantidad_estante || !cantidad_division || !idPasillo || !idLado) {
+    if (!numero || !cantidad_estante || !cantidad_division || !idPasillo || !idLado) {
         return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
 
-    const query = 'INSERT INTO Estanteria (cantidad_estante, cantidad_division, idPasillo, idLado) VALUES (?, ?, ?, ?)';
-    const values = [cantidad_estante, cantidad_division, idPasillo, idLado];
+    const query = 'INSERT INTO Estanteria (numero, cantidad_estante, cantidad_division, idPasillo, idLado) VALUES (?, ?, ?, ?, ?)';
+    const values = [numero, cantidad_estante, cantidad_division, idPasillo, idLado];
 
     db.query(query, values, (err, result) => {
         if (err) {
@@ -1459,9 +1462,9 @@ app.post('/addMovements', (req, res) => {
                         const insertMaterialDestinoQuery = `
                             INSERT INTO Material (
                                 nombre, cantidad, matricula, fechaUltimoEstado, bajoStock, idEstado, idEspacio, 
-                                ultimoUsuarioId, idCategoria, idDeposito, ocupado
+                                ultimoUsuarioId, idCategoria, idDeposito, ocupado, fechaAlta
                             ) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
                         `;
 
                         const valoresInsertMaterial = [
@@ -1476,34 +1479,52 @@ app.post('/addMovements', (req, res) => {
                                 return;
                             }
 
-                            // Notificar sobre la creación de un nuevo material
-                            notifyNewMaterialCreation(nombre, idDepositoDestino, (error) => {
-                                if (error) {
-                                    console.error('Error al manejar notificación de nuevo material:', error);
-                                    res.status(500).json({ error: 'Error al manejar notificación de nuevo material' });
+                            // Obtener el nombre del depósito destino
+                            const getDepositNameQuery = `SELECT nombre FROM Deposito WHERE id = ?`;
+
+                            db.query(getDepositNameQuery, [idDepositoDestino], (err, result) => {
+                                if (err) {
+                                    console.error('Error al obtener el nombre del depósito:', err);
+                                    res.status(500).json({ error: 'Error al obtener el nombre del depósito' });
                                     return;
                                 }
 
-                                handleStockNotifications(nombre, cantidadMovidaNumero, bajoStock, (error) => {
+                                if (result.length === 0) {
+                                    res.status(404).json({ error: 'Depósito no encontrado' });
+                                    return;
+                                }
+
+                                const nombreDeposito = result[0].nombre;
+
+                                // Notificar sobre la creación de un nuevo material
+                                notifyNewMaterialCreation(nombre, nombreDeposito, (error) => {
                                     if (error) {
-                                        console.error('Error al manejar notificaciones de stock en destino:', error);
-                                        res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
+                                        console.error('Error al manejar notificación de nuevo material:', error);
+                                        res.status(500).json({ error: 'Error al manejar notificación de nuevo material' });
                                         return;
                                     }
 
-                                    const insertMovementQuery = `
-                                        INSERT INTO movimiento (idUsuario, nombreMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
-                                        VALUES (?, ?, ?, ?, ?, NOW())
-                                    `;
-
-                                    db.query(insertMovementQuery, [idUsuario, nombre, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err, result) => {
-                                        if (err) {
-                                            console.error('Error al agregar el movimiento:', err);
-                                            res.status(500).json({ error: 'Error al agregar el movimiento' });
+                                    handleStockNotifications(nombre, cantidadMovidaNumero, bajoStock, (error) => {
+                                        if (error) {
+                                            console.error('Error al manejar notificaciones de stock en destino:', error);
+                                            res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
                                             return;
                                         }
 
-                                        res.status(200).json({ message: 'Movimiento registrado y material creado en el destino correctamente' });
+                                        const insertMovementQuery = `
+                                            INSERT INTO movimiento (idUsuario, nombreMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
+                                            VALUES (?, ?, ?, ?, ?, NOW())
+                                        `;
+
+                                        db.query(insertMovementQuery, [idUsuario, nombre, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err, result) => {
+                                            if (err) {
+                                                console.error('Error al agregar el movimiento:', err);
+                                                res.status(500).json({ error: 'Error al agregar el movimiento' });
+                                                return;
+                                            }
+
+                                            res.status(200).json({ message: 'Movimiento registrado y material creado en el destino correctamente' });
+                                        });
                                     });
                                 });
                             });
@@ -1514,6 +1535,7 @@ app.post('/addMovements', (req, res) => {
         });
     });
 });
+
 
 
 app.get('/deposit-locations-movements', (req, res) => {
@@ -1527,6 +1549,434 @@ app.get('/deposit-locations-movements', (req, res) => {
             return;
         }
         res.json(results);
+    });
+});
+
+
+// Endpoint para obtener los informes generados
+app.get('/reports', (req, res) => {
+    const query = `
+        SELECT 
+            i.id, 
+            i.fechaGeneracion, 
+            u.nombre AS Usuario, 
+            i.tipo,
+            i.tipoGrafico,
+            m.nombre AS nombreMaterial,
+            d.nombre AS nombreDeposito
+        FROM 
+            Informe i
+        LEFT JOIN 
+            Usuario u ON i.idUsuario = u.id
+        LEFT JOIN 
+            Material m ON i.idMaterial = m.id
+        LEFT JOIN 
+            Deposito d ON i.idDeposito = d.id
+        ORDER BY 
+            i.fechaGeneracion DESC
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error al obtener los informes:', err);
+            res.status(500).json({ error: 'Error al obtener los informes' });
+            return;
+        }
+        res.json(results);
+    });
+});
+
+// Endpoint para agregar un informe
+app.post('/addReport', (req, res) => {
+    // Obtener el token del encabezado de autorización
+    const token = req.headers['authorization']?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ mensaje: 'No se proporcionó el token de autenticación' });
+    }
+
+    // Verificar el token y extraer el idUsuario
+    let idUsuario;
+    try {
+        const decoded = jwt.verify(token, SECRET_KEY); // Usa la clave secreta definida
+        idUsuario = decoded.id; // Extraer el id del usuario
+    } catch (error) {
+        return res.status(401).json({ mensaje: 'Token inválido o expirado' });
+    }
+
+    const { tipo, fechaInicio, fechaFin, deposito, estadoMaterial, idMaterial, tipoGrafico } = req.body;
+
+    // Validación de campos obligatorios
+    if (!tipo) {
+        return res.status(400).json({ mensaje: 'Campos obligatorios faltantes' });
+    }
+
+    // Crear la consulta SQL para insertar el informe en la base de datos
+    const insertQuery = `
+    INSERT INTO Informe (tipo, tipoGrafico, fechaGeneracion, idUsuario, idMaterial, idDeposito, idEstado, fechaInicio, fechaFin) 
+    VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?)`;
+    const insertValues = [tipo, tipoGrafico, idUsuario, idMaterial || null, deposito || null, estadoMaterial || null, fechaInicio, fechaFin];
+
+
+    db.query(insertQuery, insertValues, (err, result) => {
+        if (err) {
+            console.error('Error al insertar informe:', err);
+            return res.status(500).json({ mensaje: 'Error al insertar informe' });
+        }
+
+        const informeId = result.insertId;
+
+        // Generar el informe dependiendo del tipo de informe seleccionado
+        let reportQuery = '';
+        let reportParams = [];
+
+        switch (tipo) {
+            case 'Informe de inventario general':
+                reportQuery = `
+                    SELECT 
+                        m.id, 
+                        m.nombre, 
+                        m.cantidad, 
+                        c.descripcion AS categoria, 
+                        d.nombre AS depositoNombre,
+                        es.descripcion AS estadoDescripcion
+                    FROM 
+                        Material m
+                    LEFT JOIN 
+                        Categoria c ON m.idCategoria = c.id
+                    LEFT JOIN 
+                        Deposito d ON m.idDeposito = d.id
+                    LEFT JOIN 
+                        Estado es ON m.idEstado = es.id
+                `;
+                break;
+
+            case 'Informe de material por estado':
+                if (estadoMaterial === 'Todos') {
+                    reportQuery = `
+                            SELECT 
+                                m.id, 
+                                m.nombre, 
+                                m.cantidad, 
+                                c.descripcion AS categoria, 
+                                d.nombre AS depositoNombre,
+                                es.descripcion AS estadoDescripcion
+                            FROM 
+                                Material m
+                            LEFT JOIN 
+                                Categoria c ON m.idCategoria = c.id
+                            LEFT JOIN 
+                                Deposito d ON m.idDeposito = d.id
+                            LEFT JOIN 
+                                Estado es ON m.idEstado = es.id
+                        `;
+                } else {
+                    reportQuery = `
+                            SELECT 
+                                m.id, 
+                                m.nombre, 
+                                m.cantidad, 
+                                c.descripcion AS categoria, 
+                                d.nombre AS depositoNombre,
+                                es.descripcion AS estadoDescripcion
+                            FROM 
+                                Material m
+                            LEFT JOIN 
+                                Categoria c ON m.idCategoria = c.id
+                            LEFT JOIN 
+                                Deposito d ON m.idDeposito = d.id
+                            LEFT JOIN 
+                                Estado es ON m.idEstado = es.id
+                            WHERE 
+                                m.idEstado = ?
+                        `;
+                    reportParams.push(estadoMaterial); // Aquí debe ser el id del estado, no su descripción
+                }
+                break;
+
+            case 'Informe de material por depósito':
+                if (!deposito) {
+                    return res.status(400).json({ mensaje: 'Debe especificar el depósito' });
+                }
+                reportQuery = `
+                    SELECT 
+                        m.id, 
+                        m.nombre, 
+                        m.cantidad, 
+                        c.descripcion AS categoria, 
+                        d.nombre AS depositoNombre,
+                        es.descripcion AS estadoDescripcion
+                    FROM 
+                        Material m
+                    LEFT JOIN 
+                        Categoria c ON m.idCategoria = c.id
+                    LEFT JOIN 
+                        Deposito d ON m.idDeposito = d.id
+                    LEFT JOIN 
+                        Estado es ON m.idEstado = es.id
+                    WHERE 
+                        d.id = ?
+                `;
+                reportParams.push(deposito);
+                break;
+
+            case 'Informe de material por movimiento entre depósito':
+                if (!fechaInicio || !fechaFin) {
+                    return res.status(400).json({ mensaje: 'Debe especificar el rango de fechas' });
+                }
+
+                if (idMaterial && idMaterial !== 'Todos') {
+                    // Si se selecciona un material específico
+                    reportQuery = `
+                        SELECT 
+                            mo.id, 
+                            mo.fechaMovimiento, 
+                            mo.cantidad, 
+                            mo.nombreMaterial, 
+                            d1.nombre AS depositoOrigen, 
+                            d2.nombre AS depositoDestino,
+                            u.nombre AS usuario
+                        FROM 
+                            movimiento mo
+                        LEFT JOIN 
+                            Deposito d1 ON mo.idDepositoOrigen = d1.id
+                        LEFT JOIN 
+                            Deposito d2 ON mo.idDepositoDestino = d2.id
+                        LEFT JOIN 
+                            Usuario u ON mo.idUsuario = u.id
+                        WHERE 
+                            mo.fechaMovimiento BETWEEN ? AND ?
+                            AND mo.nombreMaterial = ?
+                    `;
+                    reportParams.push(fechaInicio, fechaFin, idMaterial);
+                } else {
+                    // Si se selecciona "Todos" los materiales
+                    reportQuery = `
+                        SELECT 
+                            mo.id, 
+                            mo.fechaMovimiento, 
+                            mo.cantidad, 
+                            mo.nombreMaterial, 
+                            d1.nombre AS depositoOrigen, 
+                            d2.nombre AS depositoDestino,
+                            u.nombre AS usuario
+                        FROM 
+                            movimiento mo
+                        LEFT JOIN 
+                            Deposito d1 ON mo.idDepositoOrigen = d1.id
+                        LEFT JOIN 
+                            Deposito d2 ON mo.idDepositoDestino = d2.id
+                        LEFT JOIN 
+                            Usuario u ON mo.idUsuario = u.id
+                        WHERE 
+                            mo.fechaMovimiento BETWEEN ? AND ?
+                    `;
+                    reportParams.push(fechaInicio, fechaFin);
+                }
+                break;
+
+            default:
+                return res.status(400).json({ mensaje: 'Tipo de informe no válido' });
+        }
+
+        // Ejecutar la consulta para generar el informe
+        db.query(reportQuery, reportParams, (err, reportResult) => {
+            if (err) {
+                console.error('Error al generar el informe:', err);
+                return res.status(500).json({ mensaje: 'Error al generar el informe' });
+            }
+
+            res.status(200).json({
+                mensaje: 'Informe generado con éxito',
+                informeId: informeId,
+                datos: reportResult,
+            });
+        });
+    });
+});
+
+
+
+// Endpoint para obtener los detalles de un informe específico
+app.get('/reports/:id', (req, res) => {
+    const reportId = req.params.id;
+
+    const query = `SELECT id, tipo, fechaGeneracion, idUsuario, idMaterial, idDeposito, tipoGrafico, fechaInicio, fechaFin, idEstado FROM Informe WHERE id = ?`;
+
+
+    db.query(query, [reportId], (err, results) => {
+        if (err) {
+            console.error('Error al consultar la base de datos:', err);
+            return res.status(500).send('Error al consultar la base de datos');
+        }
+        if (results.length === 0) return res.status(404).send('Informe no encontrado');
+
+        const report = results[0];
+        report.datos = [];
+
+        // Si ambos son NULL, podría realizarse una consulta para devolver todos los materiales
+        if (report.idMaterial === null && report.idDeposito === null) {
+            const generalQuery = 'SELECT nombre, cantidad, idEstado FROM Material';
+            db.query(generalQuery, (err, generalResults) => {
+                if (err) {
+                    console.error('Error al obtener datos generales:', err);
+                    return res.status(500).send('Error al obtener datos generales');
+                }
+                return res.json({ ...report, datos: generalResults.length > 0 ? generalResults : [] });
+            });
+            return;
+        }
+
+        const additionalQueries = [];
+
+        if (report.idMaterial) {
+            additionalQueries.push(new Promise((resolve, reject) => {
+                const materialQuery = 'SELECT * FROM Material WHERE id = ?';
+                db.query(materialQuery, [report.idMaterial], (err, materialResults) => {
+                    if (err) return reject(err);
+                    report.material = materialResults[0] || null;
+                    resolve();
+                });
+            }));
+        }
+
+        if (report.idDeposito) {
+            additionalQueries.push(new Promise((resolve, reject) => {
+                const depositoQuery = 'SELECT * FROM Deposito WHERE id = ?';
+                db.query(depositoQuery, [report.idDeposito], (err, depositoResults) => {
+                    if (err) return reject(err);
+                    report.deposito = depositoResults[0] || null;
+                    resolve();
+                });
+            }));
+
+            additionalQueries.push(new Promise((resolve, reject) => {
+                const materialByDepositoQuery = 'SELECT nombre, cantidad, idEstado FROM Material WHERE idDeposito = ?';
+                db.query(materialByDepositoQuery, [report.idDeposito], (err, materialByDepositoResults) => {
+                    if (err) return reject(err);
+                    report.datos = materialByDepositoResults.length > 0 ? materialByDepositoResults : [];
+                    resolve();
+                });
+            }));
+        }
+
+        // Agregar caso para "Informe de material por estado" incluyendo la opción "Todos"
+        if (report.tipo === 'Informe de material por estado') {
+            console.log('Procesando informe de material por estado...');
+            additionalQueries.push(new Promise((resolve, reject) => {
+                const estadoQuery = `
+                    SELECT 
+                        m.id, 
+                        m.nombre, 
+                        m.cantidad, 
+                        m.idEstado, 
+                        e.descripcion AS estadoDescripcion
+                    FROM 
+                        Material m 
+                    LEFT JOIN 
+                        Estado e ON m.idEstado = e.id
+                `;
+
+                // Si `idEstado` es específico
+                if (report.idEstado && report.idEstado !== 'Todos') {
+                    estadoQuery += ` WHERE e.id = ?`;
+                    db.query(estadoQuery, [report.idEstado], (err, estadoResults) => {
+                        if (err) return reject(err);
+                        console.log('Resultados de la consulta para estado específico:', estadoResults); // Verifica los resultados aquí
+                        report.datos = estadoResults.length > 0 ? estadoResults : [];
+                        resolve();
+                    });
+                } else {
+                    // Si no hay un estado específico seleccionado, trae todos los materiales con sus estados
+                    db.query(estadoQuery, (err, estadoResults) => {
+                        if (err) return reject(err);
+                        console.log('Resultados de la consulta para todos los estados:', estadoResults); // Verifica los resultados aquí
+                        report.datos = estadoResults.length > 0 ? estadoResults : [];
+                        resolve();
+                    });
+                }
+            }));
+        }
+
+
+
+
+
+        // Manejar el caso para "Informe de material por movimiento entre depósito"
+        if (report.tipo === 'Informe de material por movimiento entre depósito') {
+            if (report.fechaInicio && report.fechaFin) {
+                additionalQueries.push(new Promise((resolve, reject) => {
+                    const movimientoQuery = `
+                        SELECT 
+                            mo.id, 
+                            mo.fechaMovimiento, 
+                            mo.cantidad, 
+                            m.nombre AS nombreMaterial, 
+                            d1.nombre AS depositoOrigen, 
+                            d2.nombre AS depositoDestino,
+                            u.nombre AS usuario
+                        FROM 
+                            movimiento mo
+                        LEFT JOIN 
+                            Material m ON mo.idMaterial = m.id
+                        LEFT JOIN 
+                            Deposito d1 ON mo.idDepositoOrigen = d1.id
+                        LEFT JOIN 
+                            Deposito d2 ON mo.idDepositoDestino = d2.id
+                        LEFT JOIN 
+                            Usuario u ON mo.idUsuario = u.id
+                        WHERE 
+                            mo.fechaMovimiento BETWEEN ? AND ?
+                    `;
+                    db.query(movimientoQuery, [report.fechaInicio, report.fechaFin], (err, movimientoResults) => {
+                        if (err) return reject(err);
+                        report.datos = movimientoResults.length > 0 ? movimientoResults : [];
+                        resolve();
+                    });
+                }));
+            } else {
+                console.error('Error: rango de fechas no definido en el informe');
+                return res.status(400).send('Rango de fechas no definido');
+            }
+        }
+
+        Promise.all(additionalQueries)
+            .then(() => res.json(report))
+            .catch((err) => {
+                console.error('Error al realizar las consultas adicionales:', err);
+                res.status(500).send('Error al obtener información adicional del informe');
+            });
+    });
+});
+
+
+// Endpoint para eliminar informes seleccionados
+app.delete('/delete-reports', (req, res) => {
+    const { reportIds } = req.body;
+
+    if (!reportIds || reportIds.length === 0) {
+        return res.status(400).json({ error: "No se han proporcionado informes para eliminar" });
+    }
+
+    const query = 'DELETE FROM Informe WHERE id IN (?)';
+    db.query(query, [reportIds], (err, result) => {
+        if (err) {
+            console.error('Error eliminando informes:', err);
+            return res.status(500).json({ error: "Error eliminando informes" });
+        }
+
+        res.status(200).json({ message: "Informes eliminados correctamente" });
+    });
+});
+
+
+// Endpoint para obtener la cantidad total de informes
+app.get('/total-reports', (req, res) => {
+    const query = 'SELECT COUNT(*) AS total FROM Informe';
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results[0]);
     });
 });
 

@@ -3,12 +3,12 @@ import axios from 'axios';
 import { Input } from "@/components/Common/Input/Input";
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import { Search, Filter } from 'lucide-react';
+import { AnimatePresence, motion } from "framer-motion";
 import MaterialForm from '@/components/Material/MaterialForm';
 import MaterialList from '@/components/Material/MaterialList';
 import ModalDetailMaterial from '@/components/Material/ModalDetailMaterial';
-import { Search, Filter } from 'lucide-react';
 import FilterModal from '@/components/Common/Filter/FilterModal';
-import { AnimatePresence, motion } from "framer-motion";
 
 function Material({ notify }) {
     const [materials, setMaterials] = useState([]);
@@ -188,10 +188,10 @@ function Material({ notify }) {
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
                         {userRole === 'Administrador' && (
-                            <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
+                            <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">NUEVO MATERIAL</Button>
                         )}
-                        <Button onClick={openFilterModal} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2 "> <Filter /> Filtrar </Button>
-                        <Button onClick={openModalSearch} variant="secondary" className="bg-transparent border-sipe-white border text-sipe-white font-semibold px-2 py-2 flex items-center gap-2"> <Search /> Buscar </Button>
+                        <Button onClick={openFilterModal} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2 "> <Filter /> FILTRAR </Button>
+                        <Button onClick={openModalSearch} variant="secondary" className="bg-transparent border-sipe-white border text-sipe-white font-semibold px-2 py-2 flex items-center gap-2"> <Search /> BUSCAR </Button>
                     </div>
                 </div>
                 <MaterialList materials={currentMaterials} />

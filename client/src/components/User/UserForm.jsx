@@ -67,7 +67,7 @@ const UserForm = ({ onClose, notify }) => {
             if (onClose) onClose();
             setTimeout(() => {
                 window.location.reload();
-            }, 2500);
+            }, 2000);
 
         } catch (error) {
             notify('error', "Error al crear usuario");

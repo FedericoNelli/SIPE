@@ -187,7 +187,7 @@ function MaterialForm({ onClose, notify }) {
             if (onClose) onClose();
             setTimeout(() => {
                 window.location.reload();
-            }, 2500);
+            }, 2000);
         
         } catch (error) {
             console.error('Error al agregar el material:', error);
@@ -298,7 +298,7 @@ function MaterialForm({ onClose, notify }) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {shelves.map(shelf => (
-                                        <SelectItem key={shelf.id} value={shelf.id}>Estantería {shelf.id}</SelectItem>
+                                        <SelectItem key={shelf.id} value={shelf.id}>Estantería {shelf.numero}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>

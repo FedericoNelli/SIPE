@@ -29,7 +29,7 @@ const sections = [
         ]
     },
     { name: 'Movimientos', label: 'Movimientos', icon: <ArrowUpRight />, path: '/movement', roles: ['Administrador'] },
-    { name: 'Informes', label: 'Informes', icon: <FileText />, path: '/informes', roles: ['Administrador'] },
+    { name: 'Informes', label: 'Informes', icon: <FileText />, path: '/inf', roles: ['Administrador'] },
     { name: 'Lista de usuarios', label: 'Lista de usuarios', icon: <Users />, path: '/user', roles: ['Administrador'] },
 ];
 

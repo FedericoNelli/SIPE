@@ -129,11 +129,11 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
 
                             <h1 className="text-center text-4xl font-bold text-sipe-white">Mapa</h1>
                             <div className="bg-sipe-blue-dark rounded-xl flex flex-col justify-center items-center w-auto p-4">
-                                <p className="text-sipe-white font-light py-2">Pasillo {selectedMaterial.pasilloNumero} | Estantería {selectedMaterial.estanteriaId}</p>
+                                <p className="text-sipe-white font-light py-2">Pasillo {selectedMaterial.pasilloNumero} | Estantería {selectedMaterial.estanteriaNumero}</p>
                                 <div className="flex justify-center items-center">
                                     <Map
                                         pasillo={selectedMaterial.pasilloNumero}
-                                        estanteria={selectedMaterial.estanteriaId}
+                                        estanteria={selectedMaterial.estanteriaNumero}
                                         estantes={selectedMaterial.cantidadEstante}
                                         divisiones={selectedMaterial.cantidadDivision}
                                         objetoEstante={selectedMaterial.estanteEstanteria}
