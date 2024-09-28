@@ -45,7 +45,7 @@ function Location({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de ubicaciones</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">+ NUEVO</Button>
+                        <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">NUEVA UBICACIÓN</Button>
                     </div>
                 </div>
                 <LocationList locations={currentlocations} />

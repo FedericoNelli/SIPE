@@ -21,6 +21,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
     const [selectedShelf, setSelectedShelf] = useState(material?.idEstanteria || '');
     const [selectedSpace, setSelectedSpace] = useState(material?.idEspacio || '');
     const [isImageToDelete, setIsImageToDelete] = useState(false);
+    const [selectedShelfNumber, setSelectedShelfNumber] = useState(material?.estanteriaNumero || '');
     const [formData, setFormData] = useState({
         nombre: material?.nombre || '',
         cantidad: material?.cantidad || '',
@@ -53,7 +54,8 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                         imagenPreview: data.imagen ? `http://localhost:8081${data.imagen}` : ''
                     });
                     setLocationId(data.ubicacionId);
-                    setSelectedShelf(data.estanteriaId); 
+                    setSelectedShelf(data.estanteriaId);
+                    setSelectedShelfNumber(data.estanteriaNumero);
                 })
                 .catch(error => {
                     console.error('Error al obtener los detalles del material:', error);
@@ -133,8 +135,13 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
 
     const handleShelfChange = (value) => {
         setSelectedShelf(value);
-        setSelectedSpace('');
+        setFormData(prevData => ({
+            ...prevData,
+            estanteria: value
+        }));
+        setSelectedSpace(''); // Resetear el espacio seleccionado cuando se cambia la estantería
     };
+
 
     const handleSpaceChange = (value) => {
         setSelectedSpace(value);
@@ -146,12 +153,12 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
             fileInput.value = '';
         }
     };
-    
+
     const handleFileChange = (e) => {
-        e.stopPropagation(); 
+        e.stopPropagation();
         const file = e.target.files[0];
         if (file) {
-            if (file.size > 10 * 1024 * 1024) { 
+            if (file.size > 10 * 1024 * 1024) {
                 toast.error('El archivo es demasiado grande. El tamaño máximo es 10 MB.', {
                     duration: 2500,
                     style: {
@@ -184,10 +191,10 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
             });
         }
     };
-    
+
     const handleDeleteImage = (e) => {
         e.stopPropagation();
-        
+
         if (formData.imagen) {
             setFormData(prevData => ({
                 ...prevData,
@@ -195,9 +202,9 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                 imagenPreview: ''
             }));
             setIsImageToDelete(false); // Marca que no se debe eliminar en el backend
-    
+
             resetFileInput();
-    
+
             toast.success('Imagen del preview eliminada', {
                 duration: 2500,
                 style: {
@@ -211,9 +218,9 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                 ...prevData,
                 imagenPreview: ''
             }));
-    
+
             resetFileInput();
-    
+
             toast.success('Imagen del servidor marcada para eliminarse', {
                 duration: 2500,
                 style: {
@@ -223,7 +230,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
             });
         }
     };
-    
+
 
     const handleSave = async () => {
         const { nombre, cantidad, matricula, bajoStock, estado, categoria, deposito, imagen } = formData;
@@ -321,7 +328,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                             </CardHeader>
                             <CardContent className="grid gap-4">
                                 <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
+                                    <div className="grid gap-2">
                                         <Label htmlFor="nombre" className="text-sm font-medium">Nombre del material</Label>
                                         <Input className="border-b" id="nombre" placeholder="Ingresa el nombre del material" value={formData.nombre} onChange={handleInputChange} />
                                     </div>
@@ -344,7 +351,7 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
+                                    <div className="grid gap-2">
                                         <Label htmlFor="deposito" className="text-sm font-medium">Nombre del depósito</Label>
                                         <Select id="deposito" value={formData.deposito} onValueChange={(value) => handleSelectChange('deposito', value)}>
                                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
@@ -390,41 +397,42 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
                                             onValueChange={(value) => handleShelfChange(value)}
                                         >
                                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                                <SelectValue>{selectedShelf ? shelves.find(shelf => shelf.id === selectedShelf)?.id : "Selecciona la estantería"}</SelectValue>
+                                                <SelectValue>{selectedShelf ? `Estantería ${shelves.find(shelf => shelf.id === selectedShelf)?.numero}` : "Selecciona la estantería"}</SelectValue>
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {shelves.map(shelf => (
-                                                    <SelectItem key={shelf.id} value={shelf.id}>Estantería {shelf.id}</SelectItem>
+                                                    <SelectItem key={shelf.id} value={shelf.id}>{`Estantería ${shelf.numero}`}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
+
                                     </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="space" className="text-sm font-medium">Espacio</Label>
-                                                <Select
-                                                    id="space"
-                                                    value={selectedSpace}
-                                                    onValueChange={(value) => handleSpaceChange(value)}
-                                                >
-                                                    <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                                        <SelectValue>{selectedSpace ? spaces.find(space => space.id === selectedSpace)?.numeroEspacio : "Selecciona el espacio"}</SelectValue>
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {spaces.map(space => (
-                                                            <SelectItem key={space.id} value={space.id} disabled={space.ocupado}>
-                                                                {`Espacio ${space.numeroEspacio}`}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div className="grid gap-2">
-                                            <div className="grid gap-2">
-                                                <Label className="text-sm font-medium">Estado actual: {statuses.find(status => status.id === formData.estado)?.descripcion || "Estado no disponible"}</Label> 
-                                            </div>
+                                            <Label htmlFor="space" className="text-sm font-medium">Espacio</Label>
+                                            <Select
+                                                id="space"
+                                                value={selectedSpace}
+                                                onValueChange={(value) => handleSpaceChange(value)}
+                                            >
+                                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                                    <SelectValue>{selectedSpace ? spaces.find(space => space.id === selectedSpace)?.numeroEspacio : "Selecciona el espacio"}</SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {spaces.map(space => (
+                                                        <SelectItem key={space.id} value={space.id} disabled={space.ocupado}>
+                                                            {`Espacio ${space.numeroEspacio}`}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <div className="grid gap-2">
+                                            <Label className="text-sm font-medium">Estado actual: {statuses.find(status => status.id === formData.estado)?.descripcion || "Estado no disponible"}</Label>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="image" className="text-sm font-medium">Imagen</Label>

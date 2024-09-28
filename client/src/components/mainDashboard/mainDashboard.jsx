@@ -11,6 +11,7 @@ function MainDashboard() {
     const [lastMaterial, setLastMaterial] = useState('');
     const [totalCategorias, setTotalCategorias] = useState(0); // Nuevo estado
     const [updateTrigger, setUpdateTrigger] = useState(false);
+    const [totalInformes, setTotalInformes] = useState(0);
     
     const navigate = useNavigate(); 
 
@@ -78,6 +79,18 @@ function MainDashboard() {
         fetchTotalCategorias();
     }, [updateTrigger]);
 
+    useEffect(() => {
+        const fetchTotalInformes = async () => {
+            try {
+                const response = await axios.get('http://localhost:8081/total-reports');
+                setTotalInformes(response.data.total);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+        fetchTotalInformes();
+    }, [updateTrigger]);
+
     const rol = localStorage.getItem('rol');
     const buttonSection = [
         { 
@@ -98,7 +111,7 @@ function MainDashboard() {
         { 
             label: 'Ir a Informes',
             disabled: rol !== 'Administrador',
-            path: '/informes' 
+            path: '/inf' 
         },
         { 
             label: 'Ir a Categorias',
@@ -157,7 +170,7 @@ function MainDashboard() {
                     Icon={AlignStartVertical}
                     colSpan={1}
                     title="Cantidad de informes generados"
-                    totalElement={10}
+                    totalElement={`${totalInformes} informes`}
                     buttonText={buttonSection[3].label}
                     buttonDisabled={buttonSection[3].disabled}
                     onButtonClick={() => handleButtonClick(buttonSection[3].path)} 
@@ -166,7 +179,7 @@ function MainDashboard() {
                     Icon={Tags}
                     colSpan={1}
                     title="Cantidad de categorías"
-                    totalElement={`${totalCategorias} categorías`} // Mostrar el total dinámico
+                    totalElement={`${totalCategorias} categorías`}
                     buttonText={buttonSection[4].label}
                     buttonDisabled={buttonSection[4].disabled}
                     onButtonClick={() => handleButtonClick(buttonSection[4].path)} 

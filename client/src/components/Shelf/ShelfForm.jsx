@@ -10,6 +10,7 @@ function ShelfForm({ onClose, onSubmit, notify }) {
     const [aisles, setAisles] = useState([]);
     const [sides, setSides] = useState([]);
     const [formData, setFormData] = useState({
+        numero: '',
         cantidad_estante: '',
         cantidad_division: '',
         idPasillo: '',
@@ -61,6 +62,11 @@ function ShelfForm({ onClose, onSubmit, notify }) {
                 notify('error', "La cantidad de divisiones debe ser mayor que 0");
                 return;
             }
+
+            if(formData.numero <= 0) {
+                notify('error', "El número de estante debe ser mayor a 0");
+                return;
+            }
     
             const response = await axios.post('http://localhost:8081/addShelf', formData);
     
@@ -108,6 +114,23 @@ function ShelfForm({ onClose, onSubmit, notify }) {
                     <hr className="text-sipe-gray" />
                 </CardHeader>
                 <CardContent className="flex flex-col space-y-10">
+                <div className="flex flex-col gap-4">
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="cantidad_estante" className="text-sm font-medium">
+                                Número de estantería
+                            </Label>
+                            <Input
+                                className="border-b"
+                                id="numero"
+                                name="numero"
+                                type="number"
+                                placeholder="Ingresa el número de la estantería"
+                                value={formData.numero}
+                                onChange={handleChange}
+                                min="0"
+                            />
+                        </div>
+                    </div>
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
                             <Label htmlFor="cantidad_estante" className="text-sm font-medium">

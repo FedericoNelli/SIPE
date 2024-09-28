@@ -112,7 +112,7 @@ function MovementForm({ onClose, notify }) {
 
             setTimeout(() => {
                 window.location.reload();
-            }, 2500);
+            }, 2000);
         } catch (error) {
             console.error('Error al agregar el movimiento:', error);
             notify('error', error.message || "Error al agregar movimiento");
