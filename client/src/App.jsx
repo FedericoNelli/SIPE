@@ -11,7 +11,6 @@ import Users from "./pages/Users/Users"
 import { CompTesting } from "./components/Testing/CompTesting"
 import Shelves from "./pages/Shelves/Shelves"
 import Aisles from "./pages/Aisles/Aisles"
-import Sides from "./pages/Sides/Sides"
 import Deposits from "./pages/Deposits/Deposits"
 import Locations from "./pages/Locations/Locations"
 import Movements from "./pages/Movements/Movements"
@@ -34,7 +33,6 @@ function App() {
           <Route path="/tuto" element={<AdminRoute><Tutorials /></AdminRoute>} />
           <Route path="/shelf" element={<AdminRoute><Shelves /></AdminRoute>} />
           <Route path="/aisle" element={<AdminRoute><Aisles /></AdminRoute>} />
-          <Route path="/side" element={<AdminRoute><Sides /></AdminRoute>} />
           <Route path="/deposit" element={<AdminRoute><Deposits /></AdminRoute>} />
           <Route path="/movement" element={<AdminRoute><Movements /></AdminRoute>} />
           <Route path="/locations" element={<AdminRoute><Locations /></AdminRoute>} />

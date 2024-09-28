@@ -22,8 +22,10 @@ function ShelfList() {
                     <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Estanteria número</TableHead>
                     <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad de estantes</TableHead>
                     <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad de divisiones</TableHead>
+                    <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Ubicación</TableHead>
+                    <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito</TableHead>
                     <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Pasillo</TableHead>
-                    <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Lado</TableHead>
+                    <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Lado</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -32,6 +34,8 @@ function ShelfList() {
                         <TableCell className="text-center font-light">Estanteria {shelve.numero}</TableCell>
                         <TableCell className="text-center font-light">{shelve.cantidad_estante}</TableCell>
                         <TableCell className="text-center font-light">{shelve.cantidad_division}</TableCell>
+                        <TableCell className="text-center font-light">{shelve.nombreUbicacion}</TableCell>
+                        <TableCell className="text-center font-light">{shelve.nombreDeposito}</TableCell>
                         <TableCell className="text-center font-light">{shelve.numeroPasillo}</TableCell>
                         <TableCell className="text-center font-light">{shelve.direccionLado}</TableCell>
                     </TableRow>
@@ -41,4 +45,4 @@ function ShelfList() {
     )
 }
 
-export default ShelfList
+export default ShelfList;

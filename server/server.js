@@ -575,6 +575,93 @@ app.delete('/materiales/:id/imagen', (req, res) => {
     });
 });
 
+// Endpoint para obtener las salidas de materiales
+app.get('/exits', (req, res) => {
+    const query = `
+    SELECT 
+        ex.id AS salidaId,
+        ex.cantidad,
+        m.nombre AS materialNombre,
+        DATE_FORMAT(ex.fecha, '%d-%m-%Y %H:%i:%s') AS fechaSalida,
+        d.nombre AS depositoNombre,
+        u.nombre AS ubicacionNombre -- Asumimos que el campo 'nombre' es el nombre de la ubicación
+    FROM 
+        salida_material ex
+    JOIN 
+        Material m ON ex.idMaterial = m.id
+    LEFT JOIN 
+        Deposito d ON m.idDeposito = d.id
+    LEFT JOIN 
+        Ubicacion u ON d.idUbicacion = u.id -- Asumimos que 'idUbicacion' es la FK de la tabla Deposito
+    ORDER BY 
+        ex.fecha DESC;
+`;
+
+
+
+    db.query(query, (error, results) => {
+        if (error) {
+            console.error('Error fetching material exits:', error);
+            return res.status(500).json({ error: 'Error al obtener las salidas de materiales' });
+        }
+
+        // En vez de retornar un 404, devolvemos un array vacío o un mensaje indicando que no hay registros
+        if (results.length === 0) {
+            return res.status(200).json({ message: 'No hay registros de salidas de materiales', data: [] });
+        }
+
+        res.status(200).json(results);
+    });
+});
+
+
+// Endpoint POST para registrar la salida de un material
+app.post('/materiales/salidas', async (req, res) => {
+    const { idMaterial, cantidad, motivo, fecha } = req.body;
+
+    try {
+        // Verificar que el material existe y obtener la cantidad disponible
+        const result = await new Promise((resolve, reject) => {
+            db.query('SELECT cantidad FROM Material WHERE id = ?', [idMaterial], (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+
+        if (!result || result.length === 0) {
+            return res.status(404).json({ message: 'Material no encontrado' });
+        }
+
+        const material = result[0];
+
+        if (material.cantidad < cantidad) {
+            return res.status(400).json({ message: 'La cantidad de salida no puede ser mayor a la cantidad disponible' });
+        }
+
+        // Registrar la salida del material
+        await new Promise((resolve, reject) => {
+            db.query('INSERT INTO salida_material (idMaterial, cantidad, motivo, fecha) VALUES (?, ?, ?, ?)',
+                [idMaterial, cantidad, motivo, fecha], (err) => {
+                    if (err) return reject(err);
+                    resolve();
+                });
+        });
+
+        // Actualizar la cantidad del material en la tabla `Material`
+        await new Promise((resolve, reject) => {
+            db.query('UPDATE Material SET cantidad = cantidad - ? WHERE id = ?', [cantidad, idMaterial], (err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
+
+        return res.status(201).json({ message: 'Salida de material registrada con éxito' });
+    } catch (error) {
+        console.error('Error registrando salida de material:', error.message);
+        console.error(error.stack); // Esto imprimirá el stack trace completo
+        return res.status(500).json({ message: 'Error registrando salida de material' });
+    }
+});
 
 
 
@@ -964,25 +1051,6 @@ app.post('/changePassword', (req, res) => {
     })
 });
 
-app.get('/shelves', (req, res) => {
-    const query = `
-        SELECT 
-            e.id, e.numero, e.cantidad_estante, e.cantidad_division, e.idPasillo, e.idLado, 
-            p.numero AS numeroPasillo, 
-            l.descripcion AS direccionLado 
-        FROM 
-            Estanteria e
-        LEFT JOIN 
-            Pasillo p ON e.idPasillo = p.id
-        LEFT JOIN 
-            Lado l ON e.idLado = l.id
-    `;
-
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).send('Error al consultar la base de datos');
-        res.json(results);
-    });
-});
 
 // Endpoint para agregar un nuevo pasillo
 app.post('/addAisle', (req, res) => {
@@ -1010,7 +1078,8 @@ app.post('/addAisle', (req, res) => {
 
 
 app.get('/aisle', (req, res) => {
-    const query = `
+    const depositoId = req.query.depositoId;
+    let query = `
         SELECT 
             p.id, p.numero, d.Nombre AS nombreDeposito, u.nombre AS ubicacionDeposito,
             COALESCE(l1.descripcion, 'Sin lado') AS lado1Descripcion, 
@@ -1026,14 +1095,29 @@ app.get('/aisle', (req, res) => {
         LEFT JOIN 
             Ubicacion u ON d.idUbicacion = u.id
     `;
+    if (depositoId) {
+        query += ` WHERE p.idDeposito = ?`;
+        db.query(query, [depositoId], (err, results) => {
+            if (err) return res.status(500).send('Error al consultar la base de datos');
+            res.json(results);
+        });
+    } else {
+        db.query(query, (err, results) => {
+            if (err) return res.status(500).send('Error al consultar la base de datos');
+            res.json(results);
+        });
+    }
+});
 
+
+// Endpoint para obtener los lados
+app.get('/sides', (req, res) => {
+    const query = 'SELECT id, descripcion FROM Lado';
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json(results);
     });
 });
-
-
 
 
 app.post('/addDeposit', (req, res) => {
@@ -1163,6 +1247,32 @@ app.get('/statuses', (req, res) => {
     });
 });
 
+app.get('/shelves', (req, res) => {
+    const query = `
+        SELECT 
+            e.id, e.numero, e.cantidad_estante, e.cantidad_division, e.idPasillo, e.idLado, 
+            p.numero AS numeroPasillo, 
+            l.descripcion AS direccionLado,
+            d.nombre AS nombreDeposito,
+            u.nombre AS nombreUbicacion
+        FROM 
+            Estanteria e
+        LEFT JOIN 
+            Pasillo p ON e.idPasillo = p.id
+        LEFT JOIN 
+            Lado l ON e.idLado = l.id
+        LEFT JOIN 
+            Deposito d ON p.idDeposito = d.id
+        LEFT JOIN 
+            Ubicacion u ON d.idUbicacion = u.id
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
 // Endpoint para agregar una nueva estantería
 app.post('/addShelf', (req, res) => {
     const { numero, cantidad_estante, cantidad_division, idPasillo, idLado } = req.body;
@@ -1209,36 +1319,6 @@ app.get('/spaces/:shelfId', (req, res) => {
     });
 });
 
-
-
-// Endpoint para agregar un nuevo lado
-app.post('/addSide', (req, res) => {
-    const { descripcion } = req.body;
-
-    if (!descripcion) {
-        return res.status(400).json({ error: 'Todos los campos son obligatorios' });
-    }
-
-    const query = 'INSERT INTO Lado (descripcion) VALUES (?)';
-    const values = [descripcion];
-
-    db.query(query, values, (err, result) => {
-        if (err) {
-            console.error('Error al insertar lado:', err);
-            return res.status(500).json({ error: 'Error al agregar lado', details: err });
-        }
-        res.status(200).json({ message: 'Lado agregado exitosamente', result });
-    });
-});
-
-// Endpoint para obtener los lados
-app.get('/sides', (req, res) => {
-    const query = 'SELECT id, descripcion FROM Lado';
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).send('Error al consultar la base de datos');
-        res.json(results);
-    });
-});
 
 // Endpoint para obtener los lados asociados a un pasillo
 app.get('/sides/:aisleId', (req, res) => {
