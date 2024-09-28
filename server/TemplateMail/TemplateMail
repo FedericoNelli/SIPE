@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="shortcut icon" href="/client/src/assets/images/icons/favicon.png" type="image/x-icon">
+        <title>TemplateMail</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+            body {
+                color: white;
+                font-family: 'Outfit', sans-serif;
+            }
+
+            .container {
+                background-color: #1B2632;
+                width: 40dvw;
+                height: 50dvh;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                padding-left: 2rem;
+                padding-right: 2rem;
+                padding-top: 1.5rem;
+                padding-bottom: 1.5rem;
+                border-radius: 0.5rem;
+                box-shadow: #1B2632 3px 3px 15px;
+            }
+
+            .code {
+                background-color: #FFB162;
+                color: white;
+                font-weight: 400 !important;
+                font-size: 2.2rem;
+                width: 15dvw;
+                padding: 0.9rem;
+                border: none;
+                border-radius: 0.5rem;
+                text-align: center;
+            }
+
+            .div-code {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            img {
+                width: 7.5%;
+            }
+
+            .container p {
+                font-weight: 300;
+            }
+
+            .container span {
+                font-weight: 100;
+                font-size: small;
+            }
+            .container a{
+                color: white;
+            }
+
+            
+        </style>
+    </head>
+    <body>
+        <section>
+            <div class="container">
+                <img src="/client/src/assets/images/logo/IsologoSipe.png" alt="LogoSIPE">
+                <div>
+                    <h1>¡Hola usuario!</h1>
+                    <p>
+                        Recibimos una solicitud para restablecer la contraseña de tu cuenta.
+                        Si no fuiste vos, podés ignorar este mensaje.
+                    </p>
+                    <p>
+                        Para continuar con el proceso, ingresá el siguiente código en la aplicación. <br>
+                        ¡Recordá <strong>no compartir esta información con nadie!</strong>
+                    </p>
+                </div>
+
+                <div class="div-code">
+                    <p class="code">ABCDE</p>
+                </div>
+                <span>Si tenés alguna pregunta o consulta, no dudes en ponerte en contacto con nuestro
+                    equipo de soporte <br>a través de <a href="mailto:sipe.supp@gmail.com">sipe.supp@gmail.com</a>
+                </span>
+                <span>
+                    © 2024 SIPE. Todos los derechos reservados.
+                </span>
+            </div>
+            </div>
+        </section>
+    </body>
+</html>
