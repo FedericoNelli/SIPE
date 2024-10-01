@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
+import { Button } from "@/components/Common/Button/Button";
 import axios from "axios";
 
-function MaterialExitList() {
+function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handleDeleteExits }) {
     const [salidas, setSalidas] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false);
 
     useEffect(() => {
-        axios.get('http://localhost:8081/exits') // Ajusta la ruta si es necesario
+        axios.get('http://localhost:8081/exits')
             .then(response => {
-                // Verificar si response.data es un array o un objeto con un array en `data`
                 if (Array.isArray(response.data)) {
                     setSalidas(response.data);
                 } else if (response.data.data) {
@@ -18,15 +18,37 @@ function MaterialExitList() {
             })
             .catch(error => {
                 console.error('Error fetching salidas:', error);
-            })
-            .finally(() => {
-                setLoading(false);
             });
     }, []);
 
-    if (loading) {
-        return <p className="text-center text-white">Cargando salidas...</p>;
-    }
+    const toggleExitSelection = (exitId) => {
+        if (selectedExits.includes(exitId)) {
+            setSelectedExits(selectedExits.filter(id => id !== exitId));
+        } else {
+            setSelectedExits([...selectedExits, exitId]);
+        }
+    };
+
+    const handleSelectAll = () => {
+        if (selectedExits.length === salidas.length) {
+            setSelectedExits([]);
+        } else {
+            const allExitIds = salidas.map(salida => salida.salidaId);
+            setSelectedExits(allExitIds);
+        }
+    };
+
+    const confirmDelete = () => {
+        if (selectedExits.length === 0) {
+            notify('error', 'No hay salidas seleccionadas para eliminar');
+            return;
+        }
+        setIsConfirmingDeletion(true);
+    };
+
+    const cancelDelete = () => {
+        setIsConfirmingDeletion(false);
+    };
 
     return (
         <>
@@ -36,7 +58,16 @@ function MaterialExitList() {
                 <Table className="w-full text-sipe-white">
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">ID</TableHead>
+                            {isDeleteMode && (
+                                <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedExits.length === salidas.length && salidas.length > 0}
+                                        onChange={handleSelectAll}
+                                    />
+                                </TableHead>
+                            )}
+                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">ID</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Fecha</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Material</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad</TableHead>
@@ -45,8 +76,17 @@ function MaterialExitList() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {salidas.map((salida, index) => (
-                            <TableRow key={index}>
+                        {salidas.map(salida => (
+                            <TableRow key={salida.salidaId}>
+                                {isDeleteMode && (
+                                    <TableCell className="text-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedExits.includes(salida.salidaId)}
+                                            onChange={() => toggleExitSelection(salida.salidaId)}
+                                        />
+                                    </TableCell>
+                                )}
                                 <TableCell className="text-center font-light">{salida.salidaId}</TableCell>
                                 <TableCell className="text-center font-light">{salida.fechaSalida}</TableCell>
                                 <TableCell className="text-center font-light">{salida.materialNombre}</TableCell>
@@ -56,9 +96,28 @@ function MaterialExitList() {
                             </TableRow>
                         ))}
                     </TableBody>
-
-
                 </Table>
+            )}
+            {isDeleteMode && (
+                <div className="flex flex-col items-center mt-4">
+                    {isConfirmingDeletion ? (
+                        <>
+                            <p className="text-red-500 font-bold">Si confirma la eliminación no se podrán recuperar los datos.</p>
+                            <div className="flex gap-4 mt-2">
+                                <Button onClick={cancelDelete} className="bg-gray-400 font-semibold px-4 py-2 rounded hover:bg-gray-500">
+                                    Cancelar
+                                </Button>
+                                <Button onClick={handleDeleteExits} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
+                                    Aceptar
+                                </Button>
+                            </div>
+                        </>
+                    ) : (
+                        <Button onClick={confirmDelete} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
+                            Confirmar Eliminación
+                        </Button>
+                    )}
+                </div>
             )}
         </>
     );

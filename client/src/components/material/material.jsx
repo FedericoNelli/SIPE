@@ -22,7 +22,8 @@ function Material({ notify }) {
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [materialDetail, setMaterialDetail] = useState(null);
-
+    const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para el modo de eliminación
+    const [selectedExits, setSelectedExits] = useState([]); // Estado para las salidas seleccionadas
     const [filters, setFilters] = useState({
         estado: '',
         categoria: '',
@@ -188,6 +189,34 @@ function Material({ notify }) {
         setViewingMaterialExits(false);
     };
 
+    const handleDeleteExits = () => {
+        if (selectedExits.length === 0) {
+            notify('error', 'No hay salidas seleccionadas para eliminar');
+            return;
+        }
+
+        axios.delete('http://localhost:8081/delete-exits', { data: { exitIds: selectedExits } })
+            .then(() => {
+                notify('success', 'Salidas eliminadas correctamente');
+                // Elimina las salidas eliminadas del estado actual
+                setSelectedExits([]);
+                setIsDeleteMode(false);
+            })
+
+            .catch(error => {
+                console.error('Error eliminando salidas:', error);
+                notify('error', 'Error al eliminar salidas');
+            });
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+    };
+
+    const toggleDeleteMode = () => {
+        setIsDeleteMode(!isDeleteMode);
+        setSelectedExits([]); // Limpiar la selección al salir del modo de eliminación
+    };
+
     return (
         <div className="relative">
             <div className="absolute inset-0 bg-sipe-white opacity-5 z-10 rounded-2xl" />
@@ -204,16 +233,31 @@ function Material({ notify }) {
                             </Button>
                         )}
                         {viewingMaterialExits ? (
-                            <Button onClick={backToMaterialList} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2">SALIR</Button>
+                            <>
+                                <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
+                                    {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Salidas'}
+                                </Button>
+                                <Button onClick={backToMaterialList} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2">SALIR</Button>
+                            </>
                         ) : (
-                            <Button onClick={viewMaterialExits} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2">VER SALIDAS DE MATERIALES</Button>
+                            <>
+                                <Button onClick={viewMaterialExits} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2">VER SALIDAS DE MATERIALES</Button>
+                                <Button onClick={openFilterModal} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2 ">
+                                    <Filter /> FILTRAR
+                                </Button>
+                                <Button onClick={openModalSearch} variant="secondary" className="bg-transparent border-sipe-white border text-sipe-white font-semibold px-2 py-2 flex items-center gap-2">
+                                    <Search /> BUSCAR
+                                </Button>
+                            </>
                         )}
-                        <Button onClick={openFilterModal} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2 "> <Filter /> FILTRAR </Button>
-                        <Button onClick={openModalSearch} variant="secondary" className="bg-transparent border-sipe-white border text-sipe-white font-semibold px-2 py-2 flex items-center gap-2"> <Search /> BUSCAR </Button>
                     </div>
                 </div>
                 {viewingMaterialExits ? (
-                    <MaterialExitList />
+                    <MaterialExitList
+                        isDeleteMode={isDeleteMode}
+                        selectedExits={selectedExits}
+                        setSelectedExits={setSelectedExits}
+                        handleDeleteExits={handleDeleteExits} />
                 ) : (
                     <MaterialList materials={currentMaterials} />
                 )}

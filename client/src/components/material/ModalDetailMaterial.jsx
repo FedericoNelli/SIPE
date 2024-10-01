@@ -128,19 +128,27 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
                             </div>
 
                             <h1 className="text-center text-4xl font-bold text-sipe-white">Mapa</h1>
-                            <div className="bg-sipe-blue-dark rounded-xl flex flex-col justify-center items-center w-auto p-4">
-                                <p className="text-sipe-white font-light py-2">Pasillo {selectedMaterial.pasilloNumero} | Estantería {selectedMaterial.estanteriaNumero}</p>
-                                <div className="flex justify-center items-center">
-                                    <Map
-                                        pasillo={selectedMaterial.pasilloNumero}
-                                        estanteria={selectedMaterial.estanteriaNumero}
-                                        estantes={selectedMaterial.cantidadEstante}
-                                        divisiones={selectedMaterial.cantidadDivision}
-                                        objetoEstante={selectedMaterial.estanteEstanteria}
-                                        objetoDivision={selectedMaterial.divisionEstanteria}
-                                    />
+
+                            {selectedMaterial.idEspacio ? (
+                                <div className="bg-sipe-blue-dark rounded-xl flex flex-col justify-center items-center w-auto p-4">
+                                    <p className="text-sipe-white font-light py-2">Pasillo {selectedMaterial.pasilloNumero} | Estantería {selectedMaterial.estanteriaNumero}</p>
+                                    <div className="flex justify-center items-center">
+                                        <Map
+                                            pasillo={selectedMaterial.pasilloNumero}
+                                            estanteria={selectedMaterial.estanteriaNumero}
+                                            estantes={selectedMaterial.cantidadEstante}
+                                            divisiones={selectedMaterial.cantidadDivision}
+                                            objetoEstante={selectedMaterial.estanteEstanteria}
+                                            objetoDivision={selectedMaterial.divisionEstanteria}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="bg-sipe-blue-dark rounded-xl flex flex-col justify-center items-center w-auto p-4">
+                                    <p className="text-sipe-white font-light py-2">No existe ubicación del material en ninguna estantería.</p>
+                                </div>
+                            )}
+
                             <hr />
                             <div className="flex flex-col justify-center items-center gap-4 max-w-sm mx-auto">
                                 <p className="text-sipe-white text-center">El mapa ayuda a tener una mejor noción de donde se encuentra el material. El círculo denota su posición dentro de la estantería.</p>

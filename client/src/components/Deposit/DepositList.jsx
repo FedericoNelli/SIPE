@@ -1,39 +1,102 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
-import axios from 'axios';
+import { Button } from "@/components/Common/Button/Button";
 
-function DepositList() {
-    const [deposits, setDeposits] = useState([]);
-    useEffect(() => {
-        axios.get('http://localhost:8081/deposits')
-            .then(response => {
-                setDeposits(response.data);
-            })
-            .catch(error => {
-                console.error('Error fetching deposits:', error);
-            });
-    }, []);
+function DepositList({ deposits, isDeleteMode, selectedDeposits, setSelectedDeposits, handleDeleteDeposits, notify }) {
+    const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false); // Estado para la confirmación de eliminación
+
+    // Función para alternar la selección de un depósito
+    const toggleDepositSelection = (depositId) => {
+        if (selectedDeposits.includes(depositId)) {
+            setSelectedDeposits(selectedDeposits.filter(id => id !== depositId));
+        } else {
+            setSelectedDeposits([...selectedDeposits, depositId]);
+        }
+    };
+
+    // Función para manejar la selección de todos los depósitos
+    const handleSelectAll = () => {
+        if (selectedDeposits.length === deposits.length) {
+            setSelectedDeposits([]);
+        } else {
+            const allDepositIds = deposits.map(deposit => deposit.id);
+            setSelectedDeposits(allDepositIds);
+        }
+    };
+
+    // Función para manejar la confirmación de eliminación
+    const confirmDelete = () => {
+        if (selectedDeposits.length === 0) {
+            notify('error', 'No hay depósitos seleccionados para eliminar');
+            return;
+        }
+        setIsConfirmingDeletion(true);
+    };
+
+    // Función para cancelar la confirmación de eliminación
+    const cancelDelete = () => {
+        setIsConfirmingDeletion(false);
+    };
 
     return (
         <>
             <Table className="w-full text-white">
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Nombre</TableHead>
+                        {isDeleteMode && (
+                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedDeposits.length === deposits.length && deposits.length > 0}
+                                    onChange={handleSelectAll}
+                                />
+                            </TableHead>
+                        )}
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Nombre</TableHead>
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Ubicación</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {deposits.map(deposit => (
                         <TableRow key={deposit.id}>
+                            {isDeleteMode && (
+                                <TableCell className="text-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedDeposits.includes(deposit.id)}
+                                        onChange={() => toggleDepositSelection(deposit.id)}
+                                    />
+                                </TableCell>
+                            )}
                             <TableCell className="text-center font-light">{deposit.nombre}</TableCell>
                             <TableCell className="text-center font-light">{deposit.nombreUbicacion}</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
             </Table>
+            {isDeleteMode && (
+                <div className="flex flex-col items-center mt-4">
+                    {isConfirmingDeletion ? (
+                        <>
+                            <p className="text-red-500 font-bold">Si confirma la eliminación no se podrán recuperar los datos.</p>
+                            <div className="flex gap-4 mt-2">
+                                <Button onClick={cancelDelete} className="bg-gray-400 font-semibold px-4 py-2 rounded hover:bg-gray-500">
+                                    Cancelar
+                                </Button>
+                                <Button onClick={handleDeleteDeposits} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
+                                    Aceptar
+                                </Button>
+                            </div>
+                        </>
+                    ) : (
+                        <Button onClick={confirmDelete} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
+                            Confirmar Eliminación
+                        </Button>
+                    )}
+                </div>
+            )}
         </>
-    )
+    );
 }
 
-export default DepositList
+export default DepositList;

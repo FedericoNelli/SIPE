@@ -5,11 +5,13 @@ import CategoryForm from '@/components/Category/CategoryForm';
 import CategoryList from './CategoryList';
 import axios from 'axios';
 
-function Deposit({ notify }) {
+function Category({ notify }) {
     const [categories, setCategories] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+    const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para el modo de eliminación
+    const [selectedCategories, setSelectedCategories] = useState([]); // Estado para las categorías seleccionadas
 
     useEffect(() => {
         axios.get('http://localhost:8081/categories')
@@ -17,7 +19,7 @@ function Deposit({ notify }) {
                 setCategories(response.data);
             })
             .catch(error => {
-                console.error('Error fetching deposits:', error);
+                console.error('Error fetching categories:', error);
             });
     }, []);
 
@@ -35,6 +37,32 @@ function Deposit({ notify }) {
         setIsFormModalOpen(false);
     };
 
+    // Función para activar el modo de eliminación
+    const toggleDeleteMode = () => {
+        setIsDeleteMode(!isDeleteMode);
+        setSelectedCategories([]); // Limpiar la selección al salir del modo de eliminación
+    };
+
+    // Función para manejar la eliminación de categorías
+    const handleDeleteCategories = () => {
+        if (selectedCategories.length === 0) {
+            notify('error', 'No hay categorías seleccionadas para eliminar');
+            return;
+        }
+
+        axios.delete('http://localhost:8081/delete-categories', { data: { categoryIds: selectedCategories } })
+            .then(() => {
+                notify('success', 'Categorías eliminadas correctamente');
+                setCategories(categories.filter(category => !selectedCategories.includes(category.id)));
+                setSelectedCategories([]);
+                setIsDeleteMode(false);
+            })
+            .catch(error => {
+                console.error('Error eliminando categorías:', error);
+                notify('error', 'Error al eliminar categorías');
+            });
+    };
+
     return (
         <div className="relative">
             <div className="absolute inset-0 bg-sipe-white opacity-5 z-10 rounded-2xl" />
@@ -46,9 +74,19 @@ function Deposit({ notify }) {
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
                         <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">NUEVA CATEGORÍA</Button>
+                        <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
+                            {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Categorías'}
+                        </Button>
                     </div>
                 </div>
-                <CategoryList categories={currentCategories} />
+                <CategoryList
+                    categories={currentCategories}
+                    isDeleteMode={isDeleteMode}
+                    selectedCategories={selectedCategories}
+                    setSelectedCategories={setSelectedCategories}
+                    handleDeleteCategories={handleDeleteCategories}
+                    notify={notify}
+                />
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
@@ -72,4 +110,4 @@ function Deposit({ notify }) {
     );
 }
 
-export default Deposit;
+export default Category;

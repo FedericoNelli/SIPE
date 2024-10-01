@@ -14,8 +14,7 @@ const sections = [
         roles: ['Administrador'],
         subMenu: [
             { name: 'Pasillos', path: '/aisle' },
-            { name: 'Estanterías', path: '/shelf' },
-            { name: 'Lados', path: '/side' }
+            { name: 'Estanterías', path: '/shelf' }
         ]
     },
     {

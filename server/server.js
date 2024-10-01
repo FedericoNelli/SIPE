@@ -622,7 +622,7 @@ app.post('/materiales/salidas', async (req, res) => {
     try {
         // Verificar que el material existe y obtener la cantidad disponible
         const result = await new Promise((resolve, reject) => {
-            db.query('SELECT cantidad FROM Material WHERE id = ?', [idMaterial], (err, rows) => {
+            db.query('SELECT cantidad, bajoStock, nombre FROM Material WHERE id = ?', [idMaterial], (err, rows) => {
                 if (err) return reject(err);
                 resolve(rows);
             });
@@ -655,13 +655,63 @@ app.post('/materiales/salidas', async (req, res) => {
             });
         });
 
-        return res.status(201).json({ message: 'Salida de material registrada con éxito' });
+        // Obtener la nueva cantidad después de la actualización
+        const nuevaCantidad = material.cantidad - cantidad;
+
+        // Asignar el nuevo estado utilizando assignStatus
+        const nuevoEstado = assignStatus(nuevaCantidad, material.bajoStock);
+
+        // Verificar que 'nuevoEstado' sea un valor válido antes de realizar el UPDATE
+        if ([1, 2, 3].includes(nuevoEstado)) {
+            // Actualizar el idEstado del material
+            await new Promise((resolve, reject) => {
+                db.query('UPDATE Material SET idEstado = ? WHERE id = ?', [nuevoEstado, idMaterial], (err) => {
+                    if (err) return reject(err);
+                    resolve();
+                });
+            });
+        } else {
+            console.error(`Error: El estado asignado (${nuevoEstado}) no es válido para el material con id: ${idMaterial}`);
+            return res.status(500).json({ message: 'Error al actualizar el estado del material' });
+        }
+
+
+        // Manejar las notificaciones de stock
+        handleStockNotifications(material.nombre, nuevaCantidad, material.bajoStock, (error) => {
+            if (error) {
+                console.error('Error al manejar notificaciones de stock:', error);
+                return res.status(500).json({ message: 'Error al manejar notificaciones de stock' });
+            }
+            return res.status(201).json({ message: 'Salida de material registrada con éxito y notificaciones actualizadas' });
+        });
     } catch (error) {
         console.error('Error registrando salida de material:', error.message);
         console.error(error.stack); // Esto imprimirá el stack trace completo
         return res.status(500).json({ message: 'Error registrando salida de material' });
     }
 });
+
+app.delete('/delete-exits', (req, res) => {
+    const { exitIds } = req.body; // El JSON enviado desde el frontend debe contener un campo "exitIds"
+
+    if (!exitIds || exitIds.length === 0) {
+        return res.status(400).json({ message: 'No se proporcionaron salidas para eliminar' });
+    }
+
+    // Construimos la consulta para eliminar múltiples IDs
+    const placeholders = exitIds.map(() => '?').join(',');
+    const query = `DELETE FROM salida_material WHERE id IN (${placeholders})`;
+
+    db.query(query, exitIds, (err, result) => {
+        if (err) {
+            console.error('Error eliminando salidas:', err);
+            return res.status(500).json({ message: 'Error eliminando salidas' });
+        }
+
+        res.status(200).json({ message: 'Salidas eliminadas correctamente' });
+    });
+});
+
 
 
 
@@ -765,7 +815,6 @@ function assignStatus(cantidad, bajoStock) {
 }
 
 // Endpoint para verificar si es necesario mostrar el tutorial
-// Cambia la ruta para incluir el parámetro de ID del usuario
 app.get('/check-tutorial-status/:id', (req, res) => {
     const userId = req.params.id; // Obtén el userId del parámetro de la URL
     // Verificamos si es el primer login del usuario
@@ -876,8 +925,9 @@ app.post('/logout', (req, res) => {
 });
 
 // Endpoint para agregar usuarios
-app.post('/addUser', (req, res) => {
+app.post('/addUser', upload.single('imagen'), (req, res) => {
     const { nombre, apellido, legajo, nombre_usuario, contrasenia, email, rol } = req.body;
+    const imagen = req.file;
 
     if (!nombre || !apellido || !legajo || !nombre_usuario || !contrasenia || !email || !rol) {
         return res.status(400).json({ message: 'Faltan campos obligatorios' });
@@ -928,7 +978,30 @@ app.post('/addUser', (req, res) => {
             if (err) {
                 return res.status(500).send("Error al crear el usuario");
             }
-            res.status(200).send('Usuario creado');
+
+            const userId = result.insertId;
+
+            if (imagen) {
+                const imagenPath = `/uploads/SIPEUser-img-${userId}${path.extname(imagen.originalname)}`;
+                const newFilePath = path.join(__dirname, 'public', imagenPath);
+
+                fs.rename(imagen.path, newFilePath, (err) => {
+                    if (err) {
+                        console.error('Error al renombrar la imagen:', err);
+                        return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
+                    }
+
+                    db.query('UPDATE usuario SET imagen = ? WHERE id = ?', [imagenPath, userId], (err) => {
+                        if (err) {
+                            console.error('Error al actualizar la base de datos con la imagen:', err);
+                            return res.status(500).json({ mensaje: 'Error al actualizar la imagen en la base de datos' });
+                        }
+                        res.status(200).json({ mensaje: 'Usuario creado con éxito y imagen guardada' });
+                    });
+                });
+            } else {
+                res.status(200).json({ mensaje: 'Usuario creado con éxito' });
+            }
         });
     });
 });
@@ -937,7 +1010,7 @@ app.post('/addUser', (req, res) => {
 app.get('/users', (req, res) => {
     const query = `
         SELECT 
-            u.id, u.nombre, u.apellido, u.legajo, u.nombre_usuario, u.email, u.rol 
+            u.id, u.nombre, u.apellido, u.legajo, u.imagen, u.nombre_usuario, u.email, u.rol 
         FROM Usuario u`;
 
     db.query(query, (err, results) => {
@@ -945,6 +1018,126 @@ app.get('/users', (req, res) => {
         res.json(results);
     });
 });
+
+// Eliminar un usuario
+app.delete('/users/delete/:id', (req, res) => {
+    const userId = req.params.id;
+
+    // Verificar que el ID del usuario es válido
+    if (!userId) {
+        return res.status(400).json({ mensaje: 'ID de usuario faltante' });
+    }
+
+    // Verificar si el usuario existe
+    db.query('SELECT * FROM usuario WHERE id = ?', [userId], (err, results) => {
+        if (err) {
+            return res.status(500).json({ mensaje: 'Error al buscar el usuario' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+        }
+
+        // Eliminar la imagen asociada si existe
+        const user = results[0];
+        if (user.imagen) {
+            const imagenPath = path.join(__dirname, 'public', user.imagen);
+            fs.unlink(imagenPath, (err) => {
+                if (err && err.code !== 'ENOENT') {
+                    console.error('Error al eliminar la imagen:', err);
+                }
+            });
+        }
+
+        // Eliminar el usuario de la base de datos
+        db.query('DELETE FROM usuario WHERE id = ?', [userId], (err) => {
+            if (err) {
+                return res.status(500).json({ mensaje: 'Error al eliminar el usuario' });
+            }
+
+            res.status(200).json({ mensaje: 'Usuario eliminado con éxito' });
+        });
+    });
+});
+
+// Editar un usuario
+app.put('/editUser/:id', upload.single('imagen'), (req, res) => {
+    const userId = req.params.id;
+    const { nombre, apellido, legajo, nombre_usuario, email, rol, eliminarImagen } = req.body;
+    const imagen = req.file;
+
+    if (!nombre || !apellido || !legajo || !nombre_usuario || !email || !rol) {
+        return res.status(400).json({ message: 'Faltan campos obligatorios' });
+    }
+
+    // Actualiza la información del usuario
+    const updateUserQuery = 'UPDATE usuario SET nombre = ?, apellido = ?, legajo = ?, nombre_usuario = ?, email = ?, rol = ? WHERE id = ?';
+    const values = [nombre, apellido, legajo, nombre_usuario, email, rol, userId];
+
+    db.query(updateUserQuery, values, (err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Error al actualizar el usuario' });
+        }
+
+        // Si hay una nueva imagen para guardar
+        if (imagen) {
+            const imagenPath = `/uploads/SIPEUser-img-${userId}${path.extname(imagen.originalname)}`;
+            const newFilePath = path.join(__dirname, 'public', imagenPath);
+
+            fs.rename(imagen.path, newFilePath, (err) => {
+                if (err) {
+                    console.error('Error al renombrar la imagen:', err);
+                    return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
+                }
+
+                db.query('UPDATE usuario SET imagen = ? WHERE id = ?', [imagenPath, userId], (err) => {
+                    if (err) {
+                        console.error('Error al actualizar la base de datos con la imagen:', err);
+                        return res.status(500).json({ mensaje: 'Error al actualizar la imagen en la base de datos' });
+                    }
+                    res.status(200).json({ mensaje: 'Usuario actualizado correctamente con imagen' });
+                });
+            });
+        } 
+        // Si se solicita eliminar la imagen
+        else if (eliminarImagen === 'true') {
+            // Elimina el archivo físico si existe
+            db.query('SELECT imagen FROM usuario WHERE id = ?', [userId], (err, result) => {
+                if (err) {
+                    console.error('Error al obtener la imagen actual:', err);
+                    return res.status(500).json({ mensaje: 'Error al obtener la imagen actual' });
+                }
+
+                const currentImagePath = result[0]?.imagen;
+                if (currentImagePath) {
+                    const fullPath = path.join(__dirname, 'public', currentImagePath);
+                    fs.unlink(fullPath, (err) => {
+                        if (err && err.code !== 'ENOENT') {
+                            console.error('Error al eliminar la imagen física:', err);
+                            return res.status(500).json({ mensaje: 'Error al eliminar la imagen física' });
+                        }
+
+                        // Actualiza la columna de imagen en la base de datos
+                        db.query('UPDATE usuario SET imagen = NULL WHERE id = ?', [userId], (err) => {
+                            if (err) {
+                                console.error('Error al actualizar la base de datos:', err);
+                                return res.status(500).json({ mensaje: 'Error al actualizar la base de datos' });
+                            }
+                            res.status(200).json({ mensaje: 'Usuario actualizado y la imagen eliminada correctamente' });
+                        });
+                    });
+                } else {
+                    res.status(200).json({ mensaje: 'Usuario actualizado correctamente' });
+                }
+            });
+        } 
+        else {
+            // Si no se eliminó ni agregó una imagen
+            res.status(200).json({ mensaje: 'Usuario actualizado correctamente' });
+        }
+    });
+});
+
 
 
 // Enpoint para configurar el transporte de nodemailer
@@ -1110,6 +1303,28 @@ app.get('/aisle', (req, res) => {
 });
 
 
+// Endpoint para eliminar múltiples pasillos
+app.delete('/delete-aisles', (req, res) => {
+    const { aisleIds } = req.body; // Recibe los IDs de los pasillos a eliminar
+
+    if (!aisleIds || aisleIds.length === 0) {
+        return res.status(400).json({ message: 'No se proporcionaron pasillos para eliminar' });
+    }
+
+    const placeholders = aisleIds.map(() => '?').join(',');
+    const query = `DELETE FROM pasillo WHERE id IN (${placeholders})`;
+
+    db.query(query, aisleIds, (err, result) => {
+        if (err) {
+            console.error('Error eliminando pasillos:', err);
+            return res.status(500).json({ message: 'Error eliminando pasillos' });
+        }
+
+        res.status(200).json({ message: 'Pasillos eliminados correctamente' });
+    });
+});
+
+
 // Endpoint para obtener los lados
 app.get('/sides', (req, res) => {
     const query = 'SELECT id, descripcion FROM Lado';
@@ -1150,6 +1365,28 @@ app.get('/deposits', (req, res) => {
         res.json(results);
     });
 });
+
+// Endpoint para eliminar múltiples depósitos
+app.delete('/delete-deposits', (req, res) => {
+    const { depositIds } = req.body; // Recibe los IDs de los depósitos a eliminar
+
+    if (!depositIds || depositIds.length === 0) {
+        return res.status(400).json({ message: 'No se proporcionaron depósitos para eliminar' });
+    }
+
+    const placeholders = depositIds.map(() => '?').join(',');
+    const query = `DELETE FROM deposito WHERE id IN (${placeholders})`;
+
+    db.query(query, depositIds, (err, result) => {
+        if (err) {
+            console.error('Error eliminando depósitos:', err);
+            return res.status(500).json({ message: 'Error eliminando depósitos' });
+        }
+
+        res.status(200).json({ message: 'Depósitos eliminados correctamente' });
+    });
+});
+
 
 app.get('/deposit-names', (req, res) => {
     const locationId = req.query.locationId;
@@ -1192,6 +1429,29 @@ app.get('/deposit-locations', (req, res) => {
     });
 });
 
+// Endpoint para eliminar múltiples ubicaciones
+app.delete('/delete-locations', (req, res) => {
+    const { locationIds } = req.body; // Recibe los IDs de las ubicaciones a eliminar
+
+    if (!locationIds || locationIds.length === 0) {
+        return res.status(400).json({ message: 'No se proporcionaron ubicaciones para eliminar' });
+    }
+
+    // Construimos la consulta para eliminar múltiples IDs
+    const placeholders = locationIds.map(() => '?').join(',');
+    const query = `DELETE FROM ubicacion WHERE id IN (${placeholders})`;
+
+    db.query(query, locationIds, (err, result) => {
+        if (err) {
+            console.error('Error eliminando ubicaciones:', err);
+            return res.status(500).json({ message: 'Error eliminando ubicaciones' });
+        }
+
+        res.status(200).json({ message: 'Ubicaciones eliminadas correctamente' });
+    });
+});
+
+
 // Obtener Depósitos
 app.get('/depo-names', (req, res) => {
     const query = 'SELECT id, nombre FROM Deposito';
@@ -1203,12 +1463,18 @@ app.get('/depo-names', (req, res) => {
 
 // Obtener Categorías
 app.get('/categories', (req, res) => {
-    const query = 'SELECT id, descripcion FROM Categoria';
+    const query = `
+        SELECT c.id, c.descripcion, COUNT(m.id) AS material_count
+        FROM Categoria c
+        LEFT JOIN Material m ON c.id = m.IdCategoria
+        GROUP BY c.id;
+    `;
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json(results);
     });
 });
+
 
 app.post('/addCategory', (req, res) => {
     const { descripcion } = req.body;
@@ -1228,6 +1494,26 @@ app.post('/addCategory', (req, res) => {
         res.status(200).json({ message: 'Categoría agregada exitosamente' });
     });
 });
+
+// Endpoint para eliminar categorías seleccionadas
+app.delete('/delete-categories', (req, res) => {
+    const { categoryIds } = req.body;
+
+    if (!categoryIds || categoryIds.length === 0) {
+        return res.status(400).json({ error: "No se han proporcionado categorías para eliminar" });
+    }
+
+    const query = 'DELETE FROM Categoria WHERE id IN (?)';
+    db.query(query, [categoryIds], (err, result) => {
+        if (err) {
+            console.error('Error eliminando categorías:', err);
+            return res.status(500).json({ error: "Error eliminando categorías" });
+        }
+
+        res.status(200).json({ message: "Categorías eliminadas correctamente" });
+    });
+});
+
 
 app.get('/total-categories', (req, res) => {
     const query = 'SELECT COUNT(id) AS total FROM Categoria';
@@ -1300,6 +1586,29 @@ app.get('/shelf', (req, res) => {
         res.json(results);
     });
 });
+
+// Endpoint para eliminar múltiples estanterías
+app.delete('/delete-shelves', (req, res) => {
+    const { shelfIds } = req.body; // Recibe los IDs de las estanterías a eliminar
+
+    if (!shelfIds || shelfIds.length === 0) {
+        return res.status(400).json({ message: 'No se proporcionaron estanterías para eliminar' });
+    }
+
+    // Construimos la consulta para eliminar múltiples IDs
+    const placeholders = shelfIds.map(() => '?').join(',');
+    const query = `DELETE FROM estanteria WHERE id IN (${placeholders})`;
+
+    db.query(query, shelfIds, (err, result) => {
+        if (err) {
+            console.error('Error eliminando estanterías:', err);
+            return res.status(500).json({ message: 'Error eliminando estanterías' });
+        }
+
+        res.status(200).json({ message: 'Estanterías eliminadas correctamente' });
+    });
+});
+
 
 app.get('/spaces/:shelfId', (req, res) => {
     const { shelfId } = req.params;
@@ -1549,7 +1858,7 @@ app.post('/addMovements', (req, res) => {
 
                         const valoresInsertMaterial = [
                             nombre, cantidadMovidaNumero, matricula, fechaUltimoEstado, bajoStock,
-                            nuevoEstadoDestino, idEspacio, ultimoUsuarioId, idCategoria, idDepositoDestino, ocupado
+                            nuevoEstadoDestino, null, ultimoUsuarioId, idCategoria, idDepositoDestino, ocupado
                         ];
 
                         db.query(insertMaterialDestinoQuery, valoresInsertMaterial, (err, insertResult) => {
@@ -1616,6 +1925,26 @@ app.post('/addMovements', (req, res) => {
     });
 });
 
+// Endpoint para eliminar múltiples movimientos
+app.delete('/delete-movements', (req, res) => {
+    const { movementIds } = req.body; // Recibe los IDs de los movimientos a eliminar
+
+    if (!movementIds || movementIds.length === 0) {
+        return res.status(400).json({ message: 'No se proporcionaron movimientos para eliminar' });
+    }
+
+    const placeholders = movementIds.map(() => '?').join(',');
+    const query = `DELETE FROM movimiento WHERE id IN (${placeholders})`;
+
+    db.query(query, movementIds, (err, result) => {
+        if (err) {
+            console.error('Error eliminando movimientos:', err);
+            return res.status(500).json({ message: 'Error eliminando movimientos' });
+        }
+
+        res.status(200).json({ message: 'Movimientos eliminados correctamente' });
+    });
+});
 
 
 app.get('/deposit-locations-movements', (req, res) => {

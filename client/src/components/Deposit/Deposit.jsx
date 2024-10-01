@@ -10,6 +10,8 @@ function Deposit({ notify }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+    const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para el modo de eliminación
+    const [selectedDeposits, setSelectedDeposits] = useState([]); // Estado para los depósitos seleccionados
 
     useEffect(() => {
         axios.get('http://localhost:8081/deposits')
@@ -35,6 +37,32 @@ function Deposit({ notify }) {
         setIsFormModalOpen(false);
     };
 
+    // Función para activar el modo de eliminación
+    const toggleDeleteMode = () => {
+        setIsDeleteMode(!isDeleteMode);
+        setSelectedDeposits([]); // Limpiar la selección al salir del modo de eliminación
+    };
+
+    // Función para manejar la eliminación de depósitos
+    const handleDeleteDeposits = () => {
+        if (selectedDeposits.length === 0) {
+            notify('error', 'No hay depósitos seleccionados para eliminar');
+            return;
+        }
+
+        axios.delete('http://localhost:8081/delete-deposits', { data: { depositIds: selectedDeposits } })
+            .then(() => {
+                notify('success', 'Depósitos eliminados correctamente');
+                setDeposits(deposits.filter(deposit => !selectedDeposits.includes(deposit.id)));
+                setSelectedDeposits([]);
+                setIsDeleteMode(false);
+            })
+            .catch(error => {
+                console.error('Error eliminando depósitos:', error);
+                notify('error', 'Error al eliminar depósitos');
+            });
+    };
+
     return (
         <div className="relative">
             <div className="absolute inset-0 bg-sipe-white opacity-5 z-10 rounded-2xl" />
@@ -46,9 +74,19 @@ function Deposit({ notify }) {
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
                         <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">NUEVO DEPÓSITO</Button>
+                        <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
+                            {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Depósitos'}
+                        </Button>
                     </div>
                 </div>
-                <DepositList deposits={currentDeposits} />
+                <DepositList
+                    deposits={currentDeposits}
+                    isDeleteMode={isDeleteMode}
+                    selectedDeposits={selectedDeposits}
+                    setSelectedDeposits={setSelectedDeposits}
+                    handleDeleteDeposits={handleDeleteDeposits}
+                    notify={notify}
+                />
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>

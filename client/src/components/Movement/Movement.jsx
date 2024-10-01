@@ -10,6 +10,8 @@ function Movement({ notify }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+    const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para el modo de eliminación
+    const [selectedMovements, setSelectedMovements] = useState([]); // Estado para los movimientos seleccionados
 
     useEffect(() => {
         axios.get('http://localhost:8081/movements')
@@ -35,6 +37,32 @@ function Movement({ notify }) {
         setIsFormModalOpen(false);
     };
 
+    // Función para activar el modo de eliminación
+    const toggleDeleteMode = () => {
+        setIsDeleteMode(!isDeleteMode);
+        setSelectedMovements([]); // Limpiar la selección al salir del modo de eliminación
+    };
+
+    // Función para manejar la eliminación de movimientos
+    const handleDeleteMovements = () => {
+        if (selectedMovements.length === 0) {
+            notify('error', 'No hay movimientos seleccionados para eliminar');
+            return;
+        }
+
+        axios.delete('http://localhost:8081/delete-movements', { data: { movementIds: selectedMovements } })
+            .then(() => {
+                notify('success', 'Movimientos eliminados correctamente');
+                setMovements(movements.filter(movement => !selectedMovements.includes(movement.id)));
+                setSelectedMovements([]);
+                setIsDeleteMode(false);
+            })
+            .catch(error => {
+                console.error('Error eliminando movimientos:', error);
+                notify('error', 'Error al eliminar movimientos');
+            });
+    };
+
     return (
         <div className="relative">
             <div className="absolute inset-0 bg-sipe-white opacity-5 z-10 rounded-2xl" />
@@ -46,9 +74,19 @@ function Movement({ notify }) {
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
                         <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">NUEVO MOVIMIENTO</Button>
+                        <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
+                            {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Movimientos'}
+                        </Button>
                     </div>
                 </div>
-                <MovementList movements={currentMovements} />
+                <MovementList
+                    movements={currentMovements}
+                    isDeleteMode={isDeleteMode}
+                    selectedMovements={selectedMovements}
+                    setSelectedMovements={setSelectedMovements}
+                    handleDeleteMovements={handleDeleteMovements}
+                    notify={notify}
+                />
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>

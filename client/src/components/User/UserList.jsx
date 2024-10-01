@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
 import axios from 'axios';
 
-function UserList() {
+function UserList({ onUserClick }) {
     const [users, setUsers] = useState([]);
+    
     useEffect(() => {
         axios.get('http://localhost:8081/users')
             .then(response => {
@@ -29,7 +30,11 @@ function UserList() {
                 </TableHeader>
                 <TableBody>
                     {users.map(user => (
-                        <TableRow key={user.id}>
+                        <TableRow 
+                            key={user.id} 
+                            onClick={() => onUserClick(user)}
+                            className="cursor-pointer hover:bg-gray-700" 
+                        >
                             <TableCell className="text-center font-light">{user.nombre}</TableCell>
                             <TableCell className="text-center font-light">{user.apellido}</TableCell>
                             <TableCell className="text-center font-light">{user.legajo}</TableCell>
@@ -44,4 +49,4 @@ function UserList() {
     )
 }
 
-export default UserList
+export default UserList;

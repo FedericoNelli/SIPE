@@ -83,26 +83,15 @@ function ReportList({ notify, isDeleteMode, setIsDeleteMode }) {
         try {
             const response = await axios.get(`http://localhost:8081/reports/${report.id}`);
 
-            // Verificar que response.data exista y tenga los datos esperados
             if (!response.data) {
                 console.error('No se obtuvieron datos del informe');
                 return;
             }
 
             const datos = Array.isArray(response.data.datos) ? response.data.datos : [];
-
-            // Validar y formatear las fechas de inicio y fin
             const formattedStartDate = response.data.fechaInicio ? new Date(response.data.fechaInicio).toLocaleDateString() : 'N/A';
             const formattedEndDate = response.data.fechaFin ? new Date(response.data.fechaFin).toLocaleDateString() : 'N/A';
 
-            // Verificar que el objeto `datos` esté correctamente estructurado
-            if (datos.length === 0) {
-                console.warn('No hay datos disponibles para este informe.');
-            } else {
-                console.log('Datos formateados para el informe:', datos);
-            }
-
-            // Ajustar la estructura de `selectedReport` con validación
             const selectedReportData = {
                 ...response.data,
                 datos: datos,
@@ -123,17 +112,11 @@ function ReportList({ notify, isDeleteMode, setIsDeleteMode }) {
         }
     };
 
-
-
-
-
-
+    // Función para manejar la selección de todos los elementos
     const handleSelectAll = () => {
         if (selectedReports.length === reports.length) {
-            // Si ya están todos seleccionados, deseleccionarlos
             setSelectedReports([]);
         } else {
-            // Seleccionar todos los informes
             const allReportIds = reports.map(report => report.id);
             setSelectedReports(allReportIds);
         }
@@ -159,7 +142,13 @@ function ReportList({ notify, isDeleteMode, setIsDeleteMode }) {
                         <TableHeader>
                             <TableRow>
                                 {isDeleteMode && (
-                                    <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Seleccionar</TableHead>
+                                    <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedReports.length === reports.length && reports.length > 0}
+                                            onChange={handleSelectAll}
+                                        />
+                                    </TableHead>
                                 )}
                                 <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Tipo</TableHead>
                                 <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Tipo de Gráfico</TableHead>
@@ -195,10 +184,7 @@ function ReportList({ notify, isDeleteMode, setIsDeleteMode }) {
                     {isDeleteMode && (
                         <div className="flex justify-center mt-4 gap-4">
                             {!isConfirmingDeletion ? (
-                                <>
-                                    <Button onClick={handleSelectAll} className="bg-blue-600 font-semibold px-4 py-2 rounded hover:bg-blue-700">Seleccionar Todos</Button>
-                                    <Button onClick={handleDeleteReports} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">Eliminar Seleccionados</Button>
-                                </>
+                                <Button onClick={handleDeleteReports} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">Eliminar Seleccionados</Button>
                             ) : (
                                 <div className="flex flex-col items-center gap-4">
                                     <p className="text-white font-semibold">Si confirma la eliminación no se podrán recuperar los datos.</p>
@@ -224,11 +210,10 @@ function ReportList({ notify, isDeleteMode, setIsDeleteMode }) {
                     selectedMaterial={selectedReport.idMaterial ? selectedReport.material.nombre : 'Todos los materiales'}
                     dateRange={`${selectedReport.fechaInicio} - ${selectedReport.fechaFin}`}
                     selectedOption={reportType === "Informe de material por estado" ? selectedReport.estadoMaterial : reportType}
-                    selectedDeposito={selectedReport.deposito} // Pasar el depósito como prop
-                    selectedEstado={selectedReport.estado} // Pasar el estado como prop
+                    selectedDeposito={selectedReport.deposito}
+                    selectedEstado={selectedReport.estado}
                 />
             )}
-
         </>
     );
 }
