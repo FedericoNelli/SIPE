@@ -8,78 +8,93 @@ import { Button } from "@/components/Common/Button/Button";
 import { X } from "lucide-react";
 
 function MaterialExitForm({ onClose, notify }) {
+    const [ubicaciones, setUbicaciones] = useState([]);
+    const [depositos, setDepositos] = useState([]);
     const [materials, setMaterials] = useState([]);
-    const [selectedMaterial, setSelectedMaterial] = useState(null);
-    const [quantity, setQuantity] = useState('');
+    const [users, setUsers] = useState([]);
+
+    const [selectedUbicacion, setSelectedUbicacion] = useState(null);
+    const [selectedDeposito, setSelectedDeposito] = useState(null);
+    const [selectedMaterials, setSelectedMaterials] = useState([]);
+    const [selectedUser, setSelectedUser] = useState(null);
     const [reason, setReason] = useState('');
-    const [availableQuantity, setAvailableQuantity] = useState(0);
-    const [location, setLocation] = useState('');
-    const [deposit, setDeposit] = useState('');
 
     useEffect(() => {
-        // Obtener la lista de materiales
-        axios.get('http://localhost:8081/materials')
+        axios.get('http://localhost:8081/deposit-locations')
+            .then(response => setUbicaciones(response.data))
+            .catch(error => console.error('Error fetching locations:', error));
+
+        axios.get('http://localhost:8081/users')
+            .then(response => setUsers(response.data))
+            .catch(error => console.error('Error fetching users:', error));
+    }, []);
+
+    const handleUbicacionChange = (value) => {
+        setSelectedUbicacion(value);
+        setSelectedDeposito(null);
+        setSelectedMaterials([]);
+
+        axios.get(`http://localhost:8081/deposit-names?locationId=${value}`)
+            .then(response => setDepositos(response.data))
+            .catch(error => console.error('Error fetching deposits:', error));
+    };
+
+    const handleDepositoChange = (value) => {
+        setSelectedDeposito(value);
+        setSelectedMaterials([]);
+
+        axios.get(`http://localhost:8081/materials/deposit/${value}`)
             .then(response => {
                 setMaterials(response.data);
             })
-            .catch(error => {
-                console.error('Error fetching materials:', error);
-            });
-    }, []);
+            .catch(error => console.error('Error al obtener materiales:', error));
+    };
 
     const handleMaterialChange = (value) => {
         const selectedId = value;
-        setSelectedMaterial(selectedId);
-
-        // Obtener los detalles del material seleccionado
         const material = materials.find(mat => mat.id === parseInt(selectedId));
-        if (material) {
-            setAvailableQuantity(material.cantidad);
-            setLocation(material.ubicacionNombre);
-            setDeposit(material.depositoNombre);
+
+        if (material && !selectedMaterials.find(m => m.id === material.id)) {
+            setSelectedMaterials([...selectedMaterials, { ...material, cantidadSalida: '' }]);
         }
     };
 
-    const handleInputChange = (e) => {
-        const { id, value } = e.target;
-        if (id === 'quantity' && value < 0) {
-            setQuantity(0);
-        } else {
-            setQuantity(value);
-        }
+    const handleQuantityChange = (id, value) => {
+        setSelectedMaterials(
+            selectedMaterials.map(material =>
+                material.id === id
+                    ? { ...material, cantidadSalida: value > 0 ? value : 0 }
+                    : material
+            )
+        );
     };
 
-    const handleSave = () => {
-        if (!selectedMaterial || !quantity || !reason) {
-            notify('error', 'Todos los campos son obligatorios');
-            return;
-        }
+    const handleSubmit = (e) => {
+        e.preventDefault();
 
-        if (parseInt(quantity) > availableQuantity) {
-            notify('error', 'La cantidad de salida no puede ser mayor a la cantidad disponible' );
-            return;
-        }
-
-        const exitData = {
-            idMaterial: selectedMaterial,
-            cantidad: quantity,
+        const salidas = selectedMaterials.map(material => ({
+            idMaterial: material.id,
+            cantidad: material.cantidadSalida,
             motivo: reason,
-            fecha: new Date().toISOString().split('T')[0], // Fecha actual en formato YYYY-MM-DD
-        };
+            fecha: new Date(),
+            idUsuario: selectedUser,
+        }));
 
-        axios.post('http://localhost:8081/materiales/salidas', exitData)
+        axios.post('http://localhost:8081/materials/exits', salidas)
             .then(response => {
-                notify('success', 'Salida de material registrada con éxito');
-                if (onClose) onClose(); // Cerrar el formulario
-                setTimeout(() => {
-                    window.location.reload(); // Recargar la página después de 2 segundos
-                }, 2000);
+                notify('success', 'Salida registrada con éxito');
+                onClose();
             })
             .catch(error => {
-                console.error('Error registering material exit:', error);
-                notify('error', 'Hubo un error al registrar la salida' );
+                console.error('Error registering exit:', error);
+                notify('error', 'Error al registrar la salida');
             });
     };
+
+    const handleRemoveMaterial = (id) => {
+        setSelectedMaterials(selectedMaterials.filter(material => material.id !== id));
+    };
+
 
     return (
         <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl relative">
@@ -91,15 +106,44 @@ function MaterialExitForm({ onClose, notify }) {
                 <hr />
             </CardHeader>
             <CardContent className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="ubicacion" className="text-sm font-medium">Ubicación</Label>
+                        <Select onValueChange={handleUbicacionChange}>
+                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                <SelectValue placeholder="Selecciona una ubicación" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ubicaciones.map(ubicacion => (
+                                    <SelectItem key={ubicacion.id} value={ubicacion.id}>{ubicacion.nombre}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="deposito" className="text-sm font-medium">Depósito</Label>
+                        <Select onValueChange={handleDepositoChange}>
+                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                <SelectValue placeholder="Selecciona un depósito" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {depositos.map(deposito => (
+                                    <SelectItem key={deposito.id} value={deposito.id}>{deposito.nombre}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
                 <div className="grid gap-2">
                     <Label htmlFor="material" className="text-sm font-medium">Material</Label>
-                    <Select id="material" onValueChange={handleMaterialChange}>
+                    <Select onValueChange={handleMaterialChange}>
                         <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                            <SelectValue placeholder="Selecciona el material" />
+                            <SelectValue placeholder="Selecciona un material" />
                         </SelectTrigger>
                         <SelectContent>
                             {materials.map(material => (
-                                <SelectItem key={material.id} value={material.id}>
+                                <SelectItem key={material.id} value={material.id} disabled={selectedMaterials.find(m => m.id === material.id)}>
                                     {material.nombre}
                                 </SelectItem>
                             ))}
@@ -107,44 +151,53 @@ function MaterialExitForm({ onClose, notify }) {
                     </Select>
                 </div>
 
-                {selectedMaterial && (
-                    <>
-                        <div className="grid gap-2">
-                            <p className="text-sipe-white">Ubicación: {location}</p>
-                            <p className="text-sipe-white">Depósito: {deposit}</p>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="quantity" className="text-sm font-medium">Cantidad de salida</Label>
-                            <Input
-                                className="border-b"
-                                id="quantity"
-                                type="number"
-                                value={quantity}
-                                onChange={handleInputChange}
-                                min="1"
-                                max={availableQuantity}
-                                required
-                                placeholder={`Máximo disponible: ${availableQuantity}`}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="reason" className="text-sm font-medium">Motivo de salida</Label>
-                            <Input
-                                className="border-b"
-                                id="reason"
-                                type="text"
-                                value={reason}
-                                onChange={(e) => setReason(e.target.value)}
-                                required
-                                placeholder="Motivo de la salida"
-                            />
-                        </div>
-                    </>
+                {selectedMaterials.length > 0 && (
+                    <div className="grid gap-2 mt-4">
+                        {selectedMaterials.map(material => (
+                            <div key={material.id} className="grid grid-cols-[1fr_auto_auto] gap-2 items-center">
+                                <div className="truncate">
+                                    <Label className="text-sm">{material.nombre} (Disponible: {material.cantidad})</Label>
+                                </div>
+                                <Input
+                                    type="number"
+                                    value={material.cantidadSalida}
+                                    onChange={(e) => handleQuantityChange(material.id, e.target.value)}
+                                    placeholder="Cant. a retirar"
+                                    className="border-b bg-sipe-blue-dark text-white text-sm"
+                                />
+                                <button
+                                    className="text-red-500 hover:text-red-700 text-sm"
+                                    onClick={() => handleRemoveMaterial(material.id)}
+                                >
+                                    <X size={12} strokeWidth={2} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
                 )}
+
+                <div className="grid gap-2 mt-4">
+                    <Label htmlFor="reason" className="text-sm font-medium">Motivo</Label>
+                    <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Motivo de la salida" className="border-b bg-sipe-blue-dark text-white" />
+                </div>
+
+                <div className="grid gap-2 mt-4">
+                    <Label htmlFor="usuario" className="text-sm font-medium">Usuario</Label>
+                    <Select onValueChange={setSelectedUser}>
+                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                            <SelectValue placeholder="Selecciona un usuario" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {users.map(user => (
+                                <SelectItem key={user.id} value={user.id}>{user.nombre}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-4">
-                <Button className="" variant="sipebuttonalt" size="sipebutton" onClick={onClose}>CANCELAR</Button>
-                <Button className="" variant="sipebutton" size="sipebutton" onClick={handleSave}>REGISTRAR</Button>
+                <Button className="" variant="sipebuttonalt" size="sipebutton" onClick={onClose}>Cancelar</Button>
+                <Button className="" variant="sipebutton" size="sipebutton" onClick={handleSubmit}>Registrar Salida</Button>
             </CardFooter>
         </Card>
     );

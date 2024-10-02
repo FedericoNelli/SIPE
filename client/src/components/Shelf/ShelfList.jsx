@@ -59,6 +59,7 @@ function ShelfList({ shelves, isDeleteMode, selectedShelves, setSelectedShelves,
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito</TableHead>
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Pasillo</TableHead>
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Lado</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad de materiales</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -80,6 +81,7 @@ function ShelfList({ shelves, isDeleteMode, selectedShelves, setSelectedShelves,
                             <TableCell className="text-center font-light">{shelf.nombreDeposito}</TableCell>
                             <TableCell className="text-center font-light">{shelf.numeroPasillo}</TableCell>
                             <TableCell className="text-center font-light">{shelf.direccionLado}</TableCell>
+                            <TableCell className="text-center font-light">{shelf.totalMateriales}</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>

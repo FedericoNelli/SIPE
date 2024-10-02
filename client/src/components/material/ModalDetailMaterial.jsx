@@ -12,13 +12,13 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isEditModalClosing, setIsEditModalClosing] = useState(false);
 
-    const rol = localStorage.getItem('rol'); // Obtenemos el rol del usuario
+    const rol = localStorage.getItem('rol');
 
     // Manejo del evento 'Escape' pero solo si el ModalEditMaterial NO está abierto
     useEffect(() => {
         const handleEscape = (event) => {
             if (event.key === 'Escape' && !isEditModalOpen) {
-                onClose(); // Cierra ModalDetailMaterial solo si ModalEditMaterial no está abierto
+                onClose();
             }
         };
 

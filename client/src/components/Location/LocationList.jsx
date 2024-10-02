@@ -53,6 +53,7 @@ function LocationList({ locations, isDeleteMode, selectedLocations, setSelectedL
                             </TableHead>
                         )}
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Nombre</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Total de depósitos</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -68,6 +69,7 @@ function LocationList({ locations, isDeleteMode, selectedLocations, setSelectedL
                                 </TableCell>
                             )}
                             <TableCell className="text-center font-light">{location.nombre}</TableCell>
+                            <TableCell className="text-center font-light">{location.totalDepositos}</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>

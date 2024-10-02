@@ -53,7 +53,10 @@ function DepositList({ deposits, isDeleteMode, selectedDeposits, setSelectedDepo
                             </TableHead>
                         )}
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Nombre</TableHead>
-                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Ubicación</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Ubicación</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad de Pasillos</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad de Estanterías</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad de Materiales</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -68,8 +71,11 @@ function DepositList({ deposits, isDeleteMode, selectedDeposits, setSelectedDepo
                                     />
                                 </TableCell>
                             )}
-                            <TableCell className="text-center font-light">{deposit.nombre}</TableCell>
+                            <TableCell className="text-center font-light">{deposit.nombreDeposito}</TableCell>
                             <TableCell className="text-center font-light">{deposit.nombreUbicacion}</TableCell>
+                            <TableCell className="text-center font-light">{deposit.cantidadPasillos}</TableCell>
+                            <TableCell className="text-center font-light">{deposit.cantidadEstanterias}</TableCell>
+                            <TableCell className="text-center font-light">{deposit.totalMateriales}</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>

@@ -578,26 +578,28 @@ app.delete('/materiales/:id/imagen', (req, res) => {
 // Endpoint para obtener las salidas de materiales
 app.get('/exits', (req, res) => {
     const query = `
-    SELECT 
-        ex.id AS salidaId,
-        ex.cantidad,
-        m.nombre AS materialNombre,
-        DATE_FORMAT(ex.fecha, '%d-%m-%Y %H:%i:%s') AS fechaSalida,
-        d.nombre AS depositoNombre,
-        u.nombre AS ubicacionNombre -- Asumimos que el campo 'nombre' es el nombre de la ubicación
+        SELECT 
+        s.id AS salidaId,
+        DATE_FORMAT(s.fecha, '%d-%m-%Y') AS fechaSalida,
+        GROUP_CONCAT(m.nombre ORDER BY ds.idMaterial ASC SEPARATOR ', ') AS nombresMateriales,
+        GROUP_CONCAT(ds.cantidad ORDER BY ds.idMaterial ASC SEPARATOR ' , ') AS cantidadesMateriales,
+        GROUP_CONCAT(DISTINCT d.nombre ORDER BY d.nombre ASC SEPARATOR ', ') AS depositoNombre,
+        GROUP_CONCAT(DISTINCT u.nombre ORDER BY u.nombre ASC SEPARATOR ', ') AS ubicacionNombre
     FROM 
-        salida_material ex
+        salida_material s
     JOIN 
-        Material m ON ex.idMaterial = m.id
+        detalle_salida_material ds ON s.id = ds.idSalida
+    JOIN 
+        Material m ON ds.idMaterial = m.id
     LEFT JOIN 
         Deposito d ON m.idDeposito = d.id
     LEFT JOIN 
-        Ubicacion u ON d.idUbicacion = u.id -- Asumimos que 'idUbicacion' es la FK de la tabla Deposito
+        Ubicacion u ON d.idUbicacion = u.id
+    GROUP BY 
+        s.id, s.fecha
     ORDER BY 
-        ex.fecha DESC;
-`;
-
-
+        s.fecha DESC;
+    `;
 
     db.query(query, (error, results) => {
         if (error) {
@@ -605,7 +607,6 @@ app.get('/exits', (req, res) => {
             return res.status(500).json({ error: 'Error al obtener las salidas de materiales' });
         }
 
-        // En vez de retornar un 404, devolvemos un array vacío o un mensaje indicando que no hay registros
         if (results.length === 0) {
             return res.status(200).json({ message: 'No hay registros de salidas de materiales', data: [] });
         }
@@ -614,82 +615,99 @@ app.get('/exits', (req, res) => {
     });
 });
 
-
 // Endpoint POST para registrar la salida de un material
-app.post('/materiales/salidas', async (req, res) => {
-    const { idMaterial, cantidad, motivo, fecha } = req.body;
+app.post('/materials/exits', async (req, res) => {
+    const salidas = req.body; // Aquí recibes un array de objetos
 
     try {
-        // Verificar que el material existe y obtener la cantidad disponible
-        const result = await new Promise((resolve, reject) => {
-            db.query('SELECT cantidad, bajoStock, nombre FROM Material WHERE id = ?', [idMaterial], (err, rows) => {
-                if (err) return reject(err);
-                resolve(rows);
-            });
-        });
+        const { motivo, fecha, idUsuario } = salidas[0]; // Tomamos el motivo, fecha, y usuario del primer material (asumimos que es el mismo para todos)
 
-        if (!result || result.length === 0) {
-            return res.status(404).json({ message: 'Material no encontrado' });
-        }
-
-        const material = result[0];
-
-        if (material.cantidad < cantidad) {
-            return res.status(400).json({ message: 'La cantidad de salida no puede ser mayor a la cantidad disponible' });
-        }
-
-        // Registrar la salida del material
-        await new Promise((resolve, reject) => {
-            db.query('INSERT INTO salida_material (idMaterial, cantidad, motivo, fecha) VALUES (?, ?, ?, ?)',
-                [idMaterial, cantidad, motivo, fecha], (err) => {
+        // 1. Registrar la salida principal en la tabla `salida_material`
+        const salidaId = await new Promise((resolve, reject) => {
+            db.query('INSERT INTO salida_material (fecha, motivo, idUsuario) VALUES (?, ?, ?)',
+                [fecha, motivo, idUsuario], (err, result) => {
                     if (err) return reject(err);
-                    resolve();
+                    resolve(result.insertId); // Obtener el id de la nueva salida
                 });
         });
 
-        // Actualizar la cantidad del material en la tabla `Material`
-        await new Promise((resolve, reject) => {
-            db.query('UPDATE Material SET cantidad = cantidad - ? WHERE id = ?', [cantidad, idMaterial], (err) => {
-                if (err) return reject(err);
-                resolve();
-            });
-        });
+        // 2. Para cada material, agregar su detalle a la tabla `detalle_salida_material`
+        for (const salida of salidas) {
+            const { idMaterial, cantidad } = salida;
 
-        // Obtener la nueva cantidad después de la actualización
-        const nuevaCantidad = material.cantidad - cantidad;
-
-        // Asignar el nuevo estado utilizando assignStatus
-        const nuevoEstado = assignStatus(nuevaCantidad, material.bajoStock);
-
-        // Verificar que 'nuevoEstado' sea un valor válido antes de realizar el UPDATE
-        if ([1, 2, 3].includes(nuevoEstado)) {
-            // Actualizar el idEstado del material
-            await new Promise((resolve, reject) => {
-                db.query('UPDATE Material SET idEstado = ? WHERE id = ?', [nuevoEstado, idMaterial], (err) => {
+            // Verificar que el material existe y obtener la cantidad disponible
+            const result = await new Promise((resolve, reject) => {
+                db.query('SELECT cantidad, bajoStock, nombre FROM Material WHERE id = ?', [idMaterial], (err, rows) => {
                     if (err) return reject(err);
-                    resolve();
+                    resolve(rows);
                 });
             });
-        } else {
-            console.error(`Error: El estado asignado (${nuevoEstado}) no es válido para el material con id: ${idMaterial}`);
-            return res.status(500).json({ message: 'Error al actualizar el estado del material' });
-        }
 
-
-        // Manejar las notificaciones de stock
-        handleStockNotifications(material.nombre, nuevaCantidad, material.bajoStock, (error) => {
-            if (error) {
-                console.error('Error al manejar notificaciones de stock:', error);
-                return res.status(500).json({ message: 'Error al manejar notificaciones de stock' });
+            if (!result || result.length === 0) {
+                return res.status(404).json({ message: 'Material no encontrado' });
             }
-            return res.status(201).json({ message: 'Salida de material registrada con éxito y notificaciones actualizadas' });
-        });
+
+            const material = result[0];
+
+            if (material.cantidad < cantidad) {
+                return res.status(400).json({ message: `La cantidad de salida no puede ser mayor a la cantidad disponible para el material ${material.nombre}` });
+            }
+
+            // Registrar el detalle del material en la tabla `detalle_salida_material`
+            await new Promise((resolve, reject) => {
+                db.query('INSERT INTO detalle_salida_material (idSalida, idMaterial, cantidad) VALUES (?, ?, ?)',
+                    [salidaId, idMaterial, cantidad], (err) => {
+                        if (err) return reject(err);
+                        resolve();
+                    });
+            });
+
+            // Actualizar la cantidad del material en la tabla `Material`
+            await new Promise((resolve, reject) => {
+                db.query('UPDATE Material SET cantidad = cantidad - ? WHERE id = ?', [cantidad, idMaterial], (err) => {
+                    if (err) return reject(err);
+                    resolve();
+                });
+            });
+
+            // Obtener la nueva cantidad después de la actualización
+            const nuevaCantidad = material.cantidad - cantidad;
+
+            // Asignar el nuevo estado utilizando assignStatus
+            const nuevoEstado = assignStatus(nuevaCantidad, material.bajoStock);
+
+            // Verificar que 'nuevoEstado' sea un valor válido antes de realizar el UPDATE
+            if ([1, 2, 3].includes(nuevoEstado)) {
+                // Actualizar el idEstado del material
+                await new Promise((resolve, reject) => {
+                    db.query('UPDATE Material SET idEstado = ? WHERE id = ?', [nuevoEstado, idMaterial], (err) => {
+                        if (err) return reject(err);
+                        resolve();
+                    });
+                });
+            } else {
+                console.error(`Error: El estado asignado (${nuevoEstado}) no es válido para el material con id: ${idMaterial}`);
+                return res.status(500).json({ message: 'Error al actualizar el estado del material' });
+            }
+
+            // Manejar las notificaciones de stock
+            handleStockNotifications(material.nombre, nuevaCantidad, material.bajoStock, (error) => {
+                if (error) {
+                    console.error('Error al manejar notificaciones de stock:', error);
+                    return res.status(500).json({ message: 'Error al manejar notificaciones de stock' });
+                }
+            });
+        }
+
+        return res.status(201).json({ message: 'Salida registrada con éxito y notificaciones actualizadas' });
+
     } catch (error) {
         console.error('Error registrando salida de material:', error.message);
         console.error(error.stack); // Esto imprimirá el stack trace completo
         return res.status(500).json({ message: 'Error registrando salida de material' });
     }
 });
+
 
 app.delete('/delete-exits', (req, res) => {
     const { exitIds } = req.body; // El JSON enviado desde el frontend debe contener un campo "exitIds"
@@ -712,7 +730,38 @@ app.delete('/delete-exits', (req, res) => {
     });
 });
 
+// Endpoint para obtener materiales por depósito
+app.get('/materials/deposit/:idDeposito', (req, res) => {
+    const idDeposito = req.params.idDeposito;
 
+    const query = `
+    SELECT 
+        m.id, 
+        m.nombre, 
+        m.cantidad, 
+        m.matricula, 
+        m.idDeposito, 
+        d.nombre AS depositoNombre
+    FROM 
+        Material m
+    LEFT JOIN 
+        Deposito d ON m.idDeposito = d.id
+    WHERE 
+        d.id = ?`;
+
+    db.query(query, [idDeposito], (err, results) => {
+        if (err) {
+            console.error('Error al obtener los materiales por depósito:', err);
+            return res.status(500).send('Error al consultar la base de datos');
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'No se encontraron materiales para este depósito' });
+        }
+
+        res.status(200).json(results);
+    });
+});
 
 
 const getNextImageNumber = (callback) => {
@@ -1098,7 +1147,7 @@ app.put('/editUser/:id', upload.single('imagen'), (req, res) => {
                     res.status(200).json({ mensaje: 'Usuario actualizado correctamente con imagen' });
                 });
             });
-        } 
+        }
         // Si se solicita eliminar la imagen
         else if (eliminarImagen === 'true') {
             // Elimina el archivo físico si existe
@@ -1130,7 +1179,7 @@ app.put('/editUser/:id', upload.single('imagen'), (req, res) => {
                     res.status(200).json({ mensaje: 'Usuario actualizado correctamente' });
                 }
             });
-        } 
+        }
         else {
             // Si no se eliminó ni agregó una imagen
             res.status(200).json({ mensaje: 'Usuario actualizado correctamente' });
@@ -1274,9 +1323,12 @@ app.get('/aisle', (req, res) => {
     const depositoId = req.query.depositoId;
     let query = `
         SELECT 
-            p.id, p.numero, d.Nombre AS nombreDeposito, u.nombre AS ubicacionDeposito,
-            COALESCE(l1.descripcion, 'Sin lado') AS lado1Descripcion, 
-            COALESCE(l2.descripcion, 'Sin lado') AS lado2Descripcion
+            p.id, 
+            p.numero, 
+            d.Nombre AS nombreDeposito, 
+            u.nombre AS ubicacionDeposito,
+            CONCAT_WS(', ', l1.descripcion, l2.descripcion) AS ladosDescripcion, 
+            COUNT(s.id) as totalEstanterias
         FROM 
             Pasillo p
         LEFT JOIN 
@@ -1287,20 +1339,26 @@ app.get('/aisle', (req, res) => {
             Lado l2 ON p.idLado2 = l2.id
         LEFT JOIN 
             Ubicacion u ON d.idUbicacion = u.id
-    `;
+        LEFT JOIN 
+            Estanteria s ON p.id = s.idPasillo
+        `;
+
     if (depositoId) {
-        query += ` WHERE p.idDeposito = ?`;
+        query += ` WHERE p.idDeposito = ? GROUP BY p.id, p.numero, d.Nombre, u.nombre, l1.descripcion, l2.descripcion`;
         db.query(query, [depositoId], (err, results) => {
             if (err) return res.status(500).send('Error al consultar la base de datos');
             res.json(results);
         });
     } else {
+        query += ` GROUP BY p.id, p.numero, d.Nombre, u.nombre, l1.descripcion, l2.descripcion`;
         db.query(query, (err, results) => {
             if (err) return res.status(500).send('Error al consultar la base de datos');
             res.json(results);
         });
     }
 });
+
+
 
 
 // Endpoint para eliminar múltiples pasillos
@@ -1356,9 +1414,26 @@ app.post('/addDeposit', (req, res) => {
 
 app.get('/deposits', (req, res) => {
     const query = `
-        SELECT d.id, d.nombre, d.idUbicacion, u.nombre AS nombreUbicacion 
-        FROM Deposito d 
-        LEFT JOIN Ubicacion u ON d.idUbicacion = u.id`;
+        SELECT 
+        d.id, 
+        d.nombre AS nombreDeposito, 
+        u.nombre AS nombreUbicacion, 
+        COUNT(DISTINCT p.id) AS cantidadPasillos, 
+        COUNT(DISTINCT e.id) AS cantidadEstanterias,
+        COUNT(m.id) AS totalMateriales
+    FROM 
+        Deposito d
+    JOIN 
+        Ubicacion u ON d.idUbicacion = u.id
+    LEFT JOIN 
+        Pasillo p ON d.id = p.idDeposito
+    LEFT JOIN 
+        Estanteria e ON p.id = e.idPasillo
+    LEFT JOIN 
+        Material m ON d.id = m.idDeposito
+    GROUP BY 
+        d.id, d.nombre, u.nombre;
+        `;
 
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
@@ -1422,7 +1497,19 @@ app.post('/addLocation', (req, res) => {
 
 // Obtener Ubicación
 app.get('/deposit-locations', (req, res) => {
-    const query = 'SELECT id, nombre FROM Ubicacion';
+    const query = `
+    SELECT 
+        u.id, 
+        u.nombre AS nombre, 
+        COUNT(d.id) AS totalDepositos
+    FROM 
+        Ubicacion u
+    LEFT JOIN 
+        Deposito d ON u.id = d.idUbicacion
+    GROUP BY 
+        u.id, u.nombre;
+
+    `;
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
         res.json(results);
@@ -1536,21 +1623,35 @@ app.get('/statuses', (req, res) => {
 app.get('/shelves', (req, res) => {
     const query = `
         SELECT 
-            e.id, e.numero, e.cantidad_estante, e.cantidad_division, e.idPasillo, e.idLado, 
-            p.numero AS numeroPasillo, 
-            l.descripcion AS direccionLado,
-            d.nombre AS nombreDeposito,
-            u.nombre AS nombreUbicacion
-        FROM 
-            Estanteria e
-        LEFT JOIN 
-            Pasillo p ON e.idPasillo = p.id
-        LEFT JOIN 
-            Lado l ON e.idLado = l.id
-        LEFT JOIN 
-            Deposito d ON p.idDeposito = d.id
-        LEFT JOIN 
-            Ubicacion u ON d.idUbicacion = u.id
+        e.id, 
+        e.numero, 
+        e.cantidad_estante, 
+        e.cantidad_division, 
+        e.idPasillo, 
+        e.idLado, 
+        p.numero AS numeroPasillo, 
+        l.descripcion AS direccionLado,
+        d.nombre AS nombreDeposito,
+        u.nombre AS nombreUbicacion,
+        COUNT(m.id) AS totalMateriales
+    FROM 
+        Estanteria e
+    LEFT JOIN 
+        Pasillo p ON e.idPasillo = p.id
+    LEFT JOIN 
+        Lado l ON e.idLado = l.id
+    LEFT JOIN 
+        Deposito d ON p.idDeposito = d.id
+    LEFT JOIN 
+        Ubicacion u ON d.idUbicacion = u.id
+    LEFT JOIN 
+        Espacio esp ON esp.idEstanteria = e.id
+    LEFT JOIN 
+        Material m ON m.idEspacio = esp.id
+    GROUP BY 
+        e.id, e.numero, e.cantidad_estante, e.cantidad_division, 
+        p.numero, l.descripcion, d.nombre, u.nombre
+
     `;
 
     db.query(query, (err, results) => {
@@ -1558,6 +1659,7 @@ app.get('/shelves', (req, res) => {
         res.json(results);
     });
 });
+
 
 // Endpoint para agregar una nueva estantería
 app.post('/addShelf', (req, res) => {

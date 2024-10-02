@@ -10,6 +10,8 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
     useEffect(() => {
         axios.get('http://localhost:8081/exits')
             .then(response => {
+                console.log('Respuesta de la API /exits:', response.data); // <-- Agrega este console.log
+
                 if (Array.isArray(response.data)) {
                     setSalidas(response.data);
                 } else if (response.data.data) {
@@ -20,6 +22,7 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                 console.error('Error fetching salidas:', error);
             });
     }, []);
+
 
     const toggleExitSelection = (exitId) => {
         if (selectedExits.includes(exitId)) {
@@ -76,25 +79,59 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {salidas.map(salida => (
-                            <TableRow key={salida.salidaId}>
-                                {isDeleteMode && (
-                                    <TableCell className="text-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedExits.includes(salida.salidaId)}
-                                            onChange={() => toggleExitSelection(salida.salidaId)}
-                                        />
+                        {salidas.map(salida => {
+                            return (
+                                <TableRow key={salida.salidaId}>
+                                    {isDeleteMode && (
+                                        <TableCell className="text-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedExits.includes(salida.salidaId)}
+                                                onChange={() => toggleExitSelection(salida.salidaId)}
+                                            />
+                                        </TableCell>
+                                    )}
+                                    <TableCell className="text-center font-light">{salida.salidaId}</TableCell>
+                                    <TableCell className="text-center font-light">{salida.fechaSalida}</TableCell>
+                                    <TableCell className="text-center font-light">
+                                        <div className="flex flex-col items-center">
+                                            {salida.nombresMateriales.split(', ').map((material, index, array) => (
+                                                <span key={index}>
+                                                    {material}{index < array.length - 1 && ','}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </TableCell>
-                                )}
-                                <TableCell className="text-center font-light">{salida.salidaId}</TableCell>
-                                <TableCell className="text-center font-light">{salida.fechaSalida}</TableCell>
-                                <TableCell className="text-center font-light">{salida.materialNombre}</TableCell>
-                                <TableCell className="text-center font-light">{salida.cantidad} {salida.cantidad === 1 ? "unidad" : "unidades"}</TableCell>
-                                <TableCell className="text-center font-light">{salida.depositoNombre}</TableCell>
-                                <TableCell className="text-center font-light">{salida.ubicacionNombre}</TableCell>
-                            </TableRow>
-                        ))}
+                                    <TableCell className="text-center font-light">
+                                        <div className="flex flex-col items-center">
+                                            {salida.cantidadesMateriales.split(' , ').map((cantidad, index, array) => (
+                                                <span key={index}>
+                                                    {cantidad}{index < array.length - 1 && ','}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-center font-light">
+                                        <div className="flex flex-col items-center">
+                                            {salida.depositoNombre.split(', ').map((deposito, index, array) => (
+                                                <span key={index}>
+                                                    {deposito}{index < array.length - 1 && ','}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-center font-light">
+                                        <div className="flex flex-col items-center">
+                                            {salida.ubicacionNombre.split(', ').map((ubicacion, index, array) => (
+                                                <span key={index}>
+                                                    {ubicacion}{index < array.length - 1 && ','}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             )}
