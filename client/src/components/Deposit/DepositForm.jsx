@@ -6,8 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function DepositForm({ onClose, onSubmit, notify }) {
-    const [formData, setFormData] = useState({ nombre: '', idUbicacion: '' });
+function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep, ubicacionId }) {
+
+    const [formData, setFormData] = useState({
+        nombre: '',
+        idUbicacion: ubicacionId || '', // Usamos el idUbicacion pasado desde el LocationForm
+        idDeposito: ''
+    });
     const [ubicaciones, setUbicaciones] = useState([]);
 
     useEffect(() => {
@@ -38,6 +43,12 @@ function DepositForm({ onClose, onSubmit, notify }) {
     };
 
     const handleSubmit = async () => {
+        
+        if (isTutorial && formData.nombre.trim() === '') {
+            notify('error', 'Debes ingresar un nombre'); 
+            return; 
+        }
+    
         try {
             const response = await axios.post('http://localhost:8081/addDeposit', formData);
     
@@ -45,75 +56,105 @@ function DepositForm({ onClose, onSubmit, notify }) {
                 throw new Error(response.data.error || "Error al agregar depósito");
             }
     
-            notify('success', "¡Depósito agregado correctamente!");
-    
+            if (!isTutorial) {
+                notify('success', "¡Depósito agregado correctamente!");
+            }
+            
             if (onClose) onClose();
+            
+            const idUbicacion = ubicacionId;
+
+            // Ejecuta onSubmit pasando depositoId como parámetro
+            if (onSubmit) onSubmit(idUbicacion, response.data.id);
     
-            // Ejecuta onSubmit con el delay
-            setTimeout(() => {
-                if (onSubmit) onSubmit(); // Ejecutar onSubmit después del delay
-                
-                // Verificar si no estamos en el tutorial y recargar la página
-                const isInTutorial = localStorage.getItem('inTutorial');
-                if (!isInTutorial || isInTutorial === 'false') {
-                    window.location.reload(); // Recargar la página si no estamos en el tutorial
-                }
-            }, 2000); // Ajusta el delay a 2.5 segundos
+            const isInTutorial = localStorage.getItem('inTutorial');
+            if (!isInTutorial || isInTutorial === 'false') {
+                window.location.reload(); // Recargar la página si no estamos en el tutorial
+            }
     
         } catch (error) {
             console.error('Error al agregar el depósito:', error);
             notify('error', error.message || "Error al agregar depósito");
         }
     };
-    
 
-    const handleCancel = () => {
-        if (onClose) onClose();
+
+    const handleCancel = async () => {
+        if (!isTutorial) {
+            // Lógica normal de cancelación si no estamos en tutorial
+            if (onClose) onClose();
+        } else {
+            // Lógica cuando estamos en el tutorial
+            if (currentStep === 2 && ubicacionId) { // Si estamos en el paso de depósito y volvemos al paso de ubicación
+                try {
+                    // Solo eliminar si existe una ubicación agregada
+                    await axios.delete(`http://localhost:8081/locations/delete/${ubicacionId}`);
+                    notify('info', "Ubicación eliminada. Volviendo al paso anterior...");
+                } catch (error) {
+                    console.error('Error al eliminar la ubicación:', error);
+                    notify('error', "No se pudo eliminar la ubicación. Intenta nuevamente.");
+                }
+            }
+
+            // Llamar a la función para volver al paso anterior en el tutorial
+            handlePreviousStep();
+        }
     };
 
     return (
-        <Card className="bg-sipe-blue-dark text-sipe-white p-4">
+        <Card className="bg-sipe-blue-dark text-sipe-white p-4 shadow-2xl">
             <CardHeader>
-                <CardTitle className="text-3xl text-center font-bold mb-2">Agregar nuevo Depósito</CardTitle>
-                <hr className="text-sipe-gray" />
+                <CardTitle className="text-3xl text-center font-bold mb-2">
+                    {isTutorial ? "Por favor, creá el primer depósito" : "Agregar nuevo Depósito"}
+                </CardTitle>
+                {isTutorial ? "" : <hr className="text-sipe-gray" />}
             </CardHeader>
             <CardContent className="flex flex-col space-y-10">
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-2">
-                        <Label htmlFor="nombre" className="text-sm font-medium">Nombre del depósito</Label>
                         <Input
-                            className="border-b"
+                            className="border-b text-center"
                             id="nombre"
                             name="nombre"
-                            placeholder="Ingresa el nombre del depósito"
+                            placeholder="Ingresá el nombre"
                             value={formData.nombre}
                             onChange={handleInputChange}
                         />
                     </div>
                 </div>
-                <div className="flex items-center gap-4">
-                    <Label className="text-sm font-medium">Ubicación</Label>
-                    <Select
-                        value={formData.idUbicacion}
-                        onValueChange={handleSelectChange}
-                        className="w-full"
-                    >
-                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                            <SelectValue placeholder="Selecciona una ubicación" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {ubicaciones.map((ubicacion) => (
-                                <SelectItem key={ubicacion.id} value={ubicacion.id}>
-                                    {ubicacion.nombre}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                <div className="flex items-center justify-center">
+                    <Label className="text-sm font-medium">
+                        {isTutorial ? "" : "Ubicación"}
+                    </Label>
+                    {isTutorial ? (
+                        // Si es tutorial, mostramos directamente el nombre de la ubicación en lugar del id
+                        <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
+                            {ubicaciones.find(u => u.id === formData.idUbicacion)?.nombre || "Sin ubicación seleccionada"}
+                        </span>
+                    ) : (
+                        // Si no es tutorial, mostramos el Select como siempre
+                        <Select
+                            value={formData.idUbicacion}
+                            onValueChange={handleSelectChange}
+                            className="w-full"
+                        >
+                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                <SelectValue placeholder="Selecciona una ubicación" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ubicaciones.map((ubicacion) => (
+                                    <SelectItem key={ubicacion.id} value={ubicacion.id}>
+                                        {ubicacion.nombre}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
                 </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
                 <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
-                    CANCELAR
+                    {isTutorial ? "VOLVER" : "CANCELAR"}
                 </Button>
                 <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>
                     AGREGAR

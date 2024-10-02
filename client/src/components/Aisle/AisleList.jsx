@@ -20,10 +20,10 @@ function AisleList() {
                 <TableHeader>
                     <TableRow>
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Número</TableHead>
-                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Depósito</TableHead>
-                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Ubicación</TableHead>
-                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Lado1</TableHead>
-                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Lado2</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Ubicación</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Lado 1</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Lado 2</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>

@@ -1,23 +1,29 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import LocationForm from '@/components/Location/LocationForm';
 import DepositForm from '@/components/Deposit/DepositForm';
 import CategoryForm from '@/components/Category/CategoryForm';
 import AisleForm from '@/components/Aisle/AisleForm';
 import ShelfForm from '@/components/Shelf/ShelfForm';
+import Stepper from '@/components/Stepper/Stepper';
+
 
 const Tutorial = ({ notify }) => {
     const [showTutorial, setShowTutorial] = useState(false);
-    const [currentStep, setCurrentStep] = useState(null);
+    const [currentStep, setCurrentStep] = useState(1); // Iniciar en el paso 1 (número)
+    const [ubicacionId, setUbicacionId] = useState(null); // Guardamos el idUbicacion
+    const [depositoId, setDepositoId] = useState(null);   // Guardamos el idDeposito
+    const [categoriaId, setCategoriaId] = useState(null);
+    const [pasilloId, setPasilloId] = useState(null);
+    const [estanteriaId, setEstanteriaId] = useState(null);
     const navigate = useNavigate();
+    const totalSteps = 5;
 
     useEffect(() => {
-        // Marcar que estamos en el tutorial
         localStorage.setItem('inTutorial', 'true');
-        
         return () => {
-            // Limpiar cuando el componente se desmonte
             localStorage.setItem('inTutorial', 'false');
         };
     }, []);
@@ -36,98 +42,157 @@ const Tutorial = ({ notify }) => {
                 console.error('Error al verificar el estado del tutorial:', error);
                 notify('error', 'Error al verificar el estado del tutorial');
             });
-    }, []);
+    }, [notify]);
 
     const determineFirstStep = (steps) => {
-        if (steps.ubicacion) setCurrentStep('ubicacion');
-        else if (steps.deposito) setCurrentStep('deposito');
-        else if (steps.categoria) setCurrentStep('categoria');
-        else if (steps.pasillo) setCurrentStep('pasillo');
-        else if (steps.estanteria) setCurrentStep('estanteria');
+        if (steps.ubicacion) setCurrentStep(1);
+        else if (steps.deposito) setCurrentStep(2);
+        else if (steps.categoria) setCurrentStep(3);
+        else if (steps.pasillo) setCurrentStep(4);
+        else if (steps.estanteria) setCurrentStep(5);
     };
 
-    const handleNextStep = () => {
-        switch (currentStep) {
-            case 'ubicacion':
-                setCurrentStep('deposito');
-                break;
-            case 'deposito':
-                setCurrentStep('categoria');
-                break;
-            case 'categoria':
-                setCurrentStep('pasillo');
-                break;
-            case 'pasillo':
-                setCurrentStep('estanteria');
-                break;
-            default:
-                console.log("Completing tutorial..."); // Depuración
-                completeTutorial();
-                return; // Salir de la función si se completa el tutorial
+    const handleNextStep = (newUbicacionId, newDepositoId, newCategoriaId, newPasilloId, newEstanteriaId) => {
+        if (newUbicacionId) {
+            setUbicacionId(newUbicacionId); // Guardamos el idUbicacion cuando se crea
         }
-    
-        const userId = localStorage.getItem('id');
-        axios.get(`http://localhost:8081/check-tutorial-status/${userId}`)
-            .then(response => {
-                const { steps } = response.data;
-                const allStepsCompleted = !steps.ubicacion && !steps.deposito && !steps.categoria && !steps.pasillo && !steps.estanteria;
-                
-                if (allStepsCompleted) {
-                    completeTutorial();
-                }
-            })
-            .catch(error => {
-                console.error('Error al verificar los pasos restantes del tutorial:', error);
-                notify('error', 'Error al verificar los pasos restantes del tutorial');
-            });
+        if (newDepositoId) {
+            setDepositoId(newDepositoId); // Guardamos el idDeposito cuando se crea
+        }
+        if (newCategoriaId) {
+            setCategoriaId(newCategoriaId); // Guardamos el idCategoria cuando se crea
+        }
+        if (newPasilloId){
+            setPasilloId(newPasilloId);
+        }
+        if (newEstanteriaId){
+            setEstanteriaId(newEstanteriaId);
+        }
+        if (currentStep < totalSteps) {
+            setCurrentStep(currentStep + 1);
+        } else {
+            completeTutorial();
+        }
     };
-    
+
+    const handlePreviousStep = () => {
+        if (currentStep > 1) {
+            setCurrentStep(currentStep - 1);
+        }
+    };
+
     const completeTutorial = () => {
         const userId = localStorage.getItem('id');
         axios.patch(`http://localhost:8081/complete-tutorial/${userId}`)
             .then(() => {
                 notify('success', 'Tutorial completado');
                 setShowTutorial(false);
-                localStorage.setItem('firstLogin', '0'); // Actualiza localStorage
-    
+                localStorage.setItem('firstLogin', '0');
+
                 setTimeout(() => {
-                    navigate('/dshb'); // Redirige al dashboard después de completar el tutorial
-                }, 500); // Ajusta un pequeño delay si es necesario para que el toast aparezca
+                    navigate('/dshb');
+                }, 500);
             })
             .catch((error) => {
                 console.error('Error al completar el tutorial:', error);
                 notify('error', 'Hubo un error al completar el tutorial');
             });
     };
-    
-    
-    const getStepMessage = () => {
-        switch (currentStep) {
-            case 'ubicacion':
-                return "Por favor, cree la primera ubicación.";
-            case 'deposito':
-                return "Por favor, cree el primer depósito.";
-            case 'categoria':
-                return "Por favor, cree la primera categoría.";
-            case 'pasillo':
-                return "Por favor, cree el primer pasillo.";
-            case 'estanteria':
-                return "Por favor, cree la primera estantería.";
-            default:
-                return "";
+
+    const pageVariants = {
+        initial: {
+            opacity: 0,
+            x: 300,
+            y: 0
+        },
+        in: {
+            opacity: 1,
+            x: 0,
+            y: 0
+        },
+        out: {
+            opacity: 0,
+            x: -300,
+            y: 0
         }
+    };
+
+    const pageTransition = {
+        type: "tween",
+        ease: "easeOut",
+        duration: 0.5
     };
 
     if (!showTutorial) return null;
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen">
-            <h1 className="text-xl font-bold text-sipe-white mb-4">{getStepMessage()}</h1>
-            {currentStep === 'ubicacion' && <LocationForm onSubmit={handleNextStep} notify={notify}  />}
-            {currentStep === 'deposito' && <DepositForm onSubmit={handleNextStep} notify={notify}  />}
-            {currentStep === 'categoria' && <CategoryForm onSubmit={handleNextStep} notify={notify}  />}
-            {currentStep === 'pasillo' && <AisleForm onSubmit={handleNextStep} notify={notify}  />}
-            {currentStep === 'estanteria' && <ShelfForm onSubmit={handleNextStep} notify={notify}  />}
+        <div className="relative flex flex-col items-center justify-center min-h-screen">
+            {/* Modal con Stepper debajo */}
+            <div className="relative z-10 mb-8">
+
+                <motion.div
+                    key={currentStep} // Cambia la key con cada paso para activar la animación
+                    initial="initial"
+                    animate="in"
+                    exit="out"
+                    variants={pageVariants}
+                    transition={pageTransition}
+                >
+                    {/* Renderizado de los formularios según currentStep numérico */}
+                    {currentStep === 1 && <LocationForm onSubmit={handleNextStep} notify={notify} isTutorial={true} />}
+                    {currentStep === 2 && (
+                        <DepositForm
+                            onSubmit={handleNextStep}
+                            notify={notify}
+                            isTutorial={true}
+                            currentStep={currentStep}
+                            handlePreviousStep={handlePreviousStep}
+                            ubicacionId={ubicacionId} // PASAMOS idUbicacion
+                        />
+                    )}
+                    {currentStep === 3 && (
+                        <CategoryForm
+                            onSubmit={handleNextStep}
+                            notify={notify}
+                            isTutorial={true}
+                            currentStep={currentStep}
+                            handlePreviousStep={handlePreviousStep}
+                            ubicacionId={ubicacionId}  // PASAMOS idUbicacion
+                            depositoId={depositoId}    // PASAMOS idDeposito
+                        />
+                    )}
+                    {currentStep === 4 && (
+                        <AisleForm
+                            onSubmit={handleNextStep}
+                            notify={notify}
+                            isTutorial={true}
+                            currentStep={currentStep}
+                            handlePreviousStep={handlePreviousStep}
+                            ubicacionId={ubicacionId}  // PASAMOS idUbicacion
+                            depositoId={depositoId}    // PASAMOS idDeposito
+                            categoriaId={categoriaId} // PASAMOS idCategoria
+                        />
+                    )}
+                    {currentStep === 5 && (
+                        <ShelfForm
+                            onSubmit={handleNextStep}
+                            notify={notify}
+                            isTutorial={true}
+                            currentStep={currentStep}
+                            handlePreviousStep={handlePreviousStep}
+                            ubicacionId={ubicacionId}  // PASAMOS idUbicacion
+                            depositoId={depositoId}    // PASAMOS idDeposito
+                            categoriaId={categoriaId} // PASAMOS idCategoria
+                            pasilloId={pasilloId}
+                        />
+                    )}
+                </motion.div>
+            </div>
+
+            {/* Stepper colocado debajo del modal, con espacio */}
+            <div className="absolute bottom-6 w-full flex justify-center">
+                <Stepper currentStep={currentStep} totalSteps={totalSteps} />
+            </div>
         </div>
     );
 };
