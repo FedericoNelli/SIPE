@@ -3,6 +3,7 @@ import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import DepositForm from '@/components/Deposit/DepositForm';
 import DepositList from '@/components/Deposit/DepositList';
+import DepositEditModal from './DepositEditModal';
 import axios from 'axios';
 
 function Deposit({ notify }) {
@@ -11,16 +12,22 @@ function Deposit({ notify }) {
     const [itemsPerPage] = useState(10);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para el modo de eliminación
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedDeposits, setSelectedDeposits] = useState([]); // Estado para los depósitos seleccionados
 
-    useEffect(() => {
+    // Nueva función para cargar depósitos
+    const loadDeposits = () => {
         axios.get('http://localhost:8081/deposits')
             .then(response => {
                 setDeposits(response.data);
             })
             .catch(error => {
-                console.error('Error fetching deposits:', error);
+                notify('error', 'Error al cargar depósitos', error);
             });
+    };
+
+    useEffect(() => {
+        loadDeposits();
     }, []);
 
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -63,6 +70,19 @@ function Deposit({ notify }) {
             });
     };
 
+    const openEditModal = () => {
+        setIsEditModalOpen(true);
+    };
+
+    const closeEditModal = () => {
+        setIsEditModalOpen(false);
+    };
+
+    const handleDepositUpdated = () => {
+        loadDeposits(); // Recargar depósitos
+        closeEditModal(); // Cerrar modal de edición después de actualizar
+    };
+
     return (
         <div className="relative">
             <div className="absolute inset-0 bg-sipe-white opacity-5 z-10 rounded-2xl" />
@@ -77,6 +97,7 @@ function Deposit({ notify }) {
                         <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
                             {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Depósitos'}
                         </Button>
+                        <Button onClick={openEditModal} className="bg-blue-600 font-semibold px-4 py-2 rounded hover:bg-blue-700">Editar Depósito</Button>
                     </div>
                 </div>
                 <DepositList
@@ -103,6 +124,15 @@ function Deposit({ notify }) {
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <DepositForm onClose={closeFormModal} notify={notify} />
+                    </div>
+                )}
+                {isEditModalOpen && (
+                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <DepositEditModal
+                        onClose={closeEditModal}
+                        onDepositUpdated={handleDepositUpdated}
+                        notify={notify}
+                    />
                     </div>
                 )}
             </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from "@/components/Common/Button/Button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
 import axios from 'axios';
-import ReportModalDetail from './ReportModalDetail'; // Asegúrate de importar tu modal
+import ReportDetailModal from './ReportDetailModal'; // Asegúrate de importar tu modal
 
 function ReportList({ notify, isDeleteMode, setIsDeleteMode }) {
     const [reports, setReports] = useState([]);
@@ -201,7 +201,7 @@ function ReportList({ notify, isDeleteMode, setIsDeleteMode }) {
 
             {/* Modal para mostrar detalles del informe */}
             {selectedReport && (
-                <ReportModalDetail
+                <ReportDetailModal
                     isOpen={isModalOpen}
                     onClose={closeModal}
                     reportData={selectedReport.datos}

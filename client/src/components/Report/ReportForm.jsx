@@ -6,7 +6,7 @@ import { Label } from "@/components/Common/Label/Label";
 import { Button } from "@/components/Common/Button/Button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/Common/Select/Select";
 import { Input } from "@/components/Common/Input/Input";
-import ReportModalDetail from './ReportModalDetail';
+import ReportDetailModal from './ReportDetailModal';
 
 const ReportForm = ({ onClose, notify }) => {
     const [formData, setFormData] = useState({
@@ -268,7 +268,7 @@ const ReportForm = ({ onClose, notify }) => {
                 </CardFooter>
             </Card>
 
-            <ReportModalDetail
+            <ReportDetailModal
                 isOpen={showReportModal}
                 onClose={handleCloseReportModal}
                 reportData={reportData}

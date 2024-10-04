@@ -1358,7 +1358,32 @@ app.get('/aisle', (req, res) => {
     }
 });
 
+//Endpoint para traer un pasillo a traves del ID
+app.get('/aisle/:id', (req, res) => {
+    const aisleId = req.params.id;
+    
+    const query = `
+        SELECT 
+            p.id, p.numero, p.idDeposito, p.idLado1, p.idLado2, d.idUbicacion 
+        FROM 
+            Pasillo p 
+        JOIN 
+            Deposito d ON p.idDeposito = d.id
+        WHERE 
+            p.id = ?
+    `;
 
+    db.query(query, [aisleId], (err, result) => {
+        if (err) {
+            console.error('Error al obtener el pasillo:', err);
+            return res.status(500).json({ error: 'Error al obtener el pasillo', details: err });
+        }
+        if (result.length === 0) {
+            return res.status(404).json({ message: 'Pasillo no encontrado' });
+        }
+        res.status(200).json(result[0]);
+    });
+});
 
 
 // Endpoint para eliminar múltiples pasillos
@@ -1379,6 +1404,35 @@ app.delete('/delete-aisles', (req, res) => {
         }
 
         res.status(200).json({ message: 'Pasillos eliminados correctamente' });
+    });
+});
+
+// Endpoint para actualizar un pasillo existente
+app.put('/edit-aisle/:id', (req, res) => {
+    const aisleId = req.params.id;
+    const { numero, idDeposito, idLado1, idLado2 } = req.body;
+
+    if (!numero || !idDeposito || !idLado1) {
+        return res.status(400).json({ error: 'Todos los campos requeridos deben estar completos' });
+    }
+
+    const query = `
+        UPDATE Pasillo 
+        SET numero = ?, idDeposito = ?, idLado1 = ?, idLado2 = ? 
+        WHERE id = ?
+    `;
+
+    const values = [numero, idDeposito, idLado1, idLado2 || null, aisleId];
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al actualizar el pasillo:', err);
+            return res.status(500).json({ error: 'Error al actualizar el pasillo', details: err });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Pasillo no encontrado' });
+        }
+        res.status(200).json({ message: 'Pasillo actualizado correctamente' });
     });
 });
 
@@ -1462,6 +1516,63 @@ app.delete('/delete-deposits', (req, res) => {
     });
 });
 
+// Obtener un depósito por su ID
+app.get('/deposits/:id', (req, res) => {
+    const depositId = req.params.id;
+
+    const query = `
+        SELECT d.id, d.nombre, d.idUbicacion, u.nombre AS nombreUbicacion
+        FROM Deposito d
+        JOIN Ubicacion u ON d.idUbicacion = u.id
+        WHERE d.id = ?
+    `;
+
+    db.query(query, [depositId], (err, result) => {
+        if (err) {
+            console.error('Error al obtener el depósito:', err);
+            return res.status(500).json({ error: 'Error al obtener el depósito' });
+        }
+
+        if (result.length === 0) {
+            return res.status(404).json({ message: 'Depósito no encontrado' });
+        }
+
+        res.status(200).json(result[0]);
+    });
+});
+
+// Editar un depósito por su ID
+app.put('/edit-deposit/:id', (req, res) => {
+    const depositId = req.params.id;
+    const { nombre, idUbicacion } = req.body;
+
+    // Validar que los campos requeridos estén completos
+    if (!nombre || !idUbicacion) {
+        return res.status(400).json({ error: 'Todos los campos requeridos deben estar completos' });
+    }
+
+    const query = `
+        UPDATE Deposito
+        SET nombre = ?, idUbicacion = ?
+        WHERE id = ?
+    `;
+
+    const values = [nombre, idUbicacion, depositId];
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al actualizar el depósito:', err);
+            return res.status(500).json({ error: 'Error al actualizar el depósito' });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Depósito no encontrado' });
+        }
+
+        res.status(200).json({ message: 'Depósito actualizado correctamente' });
+    });
+});
+
 
 app.get('/deposit-names', (req, res) => {
     const locationId = req.query.locationId;
@@ -1508,7 +1619,6 @@ app.get('/deposit-locations', (req, res) => {
         Deposito d ON u.id = d.idUbicacion
     GROUP BY 
         u.id, u.nombre;
-
     `;
     db.query(query, (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
@@ -1535,6 +1645,50 @@ app.delete('/delete-locations', (req, res) => {
         }
 
         res.status(200).json({ message: 'Ubicaciones eliminadas correctamente' });
+    });
+});
+
+app.get('/locations/:id', (req, res) => {
+    const locationId = req.params.id;
+
+    const query = 'SELECT id, nombre FROM Ubicacion WHERE id = ?';
+
+    db.query(query, [locationId], (err, result) => {
+        if (err) {
+            console.error('Error al obtener la ubicación:', err);
+            return res.status(500).json({ error: 'Error al obtener la ubicación' });
+        }
+
+        if (result.length === 0) {
+            return res.status(404).json({ message: 'Ubicación no encontrada' });
+        }
+
+        res.status(200).json(result[0]);
+    });
+});
+
+app.put('/edit-location/:id', (req, res) => {
+    const locationId = req.params.id;
+    const { nombre } = req.body;
+
+    if (!nombre) {
+        return res.status(400).json({ error: 'El nombre es requerido' });
+    }
+
+    const query = 'UPDATE Ubicacion SET nombre = ? WHERE id = ?';
+    const values = [nombre, locationId];
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al actualizar la ubicación:', err);
+            return res.status(500).json({ error: 'Error al actualizar la ubicación' });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Ubicación no encontrada' });
+        }
+
+        res.status(200).json({ message: 'Ubicación actualizada correctamente' });
     });
 });
 
@@ -1600,6 +1754,26 @@ app.delete('/delete-categories', (req, res) => {
         res.status(200).json({ message: "Categorías eliminadas correctamente" });
     });
 });
+
+// Endpoint para editar una categoría
+app.put('/categories/:id', (req, res) => {
+    const categoryId = req.params.id;
+    const { descripcion } = req.body;
+
+    if (!descripcion) {
+        return res.status(400).json({ message: 'La descripción es obligatoria' });
+    }
+
+    const query = 'UPDATE Categoria SET descripcion = ? WHERE id = ?';
+    db.query(query, [descripcion, categoryId], (err, result) => {
+        if (err) {
+            console.error('Error al actualizar la categoría:', err);
+            return res.status(500).json({ message: 'Error al actualizar la categoría' });
+        }
+        res.status(200).json({ message: 'Categoría actualizada exitosamente' });
+    });
+});
+
 
 
 app.get('/total-categories', (req, res) => {
@@ -1688,6 +1862,54 @@ app.get('/shelf', (req, res) => {
         res.json(results);
     });
 });
+
+// Obtener una estantería por ID
+app.get('/shelf/:id', (req, res) => {
+    const shelfId = req.params.id;
+    const query = `
+        SELECT Estanteria.*, Pasillo.numero AS pasilloNumero, Lado.descripcion AS ladoDescripcion
+        FROM Estanteria
+        JOIN Pasillo ON Estanteria.idPasillo = Pasillo.id
+        JOIN Lado ON Estanteria.idLado = Lado.id
+        WHERE Estanteria.id = ?
+    `;
+    db.query(query, [shelfId], (err, result) => {
+        if (err) {
+            console.error('Error fetching shelf:', err);
+            return res.status(500).json({ error: 'Error al obtener la estantería' });
+        }
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'Estantería no encontrada' });
+        }
+        res.status(200).json(result[0]);
+    });
+});
+
+// Actualizar una estantería
+app.put('/edit-shelf/:id', (req, res) => {
+    const shelfId = req.params.id;
+    const { numero, cantidad_estante, cantidad_division, idPasillo, idLado } = req.body;
+
+    const query = `
+        UPDATE Estanteria
+        SET numero = ?, cantidad_estante = ?, cantidad_division = ?, idPasillo = ?, idLado = ?
+        WHERE id = ?
+    `;
+
+    const values = [numero, cantidad_estante, cantidad_division, idPasillo, idLado, shelfId];
+
+    db.query(query, values, (err, result) => {
+        if (err) {
+            console.error('Error al actualizar estantería:', err);
+            return res.status(500).json({ error: 'Error al actualizar la estantería' });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Estantería no encontrada' });
+        }
+        res.status(200).json({ message: 'Estantería actualizada correctamente' });
+    });
+});
+
 
 // Endpoint para eliminar múltiples estanterías
 app.delete('/delete-shelves', (req, res) => {

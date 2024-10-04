@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-function ModalEditMaterial({ isOpen, onClose, notify, material }) {
+function MaterialEditModal({ isOpen, onClose, notify, material }) {
     const [isVisible, setIsVisible] = useState(isOpen);
     const [depositLocations, setDepositLocations] = useState([]);
     const [depositNames, setDepositNames] = useState([]);
@@ -473,4 +473,4 @@ function ModalEditMaterial({ isOpen, onClose, notify, material }) {
     );
 }
 
-export default ModalEditMaterial;
+export default MaterialEditModal;

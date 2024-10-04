@@ -7,7 +7,7 @@ import { Search, Filter } from 'lucide-react';
 import { AnimatePresence, motion } from "framer-motion";
 import MaterialForm from '@/components/Material/MaterialForm';
 import MaterialList from '@/components/Material/MaterialList';
-import ModalDetailMaterial from '@/components/Material/ModalDetailMaterial';
+import MaterialDetailModal from '@/components/Material/MaterialDetailModal';
 import FilterModal from '@/components/Common/Filter/FilterModal';
 import MaterialExitList from '@/components/Material/MaterialExitList';
 import MaterialExitForm from '@/components/Material/MaterialExitForm';
@@ -349,7 +349,7 @@ function Material({ notify }) {
 
                 <AnimatePresence>
                     {isDetailModalOpen && materialDetail && (
-                        <ModalDetailMaterial
+                        <MaterialDetailModal
                             isOpen={isDetailModalOpen}
                             onClose={closeDetailModal}
                             selectedMaterial={materialDetail}

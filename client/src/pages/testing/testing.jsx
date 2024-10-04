@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ModalEditMaterial from '@/components/Testing/CompTesting';
+import MaterialEditModal from '@/components/Testing/CompTesting';
 
 const MaterialPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -18,7 +18,7 @@ const MaterialPage = () => {
     return (
         <div>
             <button onClick={() => handleEditClick(material)}>Editar Material</button>
-            <ModalEditMaterial
+            <MaterialEditModal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 // notify={notify}

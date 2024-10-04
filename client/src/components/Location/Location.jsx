@@ -4,6 +4,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@
 import axios from 'axios';
 import LocationForm from '@/components/Location/LocationForm';
 import LocationList from './LocationList';
+import LocationEditModal from './LocationEditModal';
 
 function Location({ notify }) {
     const [locations, setLocations] = useState([]);
@@ -12,8 +13,9 @@ function Location({ notify }) {
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para el modo de eliminación
     const [selectedLocations, setSelectedLocations] = useState([]); // Estado para las ubicaciones seleccionadas
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-    useEffect(() => {
+    const loadLocations = () => {
         axios.get('http://localhost:8081/deposit-locations')
             .then(response => {
                 setLocations(response.data);
@@ -21,6 +23,10 @@ function Location({ notify }) {
             .catch(error => {
                 console.error('Error fetching locations:', error);
             });
+    };
+
+    useEffect(() => {
+        loadLocations();
     }, []);
 
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -63,6 +69,19 @@ function Location({ notify }) {
             });
     };
 
+    const openEditModal = () => {
+        setIsEditModalOpen(true);
+    };
+
+    const closeEditModal = () => {
+        setIsEditModalOpen(false);
+    };
+
+    const handleLocationUpdated = () => {
+        loadLocations();
+        closeEditModal();
+    };
+
     return (
         <div className="relative">
             <div className="absolute inset-0 bg-sipe-white opacity-5 z-10 rounded-2xl" />
@@ -77,6 +96,7 @@ function Location({ notify }) {
                         <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
                             {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Ubicaciones'}
                         </Button>
+                        <Button onClick={openEditModal} className="bg-blue-600 font-semibold px-4 py-2 rounded hover:bg-blue-700">EDITAR UBICACIÓN</Button>
                     </div>
                 </div>
                 <LocationList
@@ -103,6 +123,14 @@ function Location({ notify }) {
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <LocationForm onClose={closeFormModal} notify={notify} />
+                    </div>
+                )}
+                {isEditModalOpen && (
+                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <LocationEditModal
+                        onClose={closeEditModal}
+                        onLocationUpdated={handleLocationUpdated}
+                        notify={notify}/>
                     </div>
                 )}
             </div>

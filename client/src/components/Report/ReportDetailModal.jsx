@@ -5,7 +5,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/Common/Button/Button";
 
-function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafico, selectedMaterial, dateRange, selectedOption, selectedDeposito, selectedEstado }) {
+function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafico, selectedMaterial, dateRange, selectedOption, selectedDeposito, selectedEstado }) {
     const [chartData, setChartData] = useState([]);
 
     useEffect(() => {
@@ -297,4 +297,4 @@ function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafic
     );
 }
 
-export default ReportModalDetail;
+export default ReportDetailModal;

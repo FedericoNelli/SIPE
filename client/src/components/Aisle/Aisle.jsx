@@ -4,6 +4,7 @@ import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import AisleForm from '@/components/Aisle/AisleForm';
 import AisleList from './AisleList';
+import AisleEditModal from '@/components/Aisle/AisleEditModal'; // Importar el modal de edición
 
 function Aisle({ notify }) {
     const [aisles, setAisles] = useState([]);
@@ -12,6 +13,7 @@ function Aisle({ notify }) {
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para el modo de eliminación
     const [selectedAisles, setSelectedAisles] = useState([]); // Estado para pasillos seleccionados
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Estado para abrir/cerrar el modal de edición
 
     useEffect(() => {
         axios.get('http://localhost:8081/aisle')
@@ -42,6 +44,14 @@ function Aisle({ notify }) {
         setSelectedAisles([]); // Limpiar la selección al salir del modo de eliminación
     };
 
+    const openEditModal = () => {
+        setIsEditModalOpen(true);
+    };
+
+    const closeEditModal = () => {
+        setIsEditModalOpen(false);
+    };
+
     const handleDeleteAisles = () => {
         if (selectedAisles.length === 0) {
             notify('error', 'No hay pasillos seleccionados para eliminar');
@@ -61,6 +71,16 @@ function Aisle({ notify }) {
             });
     };
 
+    const handleAisleUpdate = () => {
+        axios.get('http://localhost:8081/aisle')
+            .then(response => {
+                setAisles(response.data);
+            })
+            .catch(error => {
+                console.error('Error fetching aisles:', error);
+            });
+    };
+
     return (
         <div className="relative">
             <div className="absolute inset-0 bg-sipe-white opacity-5 z-10 rounded-2xl" />
@@ -74,6 +94,9 @@ function Aisle({ notify }) {
                         <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">NUEVO PASILLO</Button>
                         <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
                             {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Pasillos'}
+                        </Button>
+                        <Button onClick={openEditModal} className="bg-blue-600 font-semibold px-4 py-2 rounded hover:bg-blue-700">
+                            Editar Pasillos
                         </Button>
                     </div>
                 </div>
@@ -101,6 +124,11 @@ function Aisle({ notify }) {
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <AisleForm onClose={closeFormModal} notify={notify} />
+                    </div>
+                )}
+                {isEditModalOpen && (
+                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                        <AisleEditModal onClose={closeEditModal} onAisleUpdated={handleAisleUpdate} notify={notify} />
                     </div>
                 )}
             </div>

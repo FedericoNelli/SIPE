@@ -1,20 +1,20 @@
 import React, { useEffect, useCallback, useState } from "react";
 import Map from "@/components/Common/Map/Map";
-import ModalEditMaterial from "@/components/Material/ModalEditMaterial";
+import MaterialEditModal from "@/components/Material/MaterialEditModal";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import { Button } from "@/components/Common/Button/Button";
 import { X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
-function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
+function MaterialDetailModal({ isOpen, onClose, selectedMaterial }) {
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isEditModalClosing, setIsEditModalClosing] = useState(false);
 
     const rol = localStorage.getItem('rol');
 
-    // Manejo del evento 'Escape' pero solo si el ModalEditMaterial NO está abierto
+    // Manejo del evento 'Escape' pero solo si el MaterialEditModal NO está abierto
     useEffect(() => {
         const handleEscape = (event) => {
             if (event.key === 'Escape' && !isEditModalOpen) {
@@ -199,7 +199,7 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
 
                     <AnimatePresence>
                         {isEditModalOpen && (
-                            <ModalEditMaterial
+                            <MaterialEditModal
                                 isOpen={!isEditModalClosing}
                                 onClose={handleEditModalClosed}
                                 notify={toast}
@@ -213,4 +213,4 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
     );
 }
 
-export default ModalDetailMaterial;
+export default MaterialDetailModal;
