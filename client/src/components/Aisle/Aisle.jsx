@@ -16,7 +16,7 @@ function Aisle({ notify }) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Estado para abrir/cerrar el modal de edición
 
     useEffect(() => {
-        axios.get('http://localhost:8081/aisle')
+        axios.get('http://localhost:8081/aisles')
             .then(response => {
                 setAisles(response.data);
             })
@@ -72,7 +72,7 @@ function Aisle({ notify }) {
     };
 
     const handleAisleUpdate = () => {
-        axios.get('http://localhost:8081/aisle')
+        axios.get('http://localhost:8081/aisles')
             .then(response => {
                 setAisles(response.data);
             })

@@ -46,7 +46,7 @@ function ShelfForm({ onClose, onSubmit, notify }) {
     };
 
     const fetchAislesByDeposit = (depositoId) => {
-        axios.get(`http://localhost:8081/aisle`, {
+        axios.get(`http://localhost:8081/aisles`, {
             params: { depositoId }
         })
             .then(response => setAisles(response.data))

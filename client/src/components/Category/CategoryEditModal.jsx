@@ -12,6 +12,23 @@ const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [newDescription, setNewDescription] = useState('');
 
+        // Cerrar modal al presionar la tecla Escape
+        useEffect(() => {
+            const handleKeyDown = (event) => {
+                if (event.key === 'Escape') {
+                    onClose(); // Llamar a la función onClose cuando se presiona Escape
+                }
+            };
+    
+            // Agregar el event listener
+            window.addEventListener('keydown', handleKeyDown);
+    
+            // Eliminar el event listener al desmontar el componente
+            return () => {
+                window.removeEventListener('keydown', handleKeyDown);
+            };
+        }, [onClose]);
+        
     // Cargar las categorías cuando se abre el modal
     useEffect(() => {
         const fetchCategories = async () => {

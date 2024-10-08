@@ -14,18 +14,35 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
     const [locations, setLocations] = useState([]);
     const [deposits, setDeposits] = useState([]);
     const [sides, setSides] = useState([]);
-
     const [aisleNumber, setAisleNumber] = useState('');
     const [selectedLocation, setSelectedLocation] = useState('');
     const [selectedDeposit, setSelectedDeposit] = useState('');
     const [selectedSide1, setSelectedSide1] = useState('');
     const [selectedSide2, setSelectedSide2] = useState('');
 
+        // Cerrar modal al presionar la tecla Escape
+        useEffect(() => {
+            const handleKeyDown = (event) => {
+                if (event.key === 'Escape') {
+                    onClose(); // Llamar a la función onClose cuando se presiona Escape
+                }
+            };
+    
+            // Agregar el event listener
+            window.addEventListener('keydown', handleKeyDown);
+    
+            // Eliminar el event listener al desmontar el componente
+            return () => {
+                window.removeEventListener('keydown', handleKeyDown);
+            };
+        }, [onClose]);
+
+        
     // Cargar la lista de pasillos
     useEffect(() => {
         const fetchAisles = async () => {
             try {
-                const response = await axios.get('http://localhost:8081/aisle');
+                const response = await axios.get('http://localhost:8081/aisles');
                 setAisles(response.data);
             } catch (error) {
                 notify('error', 'Error al cargar los pasillos');

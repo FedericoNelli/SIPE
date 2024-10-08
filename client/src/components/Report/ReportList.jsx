@@ -82,16 +82,13 @@ function ReportList({ notify, isDeleteMode, setIsDeleteMode }) {
         if (isDeleteMode) return;
         try {
             const response = await axios.get(`http://localhost:8081/reports/${report.id}`);
-
             if (!response.data) {
                 console.error('No se obtuvieron datos del informe');
                 return;
             }
-
             const datos = Array.isArray(response.data.datos) ? response.data.datos : [];
             const formattedStartDate = response.data.fechaInicio ? new Date(response.data.fechaInicio).toLocaleDateString() : 'N/A';
             const formattedEndDate = response.data.fechaFin ? new Date(response.data.fechaFin).toLocaleDateString() : 'N/A';
-
             const selectedReportData = {
                 ...response.data,
                 datos: datos,
@@ -161,8 +158,7 @@ function ReportList({ notify, isDeleteMode, setIsDeleteMode }) {
                                 <TableRow
                                     key={report.id}
                                     onClick={() => !isDeleteMode && handleRowClick(report)}
-                                    className="cursor-pointer hover:bg-sipe-blue-light"
-                                >
+                                    className="cursor-pointer hover:bg-sipe-blue-light">
                                     {isDeleteMode && (
                                         <TableCell className="text-center">
                                             <input
@@ -198,7 +194,6 @@ function ReportList({ notify, isDeleteMode, setIsDeleteMode }) {
                     )}
                 </>
             )}
-
             {/* Modal para mostrar detalles del informe */}
             {selectedReport && (
                 <ReportDetailModal

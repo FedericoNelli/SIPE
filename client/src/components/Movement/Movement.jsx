@@ -3,6 +3,7 @@ import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import MovementForm from '@/components/Movement/MovementForm';
 import MovementList from '@/components/Movement/MovementList';
+import MovementEditModal from './MovementEditModal'; // Importamos el modal de edición
 import axios from 'axios';
 
 function Movement({ notify }) {
@@ -10,17 +11,23 @@ function Movement({ notify }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para el modo de eliminación
-    const [selectedMovements, setSelectedMovements] = useState([]); // Estado para los movimientos seleccionados
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Estado para abrir modal de editar
+    const [isDeleteMode, setIsDeleteMode] = useState(false); 
+    const [selectedMovements, setSelectedMovements] = useState([]); 
 
-    useEffect(() => {
+    // Nueva función para cargar movimientos
+    const loadMovements = () => {
         axios.get('http://localhost:8081/movements')
             .then(response => {
                 setMovements(response.data);
             })
             .catch(error => {
-                console.error('Error fetching movements:', error);
+                notify('error', 'Error al cargar movimientos', error);
             });
+    };
+
+    useEffect(() => {
+        loadMovements();
     }, []);
 
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -35,6 +42,19 @@ function Movement({ notify }) {
 
     const closeFormModal = () => {
         setIsFormModalOpen(false);
+    };
+
+    const openEditModal = () => {
+        setIsEditModalOpen(true); // Abrir el modal de edición
+    };
+
+    const closeEditModal = () => {
+        setIsEditModalOpen(false); // Cerrar el modal de edición
+    };
+
+    const handleMovementUpdated = () => {
+        loadMovements(); // Recargar movimientos
+        closeEditModal(); // Cerrar modal de edición después de actualizar
     };
 
     // Función para activar el modo de eliminación
@@ -77,6 +97,7 @@ function Movement({ notify }) {
                         <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
                             {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Movimientos'}
                         </Button>
+                        <Button onClick={openEditModal} className="bg-blue-600 font-semibold px-4 py-2 rounded hover:bg-blue-700">Editar Movimiento</Button>
                     </div>
                 </div>
                 <MovementList
@@ -103,6 +124,15 @@ function Movement({ notify }) {
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <MovementForm onClose={closeFormModal} notify={notify} />
+                    </div>
+                )}
+                {isEditModalOpen && (
+                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                        <MovementEditModal
+                            onClose={closeEditModal}
+                            onMovementUpdated={handleMovementUpdated}
+                            notify={notify}
+                        />
                     </div>
                 )}
             </div>

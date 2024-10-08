@@ -330,7 +330,6 @@ app.get('/materials/:id', (req, res) => {
 });
 
 
-
 // Endpoint para editar un material
 app.put('/materiales/:id', upload.single('imagen'), (req, res) => {
     const id = req.params.id;
@@ -816,35 +815,52 @@ function handleStockNotifications(nombre, cantidad, bajoStock, callback) {
     );
 }
 
-function notifyNewMaterialCreation(nombre, deposito, callback) {
-    const descripcion = `Se ha creado el material '${nombre}' en el depósito '${deposito}' ya que no existía.`;
+function notifyNewMaterialCreation(nombre, idDeposito, callback) {
+    // Obtener el nombre del depósito
+    const queryDeposito = `SELECT nombre FROM Deposito WHERE id = ?`;
 
-    db.query(
-        `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
-        [descripcion],
-        (error, result) => {
-            if (error) {
-                console.error('Error al agregar notificación de nuevo material', error);
-                return callback({ mensaje: 'Error al agregar notificación de nuevo material' });
-            }
-
-            const notificacionId = result.insertId;
-
-            db.query(
-                `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
-                SELECT id, ?, FALSE FROM usuario`,
-                [notificacionId],
-                (error) => {
-                    if (error) {
-                        console.error('Error al relacionar notificación de nuevo material con usuarios', error);
-                        return callback({ mensaje: 'Error al relacionar notificación de nuevo material con usuarios' });
-                    }
-                    return callback(null);
-                }
-            );
+    db.query(queryDeposito, [idDeposito], (error, depositoResult) => {
+        if (error) {
+            console.error('Error al obtener el nombre del depósito:', error);
+            return callback({ mensaje: 'Error al obtener el nombre del depósito' });
         }
-    );
+
+        if (depositoResult.length === 0) {
+            return callback({ mensaje: 'Depósito no encontrado' });
+        }
+
+        const nombreDeposito = depositoResult[0].nombre;
+
+        const descripcion = `Se ha creado el material '${nombre}' en el '${nombreDeposito}' ya que no existía.`;
+
+        db.query(
+            `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
+            [descripcion],
+            (error, result) => {
+                if (error) {
+                    console.error('Error al agregar notificación de nuevo material', error);
+                    return callback({ mensaje: 'Error al agregar notificación de nuevo material' });
+                }
+
+                const notificacionId = result.insertId;
+
+                db.query(
+                    `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
+                    SELECT id, ?, FALSE FROM usuario`,
+                    [notificacionId],
+                    (error) => {
+                        if (error) {
+                            console.error('Error al relacionar notificación de nuevo material con usuarios', error);
+                            return callback({ mensaje: 'Error al relacionar notificación de nuevo material con usuarios' });
+                        }
+                        return callback(null);
+                    }
+                );
+            }
+        );
+    });
 }
+
 
 
 function assignStatus(cantidad, bajoStock) {
@@ -1319,7 +1335,7 @@ app.post('/addAisle', (req, res) => {
 });
 
 
-app.get('/aisle', (req, res) => {
+app.get('/aisles', (req, res) => {
     const depositoId = req.query.depositoId;
     let query = `
         SELECT 
@@ -1361,7 +1377,7 @@ app.get('/aisle', (req, res) => {
 //Endpoint para traer un pasillo a traves del ID
 app.get('/aisle/:id', (req, res) => {
     const aisleId = req.params.id;
-    
+
     const query = `
         SELECT 
             p.id, p.numero, p.idDeposito, p.idLado1, p.idLado2, d.idUbicacion 
@@ -2026,15 +2042,13 @@ app.get('/last-material', (req, res) => {
 });
 
 
-
-
 app.get('/movements', (req, res) => {
     const query = `
         SELECT 
             m.id, 
             m.fechaMovimiento, 
             u.nombre AS Usuario,
-            m.nombreMaterial, 
+            mat.nombre AS nombreMaterial,  -- Aquí traemos el nombre del material
             m.cantidad, 
             d1.nombre AS depositoOrigen, 
             d2.nombre AS depositoDestino
@@ -2046,6 +2060,8 @@ app.get('/movements', (req, res) => {
             deposito d1 ON m.idDepositoOrigen = d1.id
         LEFT JOIN 
             deposito d2 ON m.idDepositoDestino = d2.id
+        LEFT JOIN 
+            Material mat ON m.idMaterial = mat.id  -- Unimos la tabla Material para obtener el nombre
     `;
 
     db.query(query, (err, results) => {
@@ -2058,12 +2074,14 @@ app.get('/movements', (req, res) => {
     });
 });
 
+
+
 app.post('/addMovements', (req, res) => {
     const { idMaterial, idUsuario, idDepositoDestino, cantidadMovida } = req.body;
 
-    // Obtener toda la información del material en el depósito de origen
+    // Obtener toda la información del material en el depósito de origen, incluyendo el nombre
     const queryMaterialOrigen = `
-        SELECT nombre, cantidad, matricula, fechaUltimoEstado, bajoStock, idEstado, idEspacio, ultimoUsuarioId, idCategoria, idDeposito, ocupado 
+        SELECT id, cantidad, matricula, fechaUltimoEstado, bajoStock, idEstado, idEspacio, ultimoUsuarioId, idCategoria, nombre, ocupado, idDeposito 
         FROM Material 
         WHERE id = ?
     `;
@@ -2081,10 +2099,7 @@ app.post('/addMovements', (req, res) => {
         }
 
         const materialOrigen = materialResult[0];
-        const {
-            nombre, cantidad, matricula, fechaUltimoEstado, bajoStock,
-            idEstado, idEspacio, ultimoUsuarioId, idCategoria, ocupado
-        } = materialOrigen;
+        const { cantidad, matricula, fechaUltimoEstado, bajoStock, idEstado, idEspacio, ultimoUsuarioId, idCategoria, nombre, ocupado } = materialOrigen;
         const idDepositoOrigen = materialOrigen.idDeposito;
 
         const cantidadMovidaNumero = Number(cantidadMovida);
@@ -2104,7 +2119,7 @@ app.post('/addMovements', (req, res) => {
             WHERE id = ?
         `;
 
-        db.query(updateMaterialOrigenQuery, [nuevaCantidadOrigen, nuevoEstadoOrigen, idMaterial], (err, updateResult) => {
+        db.query(updateMaterialOrigenQuery, [nuevaCantidadOrigen, nuevoEstadoOrigen, idMaterial], (err) => {
             if (err) {
                 console.error('Error al actualizar el material en el depósito de origen:', err);
                 res.status(500).json({ error: 'Error al actualizar el material en el depósito de origen' });
@@ -2118,8 +2133,10 @@ app.post('/addMovements', (req, res) => {
                     return;
                 }
 
+                // Cambiamos la validación para usar el nombre y el idDepositoDestino
                 const queryMaterialDestino = 'SELECT id, cantidad FROM Material WHERE nombre = ? AND idDeposito = ?';
 
+                // Usamos el nombre del material y el idDepositoDestino para verificar si el material ya existe en el depósito de destino
                 db.query(queryMaterialDestino, [nombre, idDepositoDestino], (err, materialDestinoResult) => {
                     if (err) {
                         console.error('Error al verificar el material en el depósito de destino:', err);
@@ -2128,6 +2145,7 @@ app.post('/addMovements', (req, res) => {
                     }
 
                     if (materialDestinoResult.length > 0) {
+                        // Si el material ya existe en el depósito de destino, actualizar la cantidad
                         const { id: idMaterialDestino, cantidad: cantidadDestino } = materialDestinoResult[0];
                         const nuevaCantidadDestino = Number(cantidadDestino) + cantidadMovidaNumero;
                         const nuevoEstadoDestino = assignStatus(nuevaCantidadDestino, bajoStock);
@@ -2138,7 +2156,7 @@ app.post('/addMovements', (req, res) => {
                             WHERE id = ?
                         `;
 
-                        db.query(updateMaterialDestinoQuery, [nuevaCantidadDestino, nuevoEstadoDestino, idMaterialDestino], (err, updateResult) => {
+                        db.query(updateMaterialDestinoQuery, [nuevaCantidadDestino, nuevoEstadoDestino, idMaterialDestino], (err) => {
                             if (err) {
                                 console.error('Error al actualizar el material en el depósito de destino:', err);
                                 res.status(500).json({ error: 'Error al actualizar el material en el depósito de destino' });
@@ -2153,11 +2171,11 @@ app.post('/addMovements', (req, res) => {
                                 }
 
                                 const insertMovementQuery = `
-                                    INSERT INTO movimiento (idUsuario, nombreMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
+                                    INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
                                     VALUES (?, ?, ?, ?, ?, NOW())
                                 `;
 
-                                db.query(insertMovementQuery, [idUsuario, nombre, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err, result) => {
+                                db.query(insertMovementQuery, [idUsuario, idMaterialDestino, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err) => {
                                     if (err) {
                                         console.error('Error al agregar el movimiento:', err);
                                         res.status(500).json({ error: 'Error al agregar el movimiento' });
@@ -2170,74 +2188,57 @@ app.post('/addMovements', (req, res) => {
                         });
 
                     } else {
+                        // Si el material no existe en el depósito de destino, crear un nuevo registro
                         const nuevoEstadoDestino = assignStatus(cantidadMovidaNumero, bajoStock);
 
                         const insertMaterialDestinoQuery = `
                             INSERT INTO Material (
-                                nombre, cantidad, matricula, fechaUltimoEstado, bajoStock, idEstado, idEspacio, 
-                                ultimoUsuarioId, idCategoria, idDeposito, ocupado, fechaAlta
+                                cantidad, matricula, fechaUltimoEstado, bajoStock, idEstado, idEspacio, 
+                                ultimoUsuarioId, idCategoria, idDeposito, nombre, ocupado, fechaAlta
                             ) 
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
                         `;
 
                         const valoresInsertMaterial = [
-                            nombre, cantidadMovidaNumero, matricula, fechaUltimoEstado, bajoStock,
-                            nuevoEstadoDestino, null, ultimoUsuarioId, idCategoria, idDepositoDestino, ocupado
+                            cantidadMovidaNumero, matricula, fechaUltimoEstado, bajoStock,
+                            nuevoEstadoDestino, null, ultimoUsuarioId, idCategoria, idDepositoDestino, nombre, ocupado
                         ];
 
-                        db.query(insertMaterialDestinoQuery, valoresInsertMaterial, (err, insertResult) => {
+                        db.query(insertMaterialDestinoQuery, valoresInsertMaterial, (err) => {
                             if (err) {
                                 console.error('Error al crear el material en el depósito de destino:', err);
                                 res.status(500).json({ error: 'Error al crear el material en el depósito de destino' });
                                 return;
                             }
 
-                            // Obtener el nombre del depósito destino
-                            const getDepositNameQuery = `SELECT nombre FROM Deposito WHERE id = ?`;
-
-                            db.query(getDepositNameQuery, [idDepositoDestino], (err, result) => {
-                                if (err) {
-                                    console.error('Error al obtener el nombre del depósito:', err);
-                                    res.status(500).json({ error: 'Error al obtener el nombre del depósito' });
+                            // Notificar la creación del nuevo material en el depósito de destino
+                            notifyNewMaterialCreation(nombre, idDepositoDestino, (error) => {
+                                if (error) {
+                                    console.error('Error al notificar la creación de nuevo material:', error);
+                                    res.status(500).json({ error: 'Error al notificar la creación de nuevo material' });
                                     return;
                                 }
 
-                                if (result.length === 0) {
-                                    res.status(404).json({ error: 'Depósito no encontrado' });
-                                    return;
-                                }
-
-                                const nombreDeposito = result[0].nombre;
-
-                                // Notificar sobre la creación de un nuevo material
-                                notifyNewMaterialCreation(nombre, nombreDeposito, (error) => {
+                                handleStockNotifications(nombre, cantidadMovidaNumero, bajoStock, (error) => {
                                     if (error) {
-                                        console.error('Error al manejar notificación de nuevo material:', error);
-                                        res.status(500).json({ error: 'Error al manejar notificación de nuevo material' });
+                                        console.error('Error al manejar notificaciones de stock en destino:', error);
+                                        res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
                                         return;
                                     }
 
-                                    handleStockNotifications(nombre, cantidadMovidaNumero, bajoStock, (error) => {
-                                        if (error) {
-                                            console.error('Error al manejar notificaciones de stock en destino:', error);
-                                            res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
+                                    const insertMovementQuery = `
+                                        INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
+                                        VALUES (?, ?, ?, ?, ?, NOW())
+                                    `;
+
+                                    db.query(insertMovementQuery, [idUsuario, idMaterial, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err) => {
+                                        if (err) {
+                                            console.error('Error al agregar el movimiento:', err);
+                                            res.status(500).json({ error: 'Error al agregar el movimiento' });
                                             return;
                                         }
 
-                                        const insertMovementQuery = `
-                                            INSERT INTO movimiento (idUsuario, nombreMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
-                                            VALUES (?, ?, ?, ?, ?, NOW())
-                                        `;
-
-                                        db.query(insertMovementQuery, [idUsuario, nombre, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err, result) => {
-                                            if (err) {
-                                                console.error('Error al agregar el movimiento:', err);
-                                                res.status(500).json({ error: 'Error al agregar el movimiento' });
-                                                return;
-                                            }
-
-                                            res.status(200).json({ message: 'Movimiento registrado y material creado en el destino correctamente' });
-                                        });
+                                        res.status(200).json({ message: 'Movimiento registrado y material creado en el destino correctamente' });
                                     });
                                 });
                             });
@@ -2248,6 +2249,7 @@ app.post('/addMovements', (req, res) => {
         });
     });
 });
+
 
 // Endpoint para eliminar múltiples movimientos
 app.delete('/delete-movements', (req, res) => {
@@ -2269,6 +2271,164 @@ app.delete('/delete-movements', (req, res) => {
         res.status(200).json({ message: 'Movimientos eliminados correctamente' });
     });
 });
+
+app.get('/movements/:id', async (req, res) => {
+    const movementId = req.params.id;
+    const query = `
+        SELECT 
+            m.*, 
+            d1.nombre AS depositoOrigenNombre, 
+            d2.nombre AS depositoDestinoNombre,
+            mat.nombre AS nombreMaterial  -- Se agrega el nombre del material
+        FROM 
+            movimiento m
+        LEFT JOIN 
+            deposito d1 ON m.idDepositoOrigen = d1.id
+        LEFT JOIN 
+            deposito d2 ON m.idDepositoDestino = d2.id
+        LEFT JOIN 
+            Material mat ON m.idMaterial = mat.id  -- Se agrega el JOIN para obtener el nombre del material
+        WHERE 
+            m.id = ?`;
+
+    db.query(query, [movementId], (err, results) => {
+        if (err) {
+            console.error('Error al obtener el movimiento:', err);
+            res.status(500).json({ error: 'Error al obtener el movimiento' });
+            return;
+        }
+        if (results.length === 0) {
+            res.status(404).json({ error: 'Movimiento no encontrado' });
+            return;
+        }
+        res.json(results[0]);
+    });
+});
+
+app.put('/edit-movements/:id', async (req, res) => {
+    const id = req.params.id;
+    const { fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino, cantidad } = req.body;
+
+    const cantidadNueva = Number(cantidad);  // La nueva cantidad movida
+
+    try {
+        // Iniciar la transacción
+        await db.beginTransaction();
+
+        // Obtener el movimiento actual para comparar los cambios
+        const queryMovimientoActual = `
+            SELECT idDepositoOrigen, idDepositoDestino, cantidad 
+            FROM movimiento 
+            WHERE id = ?
+        `;
+
+        // Ejecutar la consulta con promesa
+        const resultMovimientoActual = await new Promise((resolve, reject) => {
+            db.query(queryMovimientoActual, [id], (err, result) => {
+                if (err) {
+                    console.error('Error en la consulta del movimiento actual:', err);  // Mostrar error si hay un fallo en la consulta
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+
+        // Verificar si el resultado está vacío
+        if (!resultMovimientoActual || resultMovimientoActual.length === 0) {
+            await db.rollback();
+            return res.status(404).json({ error: 'Movimiento no encontrado' });
+        }
+
+        const movimientoActual = resultMovimientoActual[0];
+        const { idDepositoOrigen: depositoOrigenAnterior, idDepositoDestino: depositoDestinoAnterior, cantidad: cantidadAnterior } = movimientoActual;
+        const cantidadAnteriorMovida = Number(cantidadAnterior);
+
+        // Calcular la diferencia entre la cantidad nueva y la cantidad anterior
+        const diferenciaCantidad = cantidadNueva - cantidadAnteriorMovida;
+
+        // Si cambió la cantidad movida o cambió el depósito de origen o destino, ajustamos los materiales correspondientes
+        if (diferenciaCantidad !== 0 || depositoOrigenAnterior !== idDepositoOrigen || depositoDestinoAnterior !== idDepositoDestino) {
+            // 1. Actualizar el depósito de origen (aplicar la diferencia de cantidad si hubo un cambio en la cantidad)
+            if (depositoOrigenAnterior === idDepositoOrigen && diferenciaCantidad !== 0) {
+                const queryUpdateOrigen = `
+                    UPDATE Material 
+                    SET cantidad = cantidad - ? 
+                    WHERE id = ? AND idDeposito = ?
+                `;
+                await db.query(queryUpdateOrigen, [diferenciaCantidad, idMaterial, idDepositoOrigen]);
+            }
+
+            // Si cambió el depósito de origen, revertimos el impacto anterior en el depósito antiguo y aplicamos en el nuevo
+            if (depositoOrigenAnterior !== idDepositoOrigen) {
+                // Revertir la cantidad en el depósito anterior
+                const queryRevertirOrigenAnterior = `
+                    UPDATE Material 
+                    SET cantidad = cantidad + ? 
+                    WHERE id = ? AND idDeposito = ?
+                `;
+                await db.query(queryRevertirOrigenAnterior, [cantidadAnteriorMovida, idMaterial, depositoOrigenAnterior]);
+
+                // Aplicar la nueva cantidad en el nuevo depósito de origen
+                const queryUpdateNuevoOrigen = `
+                    UPDATE Material 
+                    SET cantidad = cantidad - ? 
+                    WHERE id = ? AND idDeposito = ?
+                `;
+                await db.query(queryUpdateNuevoOrigen, [cantidadNueva, idMaterial, idDepositoOrigen]);
+            }
+
+            // 2. Actualizar el depósito de destino (aplicar la diferencia de cantidad si hubo un cambio en la cantidad)
+            if (depositoDestinoAnterior === idDepositoDestino && diferenciaCantidad !== 0) {
+                const queryUpdateDestino = `
+                    UPDATE Material 
+                    SET cantidad = cantidad + ? 
+                    WHERE id = ? AND idDeposito = ?
+                `;
+                await db.query(queryUpdateDestino, [diferenciaCantidad, idMaterial, idDepositoDestino]);
+            }
+
+            // Si cambió el depósito de destino, revertimos el impacto anterior en el depósito antiguo y aplicamos en el nuevo
+            if (depositoDestinoAnterior !== idDepositoDestino) {
+                // Revertir la cantidad en el depósito anterior
+                const queryRevertirDestinoAnterior = `
+                    UPDATE Material 
+                    SET cantidad = cantidad - ? 
+                    WHERE id = ? AND idDeposito = ?
+                `;
+                await db.query(queryRevertirDestinoAnterior, [cantidadAnteriorMovida, idMaterial, depositoDestinoAnterior]);
+
+                // Aplicar la nueva cantidad en el nuevo depósito de destino
+                const queryUpdateNuevoDestino = `
+                    UPDATE Material 
+                    SET cantidad = cantidad + ? 
+                    WHERE id = ? AND idDeposito = ?
+                `;
+                await db.query(queryUpdateNuevoDestino, [cantidadNueva, idMaterial, idDepositoDestino]);
+            }
+        }
+
+        // Finalmente, actualizamos el movimiento
+        const queryUpdateMovimiento = `
+            UPDATE movimiento 
+            SET fechaMovimiento = ?, idMaterial = ?, idUsuario = ?, idDepositoOrigen = ?, idDepositoDestino = ?, cantidad = ?
+            WHERE id = ?
+        `;
+        await db.query(queryUpdateMovimiento, [fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino, cantidadNueva, id]);
+
+        // Confirmar la transacción
+        await db.commit();
+
+        res.json({ message: 'Movimiento y materiales actualizados correctamente' });
+
+    } catch (error) {
+        // Si ocurre un error, revertir la transacción
+        await db.rollback();
+        console.error('Error al actualizar el movimiento:', error);
+        res.status(500).json({ error: 'Error al actualizar el movimiento' });
+    }
+});
+
 
 
 app.get('/deposit-locations-movements', (req, res) => {
@@ -2337,19 +2497,18 @@ app.post('/addReport', (req, res) => {
         return res.status(401).json({ mensaje: 'Token inválido o expirado' });
     }
 
-    const { tipo, fechaInicio, fechaFin, deposito, estadoMaterial, idMaterial, tipoGrafico } = req.body;
+    const { tipo, fechaInicio, fechaFin, deposito, estadoMaterial, idMaterial, tipoGrafico, idSalida, idDetalleSalida } = req.body;
 
     // Validación de campos obligatorios
     if (!tipo) {
         return res.status(400).json({ mensaje: 'Campos obligatorios faltantes' });
     }
 
-    // Crear la consulta SQL para insertar el informe en la base de datos
+    // Crear la consulta SQL para insertar el informe en la base de datos, ahora con idSalida e idDetalleSalida
     const insertQuery = `
-    INSERT INTO Informe (tipo, tipoGrafico, fechaGeneracion, idUsuario, idMaterial, idDeposito, idEstado, fechaInicio, fechaFin) 
-    VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?)`;
-    const insertValues = [tipo, tipoGrafico, idUsuario, idMaterial || null, deposito || null, estadoMaterial || null, fechaInicio, fechaFin];
-
+    INSERT INTO Informe (tipo, tipoGrafico, fechaGeneracion, idUsuario, idMaterial, idDeposito, idEstado, idSalida, idDetalleSalida, fechaInicio, fechaFin) 
+    VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const insertValues = [tipo, tipoGrafico, idUsuario, idMaterial || null, deposito || null, estadoMaterial || null, idSalida || null, idDetalleSalida || null, fechaInicio, fechaFin];
 
     db.query(insertQuery, insertValues, (err, result) => {
         if (err) {
@@ -2387,42 +2546,42 @@ app.post('/addReport', (req, res) => {
             case 'Informe de material por estado':
                 if (estadoMaterial === 'Todos') {
                     reportQuery = `
-                            SELECT 
-                                m.id, 
-                                m.nombre, 
-                                m.cantidad, 
-                                c.descripcion AS categoria, 
-                                d.nombre AS depositoNombre,
-                                es.descripcion AS estadoDescripcion
-                            FROM 
-                                Material m
-                            LEFT JOIN 
-                                Categoria c ON m.idCategoria = c.id
-                            LEFT JOIN 
-                                Deposito d ON m.idDeposito = d.id
-                            LEFT JOIN 
-                                Estado es ON m.idEstado = es.id
-                        `;
+                        SELECT 
+                            m.id, 
+                            m.nombre, 
+                            m.cantidad, 
+                            c.descripcion AS categoria, 
+                            d.nombre AS depositoNombre,
+                            es.descripcion AS estadoDescripcion
+                        FROM 
+                            Material m
+                        LEFT JOIN 
+                            Categoria c ON m.idCategoria = c.id
+                        LEFT JOIN 
+                            Deposito d ON m.idDeposito = d.id
+                        LEFT JOIN 
+                            Estado es ON m.idEstado = es.id
+                    `;
                 } else {
                     reportQuery = `
-                            SELECT 
-                                m.id, 
-                                m.nombre, 
-                                m.cantidad, 
-                                c.descripcion AS categoria, 
-                                d.nombre AS depositoNombre,
-                                es.descripcion AS estadoDescripcion
-                            FROM 
-                                Material m
-                            LEFT JOIN 
-                                Categoria c ON m.idCategoria = c.id
-                            LEFT JOIN 
-                                Deposito d ON m.idDeposito = d.id
-                            LEFT JOIN 
-                                Estado es ON m.idEstado = es.id
-                            WHERE 
-                                m.idEstado = ?
-                        `;
+                        SELECT 
+                            m.id, 
+                            m.nombre, 
+                            m.cantidad, 
+                            c.descripcion AS categoria, 
+                            d.nombre AS depositoNombre,
+                            es.descripcion AS estadoDescripcion
+                        FROM 
+                            Material m
+                        LEFT JOIN 
+                            Categoria c ON m.idCategoria = c.id
+                        LEFT JOIN 
+                            Deposito d ON m.idDeposito = d.id
+                        LEFT JOIN 
+                            Estado es ON m.idEstado = es.id
+                        WHERE 
+                            m.idEstado = ?
+                    `;
                     reportParams.push(estadoMaterial); // Aquí debe ser el id del estado, no su descripción
                 }
                 break;
@@ -2461,48 +2620,103 @@ app.post('/addReport', (req, res) => {
                 if (idMaterial && idMaterial !== 'Todos') {
                     // Si se selecciona un material específico
                     reportQuery = `
+                            SELECT 
+                                mo.id, 
+                                mo.fechaMovimiento, 
+                                mo.cantidad, 
+                                m.nombre AS nombreMaterial,  -- JOIN con la tabla Material para obtener el nombre
+                                d1.nombre AS depositoOrigen, 
+                                d2.nombre AS depositoDestino,
+                                u.nombre AS usuario
+                            FROM 
+                                Movimiento mo
+                            LEFT JOIN 
+                                Material m ON mo.idMaterial = m.id  -- Hacemos JOIN con Material para obtener el nombre
+                            LEFT JOIN 
+                                Deposito d1 ON mo.idDepositoOrigen = d1.id
+                            LEFT JOIN 
+                                Deposito d2 ON mo.idDepositoDestino = d2.id
+                            LEFT JOIN 
+                                Usuario u ON mo.idUsuario = u.id
+                            WHERE 
+                                mo.fechaMovimiento BETWEEN ? AND ?
+                                AND mo.idMaterial = ?
+                        `;
+                    reportParams.push(fechaInicio, fechaFin, idMaterial);
+                } else {
+                    // Si se selecciona "Todos" los materiales
+                    reportQuery = `
+                            SELECT 
+                                mo.id, 
+                                mo.fechaMovimiento, 
+                                mo.cantidad, 
+                                m.nombre AS nombreMaterial,  -- JOIN con la tabla Material para obtener el nombre
+                                d1.nombre AS depositoOrigen, 
+                                d2.nombre AS depositoDestino,
+                                u.nombre AS usuario
+                            FROM 
+                                Movimiento mo
+                            LEFT JOIN 
+                                Material m ON mo.idMaterial = m.id  -- Hacemos JOIN con Material para obtener el nombre
+                            LEFT JOIN 
+                                Deposito d1 ON mo.idDepositoOrigen = d1.id
+                            LEFT JOIN 
+                                Deposito d2 ON mo.idDepositoDestino = d2.id
+                            LEFT JOIN 
+                                Usuario u ON mo.idUsuario = u.id
+                            WHERE 
+                                mo.fechaMovimiento BETWEEN ? AND ?
+                        `;
+                    reportParams.push(fechaInicio, fechaFin);
+                }
+                break;
+
+
+            case 'Informe de salida de material':
+                if (!fechaInicio || !fechaFin) {
+                    return res.status(400).json({ mensaje: 'Debe especificar el rango de fechas' });
+                }
+
+                if (idMaterial && idMaterial !== 'Todos') {
+                    // Si se selecciona un material específico
+                    reportQuery = `
                         SELECT 
-                            mo.id, 
-                            mo.fechaMovimiento, 
-                            mo.cantidad, 
-                            mo.nombreMaterial, 
-                            d1.nombre AS depositoOrigen, 
-                            d2.nombre AS depositoDestino,
-                            u.nombre AS usuario
+                            sm.id, 
+                            sm.fecha, 
+                            dsm.cantidad, 
+                            m.nombre AS nombreMaterial, 
+                            u.nombre AS nombreUsuario
                         FROM 
-                            movimiento mo
-                        LEFT JOIN 
-                            Deposito d1 ON mo.idDepositoOrigen = d1.id
-                        LEFT JOIN 
-                            Deposito d2 ON mo.idDepositoDestino = d2.id
-                        LEFT JOIN 
-                            Usuario u ON mo.idUsuario = u.id
+                            salida_material sm
+                        JOIN 
+                            detalle_salida_material dsm ON sm.id = dsm.idSalida
+                        JOIN 
+                            Material m ON dsm.idMaterial = m.id
+                        JOIN 
+                            Usuario u ON sm.idUsuario = u.id
                         WHERE 
-                            mo.fechaMovimiento BETWEEN ? AND ?
-                            AND mo.nombreMaterial = ?
+                            sm.fecha BETWEEN ? AND ? AND dsm.idMaterial = ?
                     `;
                     reportParams.push(fechaInicio, fechaFin, idMaterial);
                 } else {
                     // Si se selecciona "Todos" los materiales
                     reportQuery = `
                         SELECT 
-                            mo.id, 
-                            mo.fechaMovimiento, 
-                            mo.cantidad, 
-                            mo.nombreMaterial, 
-                            d1.nombre AS depositoOrigen, 
-                            d2.nombre AS depositoDestino,
-                            u.nombre AS usuario
+                            sm.id, 
+                            sm.fecha, 
+                            dsm.cantidad, 
+                            m.nombre AS nombreMaterial, 
+                            u.nombre AS nombreUsuario
                         FROM 
-                            movimiento mo
-                        LEFT JOIN 
-                            Deposito d1 ON mo.idDepositoOrigen = d1.id
-                        LEFT JOIN 
-                            Deposito d2 ON mo.idDepositoDestino = d2.id
-                        LEFT JOIN 
-                            Usuario u ON mo.idUsuario = u.id
+                            salida_material sm
+                        JOIN 
+                            detalle_salida_material dsm ON sm.id = dsm.idSalida
+                        JOIN 
+                            Material m ON dsm.idMaterial = m.id
+                        JOIN 
+                            Usuario u ON sm.idUsuario = u.id
                         WHERE 
-                            mo.fechaMovimiento BETWEEN ? AND ?
+                            sm.fecha BETWEEN ? AND ?
                     `;
                     reportParams.push(fechaInicio, fechaFin);
                 }
@@ -2527,6 +2741,7 @@ app.post('/addReport', (req, res) => {
         });
     });
 });
+
 
 
 
@@ -2767,6 +2982,35 @@ app.get('/notificaciones-material', (req, res) => {
         res.json(results);
     });
 });
+
+// Endpoint para obtener pasillos por depósito
+app.get('/aisles/:idDeposito', (req, res) => {
+    const idDeposito = req.params.idDeposito;
+
+    const query = 'SELECT id, numero FROM Pasillo WHERE idDeposito = ?';
+    db.query(query, [idDeposito], (err, results) => {
+        if (err) {
+            console.error('Error al obtener los pasillos:', err);
+            return res.status(500).json({ error: 'Error al obtener los pasillos' });
+        }
+        res.json(results);
+    });
+});
+
+// Endpoint para obtener estanterías por pasillo
+app.get('/shelves/:idPasillo', (req, res) => {
+    const idPasillo = req.params.idPasillo;
+
+    const query = 'SELECT id, numero FROM Estanteria WHERE idPasillo = ?';
+    db.query(query, [idPasillo], (err, results) => {
+        if (err) {
+            console.error('Error al obtener las estanterías:', err);
+            return res.status(500).json({ error: 'Error al obtener las estanterías' });
+        }
+        res.json(results);
+    });
+});
+
 
 app.listen(8081, () => {
     console.log(`Servidor corriendo en el puerto 8081`);

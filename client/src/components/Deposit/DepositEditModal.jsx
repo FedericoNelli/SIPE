@@ -12,9 +12,25 @@ const DepositEditModal = ({ onClose, onDepositUpdated, notify }) => {
     const [selectedDepositId, setSelectedDepositId] = useState(''); // Depósito seleccionado
     const [depositData, setDepositData] = useState(null);
     const [locations, setLocations] = useState([]); // Lista de ubicaciones
-
     const [depositName, setDepositName] = useState('');
     const [selectedLocation, setSelectedLocation] = useState('');
+
+        // Cerrar modal al presionar la tecla Escape
+        useEffect(() => {
+            const handleKeyDown = (event) => {
+                if (event.key === 'Escape') {
+                    onClose(); // Llamar a la función onClose cuando se presiona Escape
+                }
+            };
+    
+            // Agregar el event listener
+            window.addEventListener('keydown', handleKeyDown);
+    
+            // Eliminar el event listener al desmontar el componente
+            return () => {
+                window.removeEventListener('keydown', handleKeyDown);
+            };
+        }, [onClose]);
 
     // Cargar la lista de depósitos
     useEffect(() => {

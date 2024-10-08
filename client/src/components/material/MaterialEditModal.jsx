@@ -16,8 +16,10 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
     const [locationId, setLocationId] = useState(material?.idUbicacion || '');
     const [categories, setCategories] = useState([]);
     const [statuses, setStatuses] = useState([]);
+    const [aisles, setAisles] = useState([]); // Estado para los pasillos
     const [shelves, setShelves] = useState([]);
     const [spaces, setSpaces] = useState([]);
+    const [selectedAisle, setSelectedAisle] = useState(material?.idPasillo || '');
     const [selectedShelf, setSelectedShelf] = useState(material?.idEstanteria || '');
     const [selectedSpace, setSelectedSpace] = useState(material?.idEspacio || '');
     const [isImageToDelete, setIsImageToDelete] = useState(false);
@@ -36,6 +38,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
 
     useEffect(() => {
         if (material?.id) {
+            // Cargar los detalles del material
             axios.get(`http://localhost:8081/materials/${material.id}`)
                 .then(response => {
                     const data = response.data;
@@ -49,13 +52,17 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                         deposito: data.idDeposito,
                         ubicacion: data.ubicacionId,
                         espacio: data.idEspacio,
+                        pasillo: data.pasilloNumero,
                         estanteria: data.estanteriaId,
                         imagen: null,
                         imagenPreview: data.imagen ? `http://localhost:8081${data.imagen}` : ''
                     });
                     setLocationId(data.ubicacionId);
-                    setSelectedShelf(data.estanteriaId);
+                    setSelectedShelf(data.estanteriaId || '');
                     setSelectedShelfNumber(data.estanteriaNumero);
+                    setSelectedAisle(data.pasilloNumero || '');
+                    setSelectedSpace(data.idEspacio);
+
                 })
                 .catch(error => {
                     console.error('Error al obtener los detalles del material:', error);
@@ -67,37 +74,6 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
     useEffect(() => {
         setIsVisible(isOpen);
     }, [isOpen]);
-
-    useEffect(() => {
-        fetch('http://localhost:8081/deposit-locations')
-            .then(response => response.json())
-            .then(data => setDepositLocations(data))
-            .catch(error => console.error('Error fetching deposit locations:', error));
-
-        fetch('http://localhost:8081/categories')
-            .then(response => response.json())
-            .then(data => setCategories(data))
-            .catch(error => console.error('Error fetching categories:', error));
-
-        fetch('http://localhost:8081/statuses')
-            .then(response => response.json())
-            .then(data => setStatuses(data))
-            .catch(error => console.error('Error fetching statuses:', error));
-
-        fetch('http://localhost:8081/shelves')
-            .then(response => response.json())
-            .then(data => setShelves(data))
-            .catch(error => console.error('Error fetching shelves:', error));
-    }, []);
-
-    useEffect(() => {
-        if (selectedShelf) {
-            fetch(`http://localhost:8081/spaces/${selectedShelf}`)
-                .then(response => response.json())
-                .then(data => setSpaces(data))
-                .catch(error => console.error('Error fetching spaces:', error));
-        }
-    }, [selectedShelf]);
 
     useEffect(() => {
         if (locationId) {
@@ -113,6 +89,62 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
         }
     }, [locationId]);
 
+
+    // Este useEffect solo se ejecuta cuando ya tienes el idDeposito
+    useEffect(() => {
+        if (formData.deposito) {
+            axios.get(`http://localhost:8081/aisles/${formData.deposito}`)
+                .then(response => {
+                    setAisles(response.data);
+                    setSelectedAisle(material?.pasilloNumero || '');  // Pre-carga el pasillo
+                })
+                .catch(error => console.error('Error fetching aisles:', error));
+        }
+    }, [formData.deposito]);
+
+    // Este useEffect solo se ejecuta cuando ya tienes el pasillo seleccionado
+    useEffect(() => {
+        if (selectedAisle) {
+            axios.get(`http://localhost:8081/shelves/${selectedAisle}`)
+                .then(response => {
+                    setShelves(response.data);
+                    setSelectedShelf(formData.estanteria || '');  // Pre-carga la estantería
+                })
+                .catch(error => console.error('Error fetching shelves:', error));
+        }
+    }, [selectedAisle]);
+
+    // Este useEffect se asegura de cargar los espacios cuando ya tienes la estantería
+    useEffect(() => {
+        if (selectedShelf) {
+            axios.get(`http://localhost:8081/spaces/${selectedShelf}`)
+                .then(response => {
+                    setSpaces(response.data);
+                    setSelectedSpace(material?.idEspacio || '');  // Pre-carga el espacio
+                })
+                .catch(error => console.error('Error fetching spaces:', error));
+        }
+    }, [selectedShelf]);
+
+    // Peticiones para obtener las ubicaciones de depósitos, categorías, estados y ubicaciones iniciales
+    useEffect(() => {
+        fetch('http://localhost:8081/deposit-locations')
+            .then(response => response.json())
+            .then(data => setDepositLocations(data))
+            .catch(error => console.error('Error fetching deposit locations:', error));
+
+        fetch('http://localhost:8081/categories')
+            .then(response => response.json())
+            .then(data => setCategories(data))
+            .catch(error => console.error('Error fetching categories:', error));
+
+        fetch('http://localhost:8081/statuses')
+            .then(response => response.json())
+            .then(data => setStatuses(data))
+            .catch(error => console.error('Error fetching statuses:', error));
+    }, []);
+
+    // Manejar cambios en los selects
     const handleInputChange = (e) => {
         e.stopPropagation();
         const { id, value } = e.target;
@@ -129,8 +161,26 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
         }));
 
         if (id === 'depositLocation') {
-            setLocationId(value);
+            setLocationId(value);  // Asegúrate de actualizar locationId
+            setFormData(prevState => ({
+                ...prevState,
+                ubicacion: value // Actualiza también el formData para reflejar la nueva ubicación
+            }));
         }
+
+        if (id === 'deposito') {
+            setLocationId(value);
+            setSelectedAisle('');
+            setSelectedShelf('');
+        }
+    };
+
+    const handleAisleChange = (value) => {
+        setSelectedAisle(value);
+        setFormData(prevData => ({
+            ...prevData,
+            estanteria: value
+        }));
     };
 
     const handleShelfChange = (value) => {
@@ -141,7 +191,6 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
         }));
         setSelectedSpace(''); // Resetear el espacio seleccionado cuando se cambia la estantería
     };
-
 
     const handleSpaceChange = (value) => {
         setSelectedSpace(value);
@@ -202,9 +251,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                 imagenPreview: ''
             }));
             setIsImageToDelete(false); // Marca que no se debe eliminar en el backend
-
             resetFileInput();
-
             toast.success('Imagen del preview eliminada', {
                 duration: 2500,
                 style: {
@@ -218,9 +265,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                 ...prevData,
                 imagenPreview: ''
             }));
-
             resetFileInput();
-
             toast.success('Imagen del servidor marcada para eliminarse', {
                 duration: 2500,
                 style: {
@@ -231,10 +276,8 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
         }
     };
 
-
     const handleSave = async () => {
         const { nombre, cantidad, matricula, bajoStock, estado, categoria, deposito, imagen } = formData;
-
         const formDataToSend = new FormData();
         if (nombre) formDataToSend.append('nombre', nombre);
         if (cantidad) formDataToSend.append('cantidad', cantidad);
@@ -273,7 +316,6 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
             }, 2500);
 
         } catch (error) {
-
             toast.error(error.message || "Error al actualizar el material", {
                 duration: 2500,
                 style: {
@@ -390,14 +432,33 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
+                                        <Label htmlFor="aisle" className="text-sm font-medium">Pasillo</Label>
+                                        <Select
+                                            id="aisle"
+                                            value={selectedAisle}
+                                            onValueChange={(value) => handleAisleChange(value)}>
+                                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                                <SelectValue>
+                                                    {selectedAisle && aisles.find(aisle => aisle.id === selectedAisle) ? `Pasillo ${aisles.find(aisle => aisle.id === selectedAisle)?.numero}` : "Pasillo no seleccionado"}
+                                                </SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {aisles.map(aisle => (
+                                                    <SelectItem key={aisle.id} value={aisle.id}>{`Pasillo ${aisle.numero}`}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="grid gap-2">
                                         <Label htmlFor="shelf" className="text-sm font-medium">Estantería</Label>
                                         <Select
                                             id="shelf"
                                             value={selectedShelf}
-                                            onValueChange={(value) => handleShelfChange(value)}
-                                        >
+                                            onValueChange={(value) => handleShelfChange(value)}>
                                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                                <SelectValue>{selectedShelf ? `Estantería ${shelves.find(shelf => shelf.id === selectedShelf)?.numero}` : "Selecciona la estantería"}</SelectValue>
+                                                <SelectValue>
+                                                    {selectedShelf && shelves.find(shelf => shelf.id === selectedShelf) ? `Estantería ${shelves.find(shelf => shelf.id === selectedShelf)?.numero}` : "Estantería no seleccionada"}
+                                                </SelectValue>
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {shelves.map(shelf => (

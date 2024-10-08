@@ -14,12 +14,29 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
     const [aisles, setAisles] = useState([]);
     const [sides, setSides] = useState([]);
     const [loading, setLoading] = useState(false); // Loading state to prevent double messages
-
     const [shelfNumber, setShelfNumber] = useState('');
     const [shelfQuantity, setShelfQuantity] = useState('');
     const [divisionQuantity, setDivisionQuantity] = useState('');
     const [selectedAisle, setSelectedAisle] = useState('');
     const [selectedSide, setSelectedSide] = useState('');
+
+    // Cerrar modal al presionar la tecla Escape
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                onClose(); // Llamar a la función onClose cuando se presiona Escape
+            }
+        };
+
+        // Agregar el event listener
+        window.addEventListener('keydown', handleKeyDown);
+
+        // Eliminar el event listener al desmontar el componente
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [onClose]);
+
 
     // Cargar la lista de estanterías
     useEffect(() => {
@@ -61,7 +78,7 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
     useEffect(() => {
         const fetchAisles = async () => {
             try {
-                const response = await axios.get('http://localhost:8081/aisle');
+                const response = await axios.get('http://localhost:8081/aisles');
                 setAisles(response.data);
             } catch (error) {
                 notify('error', 'Error al cargar los pasillos');
@@ -110,7 +127,7 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
             setLoading(false); // Detener estado de carga
         }
     };
-    
+
 
     return (
         <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
@@ -162,7 +179,6 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                                 className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
                             />
                         </div>
-
                         <div className="grid gap-2">
                             <Label htmlFor="divisionQuantity" className="text-sm font-medium">Cantidad de Divisiones</Label>
                             <Input
@@ -173,7 +189,6 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                                 className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
                             />
                         </div>
-
                         <div className="grid gap-2">
                             <Label htmlFor="aisle" className="text-sm font-medium">Pasillo</Label>
                             <Select value={selectedAisle} onValueChange={setSelectedAisle}>
@@ -183,13 +198,12 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                                 <SelectContent>
                                     {aisles.map((aisle) => (
                                         <SelectItem key={aisle.id} value={aisle.id}>
-                                            {aisle.numero}
+                                            {`Pasillo ${aisle.numero} - Ubicación: ${aisle.ubicacionDeposito} - Depósito: ${aisle.nombreDeposito}`}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
-
                         <div className="grid gap-2">
                             <Label htmlFor="side" className="text-sm font-medium">Lado</Label>
                             <Select value={selectedSide} onValueChange={setSelectedSide}>

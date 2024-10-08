@@ -356,7 +356,6 @@ function Material({ notify }) {
                         />
                     )}
                 </AnimatePresence>
-
             </div>
         </div>
     )
