@@ -15,12 +15,16 @@ const ReportForm = ({ onClose, notify }) => {
         deposito: '',
         estadoMaterial: '',
         idMaterial: '', // Añadir material al formulario
-        tipoGrafico: '', // Añadir tipo de gráfico
+        tipoGrafico: '',
+        idSalida: '',
+        idDetalleSalida: '',
+        idMovimiento: ''
     });
     const [depositos, setDepositos] = useState([]);
     const [estadosMaterial, setEstadosMaterial] = useState([]);
     const [materiales, setMateriales] = useState([]);
-    const [exits, setExits] = useState([]); // Añadir estado para las salidas de material
+    const [exits, setExits] = useState([]);
+    const [movements, setMovements] = useState([]); // Añadir estado para las salidas de material
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -38,11 +42,18 @@ const ReportForm = ({ onClose, notify }) => {
 
         // Si el informe seleccionado es "Informe de salida de material", hacemos la solicitud al endpoint /exits
         if (formData.tipo === 'Informe de salida de material') {
-            axios.get('http://localhost:8081/exits')
-                .then(response => setExits(response.data))
+            axios.get('http://localhost:8081/exits-details')
+                .then(response => {
+                    setExits(response.data)
+                }
+                )
                 .catch(error => console.error('Error fetching exits:', error));
+        } if (formData.tipo === 'Informe de material por movimiento entre deposito') {
+            axios.get('http://localhost:8081/movements')
+                .then(response => setMovements(response.data))
+                .catch(error => console.error('Error fetching movements:', error));
         }
-    }, [formData.tipo]); // Ejecuta nuevamente si cambia el tipo de informe
+    }, [formData.tipo]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -50,6 +61,41 @@ const ReportForm = ({ onClose, notify }) => {
             ...prevData,
             [name]: value
         }));
+    };
+
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === "Escape") {
+                onClose();
+            }
+        };
+
+        // Agregar el evento de tecla al montar el componente
+        window.addEventListener("keydown", handleEscape);
+
+        // Limpiar el evento al desmontar el componente
+        return () => {
+            window.removeEventListener("keydown", handleEscape);
+        };
+    }, [onClose]);
+
+    const handleMultiSelectChange = (name, value) => {
+        setFormData((prevData) => {
+            const currentValues = prevData[name];
+            if (currentValues.includes(value)) {
+                // Si el valor ya está seleccionado, lo quitamos
+                return {
+                    ...prevData,
+                    [name]: currentValues.filter((val) => val !== value)
+                };
+            } else {
+                // Si no está seleccionado, lo agregamos
+                return {
+                    ...prevData,
+                    [name]: [...currentValues, value]
+                };
+            }
+        });
     };
 
     const handleSelectChange = (name, value) => {
@@ -66,11 +112,20 @@ const ReportForm = ({ onClose, notify }) => {
             // Formatear las fechas a 'yyyy-MM-dd' si están presentes
             const formattedStartDate = formData.fechaInicio ? format(new Date(formData.fechaInicio), 'yyyy-MM-dd') : null;
             const formattedEndDate = formData.fechaFin ? format(new Date(formData.fechaFin), 'yyyy-MM-dd') : null;
+
             const reportDataToSend = {
                 ...formData,
                 fechaInicio: formattedStartDate,
                 fechaFin: formattedEndDate,
+                deposito: formData.deposito,
+                estadoMaterial: formData.estadoMaterial,
+                idMaterial: formData.idMaterial,
+                idDetalleSalida: formData.tipo === 'Informe de salida de material' ? formData.idDetalleSalida : null,
+                idMovimiento: formData.tipo === 'Informe de material por movimiento entre deposito' ? formData.idMovimiento : null
             };
+
+            // Aquí agregas el log para verificar qué tipo de informe se está enviando
+            console.log("Enviando informe al backend:", reportDataToSend);
 
             const response = await axios.post('http://localhost:8081/addReport', reportDataToSend, {
                 headers: {
@@ -78,14 +133,14 @@ const ReportForm = ({ onClose, notify }) => {
                     'Content-Type': 'application/json'
                 }
             });
-
+            console.log('Response del informe generado:', response.data);
             if (response.status === 200) {
                 notify('success', "¡Informe generado con éxito!");
-                
+
                 // Recargar la página después de 2 segundos
-                setTimeout(() => {
+                /* setTimeout(() => {
                     window.location.reload();
-                }, 2000);  // Recargar después de 2 segundos
+                }, 2000); */  // Recargar después de 2 segundos
             } else {
                 throw new Error(response.data.mensaje || "Error al generar informe");
             }
@@ -120,9 +175,9 @@ const ReportForm = ({ onClose, notify }) => {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="Informe de inventario general">Informe de inventario general</SelectItem>
-                                <SelectItem value="Informe de material por depósito">Informe de material por depósito</SelectItem>
+                                <SelectItem value="Informe de material por deposito">Informe de material por depósito</SelectItem>
                                 <SelectItem value="Informe de material por estado">Informe de material por estado</SelectItem>
-                                <SelectItem value="Informe de material por movimiento entre depósito">Informe de material por movimiento entre depósito</SelectItem>
+                                <SelectItem value="Informe de material por movimiento entre deposito">Informe de material por movimiento entre depósito</SelectItem>
                                 <SelectItem value="Informe de salida de material">Informe de salida de material</SelectItem>
                             </SelectContent>
                         </Select>
@@ -147,7 +202,7 @@ const ReportForm = ({ onClose, notify }) => {
                     </div>
 
                     {/* Select de depósito si el informe es por depósito */}
-                    {formData.tipo === 'Informe de material por depósito' && (
+                    {formData.tipo === 'Informe de material por deposito' && (
                         <div className="flex flex-col gap-4">
                             <Label className="text-sm font-medium">Depósito</Label>
                             <Select
@@ -189,26 +244,47 @@ const ReportForm = ({ onClose, notify }) => {
                         </div>
                     )}
 
-                    {/* Selects de material y rango de fechas si el informe es por salida de material */}
+                    {/* Selects de material si el informe es por salida de material */}
                     {formData.tipo === 'Informe de salida de material' && (
                         <div className="flex flex-col gap-4">
                             <Label className="text-sm font-medium">Material</Label>
                             <Select
-                                value={formData.idMaterial}
-                                onValueChange={(value) => handleSelectChange('idMaterial', value)}
+                                value={formData.idDetalleSalida}
+                                onValueChange={(value) => handleSelectChange('idDetalleSalida', value)}
                             >
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Selecciona un material" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Todos">Todos</SelectItem>
-                                    {materiales.map(material => (
-                                        <SelectItem key={material.id} value={material.id}>{material.nombre}</SelectItem>
+                                    {exits.map(exit => (
+                                        <SelectItem key={exit.salidaId} value={exit.salidaId}>{exit.nombreMaterial}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                     )}
+
+                    {/* Selects de material y rango de fechas si el informe es por movimiento entre depósitos */}
+                    {formData.tipo === 'Informe de material por movimiento entre deposito' && (
+                        <div className="flex flex-col gap-4">
+                            <Label className="text-sm font-medium">Material</Label>
+                            <Select
+                                value={formData.idMovimiento} // Usamos idMovimiento como FK para movimientos
+                                onValueChange={(value) => handleSelectChange('idMovimiento', value)}
+                            >
+                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                    <SelectValue placeholder="Selecciona un movimiento" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {movements.map(movement => (
+                                        <SelectItem key={movement.id} value={movement.id}>{movement.nombreMaterial}{' '}{movement.depositoOrigen}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
+
 
                     {/* Selección de fechas (siempre presente para todos los tipos de informes) */}
                     <div className="flex flex-col gap-4">

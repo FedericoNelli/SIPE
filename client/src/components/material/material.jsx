@@ -24,6 +24,7 @@ function Material({ notify }) {
     const [materialDetail, setMaterialDetail] = useState(null);
     const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para el modo de eliminación
     const [selectedExits, setSelectedExits] = useState([]); // Estado para las salidas seleccionadas
+    const [materialExits, setMaterialExits] = useState([]);
     const [filters, setFilters] = useState({
         estado: '',
         categoria: '',
@@ -69,7 +70,26 @@ function Material({ notify }) {
         axios.get('http://localhost:8081/statuses')
             .then(response => setAvailableStatuses(response.data))
             .catch(error => console.error('Error fetching statuses:', error));
+
+        // Cargar salidas de materiales
+        loadMaterialExits();
     }, []);
+
+    // Función para cargar las salidas de materiales
+    const loadMaterialExits = () => {
+        axios.get('http://localhost:8081/exits')
+            .then(response => {
+                setMaterialExits(response.data);
+            })
+            .catch(error => {
+                console.error('Error fetching material exits:', error);
+            });
+    };
+
+    // Función para refrescar la lista de salidas
+    const refreshMaterialExits = () => {
+        loadMaterialExits();
+    };
 
     // Manejar la búsqueda
     const handleSearch = (e) => {
@@ -217,6 +237,7 @@ function Material({ notify }) {
         setSelectedExits([]); // Limpiar la selección al salir del modo de eliminación
     };
 
+
     return (
         <div className="relative">
             <div className="absolute inset-0 bg-sipe-white opacity-5 z-10 rounded-2xl" />
@@ -254,6 +275,7 @@ function Material({ notify }) {
                 </div>
                 {viewingMaterialExits ? (
                     <MaterialExitList
+                        materialExits={materialExits}
                         isDeleteMode={isDeleteMode}
                         selectedExits={selectedExits}
                         setSelectedExits={setSelectedExits}
@@ -338,7 +360,9 @@ function Material({ notify }) {
                                 transition={{ duration: 0.3 }}
                             >
                                 {viewingMaterialExits ? (
-                                    <MaterialExitForm onClose={closeFormModal} notify={notify} />
+                                    <MaterialExitForm onClose={closeFormModal}
+                                        notify={notify}
+                                        onExitCreated={refreshMaterialExits} />
                                 ) : (
                                     <MaterialForm onClose={closeFormModal} notify={notify} />
                                 )}

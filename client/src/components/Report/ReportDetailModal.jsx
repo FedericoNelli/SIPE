@@ -4,14 +4,15 @@ import { X } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/Common/Chart/Chart";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/Common/Button/Button";
+import { format } from "date-fns"; // Usar para formatear fechas
 
-function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafico, selectedMaterial, dateRange, selectedOption, selectedDeposito, selectedEstado }) {
+function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafico, selectedMaterial, dateRange, selectedOption }) {
     const [chartData, setChartData] = useState([]);
+    const [materialDetails, setMaterialDetails] = useState([]); // Para los detalles de materiales en los informes de salida de material y movimientos
 
     useEffect(() => {
         if (Array.isArray(reportData) && reportData.length > 0) {
             let formattedData = [];
-
             if (reportType === "Informe de inventario general") {
                 // Mapeo de datos para el Informe de inventario general
                 formattedData = reportData.map((item) => ({
@@ -19,41 +20,54 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                     value: item.cantidad || 0,
                     color: `#${Math.floor(Math.random() * 16777215).toString(16)}`, // Genera un color aleatorio
                 }));
-            } else if (reportType === "Informe de material por depósito") {
+            } else if (reportType === "Informe de material por deposito") {
                 formattedData = reportData.map((item) => ({
                     name: item.nombre || "Sin nombre",
                     value: item.cantidad || 0,
                     color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
                 }));
             } else if (reportType === "Informe de material por estado") {
-                const groupedData = reportData.reduce((acc, item) => {
-                    const estado = item.estadoDescripcion || "Sin estado";
-                    const existing = acc.find((data) => data.name === estado);
-
-                    if (existing) {
-                        existing.value += item.cantidad;
-                        existing.materials += `, ${item.nombre} (${item.cantidad})`; // Agrega el nombre del material y la cantidad
-                    } else {
-                        acc.push({
-                            name: estado,
-                            value: item.cantidad || 0,
-                            materials: `${item.nombre} (${item.cantidad})`, // Agrega el nombre del material y la cantidad
-                            color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
-                        });
-                    }
-                    return acc;
-                }, []);
+                // Agrupación de datos para "material por estado"
+                const groupedData = reportData.map((item) => ({
+                    name: item.nombre,
+                    value: item.cantidad || 0,
+                    estado: item.estadoMaterial || "Sin estado",
+                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`, // Color aleatorio
+                }));
                 formattedData = groupedData;
+            } else if (reportType === "Informe de material por movimiento entre deposito") {
+                // Mapeo de datos para Informe de movimiento entre depósitos
+                formattedData = reportData.map((item) => ({
+                    name: `${item.depositoOrigen} -> ${item.depositoDestino}`,
+                    value: item.cantidad || 0,
+                    depositoOrigen: item.depositoOrigen,
+                    depositoDestino: item.depositoDestino,
+                    nombreMaterial: item.nombreMaterial || "Sin nombre",
+                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+                }));
+                setMaterialDetails(formattedData); // Guardar detalles de materiales para mostrar fuera del gráfico
+            } else if (reportType === "Informe de salida de material") {
+                // Mapeo de datos para Informe de salida de material
+                formattedData = reportData.map((item) => ({
+                    name: item.nombreMaterial || "Sin nombre",
+                    value: item.cantidad || 0,
+                    fecha: item.fechaSalida || "Sin fecha",
+                    usuario: item.nombreUsuario || "Desconocido",
+                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+                }));
+                setMaterialDetails(formattedData); // Guardar detalles de salidas para mostrar fuera del gráfico
             }
-
-            console.log('Datos formateados para el gráfico (después de formatear):', formattedData);
             setChartData(formattedData);
         } else {
-            console.log('reportData no es un array o está vacío:', reportData);
             setChartData([]);
         }
     }, [reportData, reportType]);
 
+
+    // Supongamos que dateRange está en el formato: "2024-09-30T00:00:00.000Z - 2024-10-09T00:00:00.000Z"
+    const [startDate, endDate] = dateRange.split(' - '); // Dividimos las dos fechas
+    const formattedStartDate = startDate ? format(new Date(startDate), 'dd/MM/yyyy') : 'N/A';
+    const formattedEndDate = endDate ? format(new Date(endDate), 'dd/MM/yyyy') : 'N/A';
 
     useEffect(() => {
         const handleEscape = (event) => {
@@ -117,32 +131,37 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                         {/* Mostrar subtítulos según el tipo de informe */}
                         {reportType === "Informe de inventario general" && (
                             <h3 className="text-center text-lg font-medium text-sipe-white mb-4">
-                                {dateRange}
+                                {formattedStartDate} - {formattedEndDate}
                             </h3>
                         )}
 
                         {reportType === "Informe de material por estado" && (
                             <h3 className="text-center text-lg font-medium text-sipe-white mb-4">
-                                Estado: {selectedEstado} <br />
-                                {dateRange}
+                                Estado: {selectedOption} <br />
+                                {formattedStartDate} - {formattedEndDate}
                             </h3>
                         )}
 
-                        {reportType === "Informe de material por movimiento entre depósito" && (
+                        {reportType === "Informe de material por movimiento entre deposito" && (
                             <h3 className="text-center text-lg font-medium text-sipe-white mb-4">
                                 Material: {selectedMaterial} <br />
-                                {dateRange}
+                                {formattedStartDate} - {formattedEndDate}
                             </h3>
                         )}
 
-                        {reportType === "Informe de material por depósito" && (
+                        {reportType === "Informe de salida de material" && (
                             <h3 className="text-center text-lg font-medium text-sipe-white mb-4">
-                                Depósito: {selectedDeposito} <br /> {/* Mostrar el depósito seleccionado */}
-                                {dateRange}
+                                Material: {selectedMaterial} <br />
+                                {formattedStartDate} - {formattedEndDate}
                             </h3>
                         )}
 
-
+                        {reportType === "Informe de material por deposito" && (
+                            <h3 className="text-center text-lg font-medium text-sipe-white mb-4">
+                                Depósito: {selectedOption} <br /> {/* Mostrar el depósito seleccionado */}
+                                {formattedStartDate} - {formattedEndDate}
+                            </h3>
+                        )}
 
                         {/* Contenedor del gráfico */}
                         <div className="w-full flex justify-center items-center">
@@ -184,9 +203,9 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                                 fontWeight="bold"
                                             />
                                         </Bar>
-
                                     </BarChart>
                                 )}
+
                                 {tipoGrafico === "Torta" && (
                                     <PieChart width={500} height={500}>
                                         <ChartTooltip
@@ -240,6 +259,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                         </Pie>
                                     </PieChart>
                                 )}
+
                                 {tipoGrafico === "Area" && (
                                     <AreaChart
                                         data={chartData}
@@ -263,7 +283,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                             content={<ChartTooltipContent indicator="dot" />}
                                         />
                                         <Area
-                                            dataKey="value" // Cambiado de 'value1' a 'value'
+                                            dataKey="value"
                                             name="Cantidad Material"
                                             type="natural"
                                             fill="var(--color-value1)"
@@ -273,7 +293,6 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                         />
                                     </AreaChart>
                                 )}
-
                             </ChartContainer>
                         </div>
 
@@ -281,6 +300,34 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                         <div className="bg-sipe-orange-dark rounded-xl mt-8 p-4 flex flex-col justify-center items-center w-full text-sipe-white">
                             <h2 className="text-center text-2xl font-bold mb-2">Detalle del Informe</h2>
                             <p className="font-bold">Total de registros: {reportData.length}</p>
+
+                            {/* Detalles adicionales para los informes de salida de material y movimientos */}
+                            {reportType === "Informe de salida de material" && (
+                                <div className="mt-4 w-full">
+                                    <h3 className="text-center font-bold">Detalles de Salidas:</h3>
+                                    <ul className="list-disc pl-5">
+                                        {materialDetails.map((item, index) => (
+                                            <li key={index} className="text-sipe-white">
+                                                Material: {item.name}, Cantidad: {item.value}, Fecha: {item.fecha}, Usuario: {item.usuario}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {reportType === "Informe de material por movimiento entre deposito" && (
+                                <div className="mt-4 w-full">
+                                    <h3 className="text-center font-bold">Detalles de Movimientos:</h3>
+                                    <ul className="list-disc pl-5">
+                                        {materialDetails.map((item, index) => (
+                                            <li key={index} className="text-sipe-white">
+                                                Material: {item.nombreMaterial}, Cantidad: {item.value}, Origen: {item.depositoOrigen}, Destino: {item.depositoDestino}, Fecha: {item.fechaMovimiento}, Usuario: {item.usuario}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
                             <p className="text-center">El gráfico muestra la cantidad de datos relacionados con el informe seleccionado.</p>
                         </div>
 

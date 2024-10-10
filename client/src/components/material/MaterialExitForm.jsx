@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { format } from 'date-fns';  // Importamos date-fns para formatear y parsear fechas
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
@@ -7,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import { X } from "lucide-react";
 
-function MaterialExitForm({ onClose, notify }) {
+function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la prop onExitCreated
     const [ubicaciones, setUbicaciones] = useState([]);
     const [depositos, setDepositos] = useState([]);
     const [materials, setMaterials] = useState([]);
@@ -18,6 +19,8 @@ function MaterialExitForm({ onClose, notify }) {
     const [selectedMaterials, setSelectedMaterials] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [reason, setReason] = useState('');
+    const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd')); // Fecha actual como valor inicial
+    const [maxDate] = useState(format(new Date(), 'yyyy-MM-dd')); // Establecemos la fecha máxima como hoy
 
     useEffect(() => {
         axios.get('http://localhost:8081/deposit-locations')
@@ -72,21 +75,25 @@ function MaterialExitForm({ onClose, notify }) {
     const handleSubmit = (e) => {
         e.preventDefault();
 
+        const formattedDateForMySQL = format(new Date(selectedDate), 'yyyy-MM-dd');
         const salidas = selectedMaterials.map(material => ({
             idMaterial: material.id,
             cantidad: material.cantidadSalida,
             motivo: reason,
-            fecha: new Date(),
+            fecha: formattedDateForMySQL,
             idUsuario: selectedUser,
         }));
 
         axios.post('http://localhost:8081/materials/exits', salidas)
             .then(response => {
                 notify('success', 'Salida registrada con éxito');
-                onClose();
+                if (onExitCreated) {
+                    onExitCreated();  // Llamamos a la función para refrescar la lista de salidas
+                }
+                onClose();  // Cerrar el modal
             })
             .catch(error => {
-                console.error('Error registering exit:', error);
+                console.error('Error registrando salida:', error);
                 notify('error', 'Error al registrar la salida');
             });
     };
@@ -94,7 +101,6 @@ function MaterialExitForm({ onClose, notify }) {
     const handleRemoveMaterial = (id) => {
         setSelectedMaterials(selectedMaterials.filter(material => material.id !== id));
     };
-
 
     return (
         <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl relative">
@@ -175,6 +181,17 @@ function MaterialExitForm({ onClose, notify }) {
                         ))}
                     </div>
                 )}
+
+                <div className="grid gap-2 mt-4">
+                    <Label htmlFor="fecha" className="text-sm font-medium">Fecha de Salida</Label>
+                    <Input
+                        type="date"
+                        value={selectedDate}
+                        max={maxDate}  // Limitar la fecha máxima a hoy
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="border-b bg-sipe-blue-dark text-white"
+                    />
+                </div>
 
                 <div className="grid gap-2 mt-4">
                     <Label htmlFor="reason" className="text-sm font-medium">Motivo</Label>

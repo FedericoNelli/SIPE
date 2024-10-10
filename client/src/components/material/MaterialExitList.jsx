@@ -1,28 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
 import { Button } from "@/components/Common/Button/Button";
-import axios from "axios";
 
-function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handleDeleteExits }) {
-    const [salidas, setSalidas] = useState([]);
+function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handleDeleteExits, materialExits }) {
     const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false);
-
-    useEffect(() => {
-        axios.get('http://localhost:8081/exits')
-            .then(response => {
-                console.log('Respuesta de la API /exits:', response.data); // <-- Agrega este console.log
-
-                if (Array.isArray(response.data)) {
-                    setSalidas(response.data);
-                } else if (response.data.data) {
-                    setSalidas(response.data.data);
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching salidas:', error);
-            });
-    }, []);
-
 
     const toggleExitSelection = (exitId) => {
         if (selectedExits.includes(exitId)) {
@@ -33,10 +14,10 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
     };
 
     const handleSelectAll = () => {
-        if (selectedExits.length === salidas.length) {
+        if (selectedExits.length === materialExits.length) {
             setSelectedExits([]);
         } else {
-            const allExitIds = salidas.map(salida => salida.salidaId);
+            const allExitIds = materialExits.map(salida => salida.salidaId);
             setSelectedExits(allExitIds);
         }
     };
@@ -55,7 +36,7 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
 
     return (
         <>
-            {salidas.length === 0 ? (
+            {materialExits.length === 0 ? (
                 <p className="text-center text-white">No hay salidas registradas.</p>
             ) : (
                 <Table className="w-full text-sipe-white">
@@ -65,7 +46,7 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                                 <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">
                                     <input
                                         type="checkbox"
-                                        checked={selectedExits.length === salidas.length && salidas.length > 0}
+                                        checked={selectedExits.length === materialExits.length && materialExits.length > 0}
                                         onChange={handleSelectAll}
                                     />
                                 </TableHead>
@@ -79,7 +60,7 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {salidas.map(salida => {
+                        {materialExits.map(salida => {
                             return (
                                 <TableRow key={salida.salidaId}>
                                     {isDeleteMode && (
