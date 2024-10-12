@@ -8,15 +8,15 @@ import axios from 'axios';
 
 function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep, ubicacionId }) {
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState(() => JSON.parse(localStorage.getItem('depositFormData')) || {
         nombre: '',
-        idUbicacion: ubicacionId || '', // Usamos el idUbicacion pasado desde el LocationForm
+        idUbicacion: ubicacionId || '', 
         idDeposito: ''
     });
     const [ubicaciones, setUbicaciones] = useState([]);
 
     useEffect(() => {
-        // Cargar ubicaciones cuando el componente se monte
+        
         axios.get('http://localhost:8081/deposit-locations')
             .then(response => {
                 setUbicaciones(response.data);
@@ -64,12 +64,12 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
             
             const idUbicacion = ubicacionId;
 
-            // Ejecuta onSubmit pasando depositoId como parámetro
+            
             if (onSubmit) onSubmit(idUbicacion, response.data.id);
     
             const isInTutorial = localStorage.getItem('inTutorial');
             if (!isInTutorial || isInTutorial === 'false') {
-                window.location.reload(); // Recargar la página si no estamos en el tutorial
+                window.location.reload(); 
             }
     
         } catch (error) {
@@ -81,13 +81,13 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
 
     const handleCancel = async () => {
         if (!isTutorial) {
-            // Lógica normal de cancelación si no estamos en tutorial
+            
             if (onClose) onClose();
         } else {
-            // Lógica cuando estamos en el tutorial
-            if (currentStep === 2 && ubicacionId) { // Si estamos en el paso de depósito y volvemos al paso de ubicación
+            
+            if (currentStep === 2 && ubicacionId) { 
                 try {
-                    // Solo eliminar si existe una ubicación agregada
+                    
                     await axios.delete(`http://localhost:8081/locations/delete/${ubicacionId}`);
                     notify('info', "Ubicación eliminada. Volviendo al paso anterior...");
                 } catch (error) {
@@ -96,7 +96,6 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
                 }
             }
 
-            // Llamar a la función para volver al paso anterior en el tutorial
             handlePreviousStep();
         }
     };
@@ -109,7 +108,7 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
                 </CardTitle>
                 {isTutorial ? "" : <hr className="text-sipe-gray" />}
             </CardHeader>
-            <CardContent className="flex flex-col space-y-10">
+            <CardContent className="flex flex-col space-y-6">
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-2">
                         <Input

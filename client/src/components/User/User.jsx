@@ -45,7 +45,7 @@ function User({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de usuarios</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">NUEVO USUARIO</Button>
+                        <Button onClick={openFormModal} variant="sipemodal">NUEVO USUARIO</Button>
                     </div>
                 </div>
                 <UserList users={currentUsers} />

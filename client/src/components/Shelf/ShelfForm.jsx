@@ -133,7 +133,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
             const idCategoria = categoriaId;
             const idPasillo = pasilloId;
 
-            if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria, idPasillo, response.data.id); // Ejecutar onSubmit después del delay
+            if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria, idPasillo, response.data.result.insertId); // Ejecutar onSubmit después del delay
 
             // Verificar si no estamos en el tutorial y recargar la página
             const isInTutorial = localStorage.getItem('inTutorial');
@@ -180,7 +180,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
             <Card className="bg-sipe-blue-dark text-sipe-white p-4">
                 <CardHeader>
                     <CardTitle className="text-3xl text-center font-bold mb-2">
-                        {isTutorial ? "Por favor, creá el primer pasillo" : "Agregar nuevo Pasillo"}
+                        {isTutorial ? "Por favor, creá la primer estantería" : "Agregar nuevo Estantería"}
                     </CardTitle>
                     {isTutorial ? "" : <hr className="text-sipe-gray" />}
                 </CardHeader>
@@ -290,7 +290,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
                     <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
-                        CANCELAR
+                        {isTutorial ? "VOLVER" : "CANCELAR"}
                     </Button>
                     <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>
                         AGREGAR

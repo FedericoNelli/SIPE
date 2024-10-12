@@ -100,7 +100,7 @@ function Navbar() {
                                 {showNotifications && (
                                     <DropdownMenuContent>
                                         {notificaciones.length === 0 ? (
-                                            <p className="p-4 text-sm text-gray-600">No tienes notificaciones</p>
+                                            <p className="p-4 text-sm text-sipe-white bg-sipe-blue-dark/90 rounded-lg backdrop-blur-sm">No tienes notificaciones</p>
                                         ) : (
                                             notificaciones.map((notif) => (
                                                 <DropdownMenuItem key={notif.id}>

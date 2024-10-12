@@ -45,7 +45,7 @@ function Aisle( {notify} ) {
                         <h3 className="text-md font-thin">Listado completo de pasillos</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">NUEVO PASILLO</Button>
+                        <Button onClick={openFormModal} variant="sipemodal">NUEVO PASILLO</Button>
                     </div>
                 </div>
                 <AisleList aisles={currentaisles} />

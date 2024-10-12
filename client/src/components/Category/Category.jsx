@@ -45,7 +45,7 @@ function Deposit({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de categorías</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">NUEVA CATEGORÍA</Button>
+                        <Button onClick={openFormModal} variant="sipemodal">NUEVA CATEGORÍA</Button>
                     </div>
                 </div>
                 <CategoryList categories={currentCategories} />

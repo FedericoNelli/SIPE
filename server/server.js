@@ -696,6 +696,44 @@ app.delete('/aisle/delete/:id', (req, res) => {
     });
 });
 
+app.delete('/delete-shelves', (req, res) => {
+    const { shelfIds } = req.body; // Recibe los IDs de las estanterías a eliminar
+
+    if (!shelfIds || shelfIds.length === 0) {
+        return res.status(400).json({ message: 'No se proporcionaron estanterías para eliminar' });
+    }
+
+    // Construimos la consulta para eliminar múltiples IDs
+    const placeholders = shelfIds.map(() => '?').join(',');
+    const query = `DELETE FROM estanteria WHERE id IN (${placeholders})`;
+
+    db.query(query, shelfIds, (err, result) => {
+        if (err) {
+            console.error('Error eliminando estanterías:', err);
+            return res.status(500).json({ message: 'Error eliminando estanterías' });
+        }
+
+        res.status(200).json({ message: 'Estanterías eliminadas correctamente' });
+    });
+});
+
+app.get('/spaces/:shelfId', (req, res) => {
+    const { shelfId } = req.params;
+    const query = `
+        SELECT Espacio.id, Espacio.fila, Espacio.columna, Espacio.numeroEspacio,
+        CASE 
+            WHEN Material.id IS NOT NULL THEN true 
+            ELSE false 
+        END AS ocupado
+        FROM Espacio
+        LEFT JOIN Material ON Material.idEspacio = Espacio.id
+        WHERE Espacio.idEstanteria = ?
+    `;
+    db.query(query, [shelfId], (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
 
 const getNextImageNumber = (callback) => {
     const query = 'SELECT COUNT(*) AS count FROM Material WHERE imagen IS NOT NULL';
@@ -1296,14 +1334,6 @@ app.post('/addShelf', (req, res) => {
             return res.status(500).json({ error: 'Error al agregar estantería', details: err });
         }
         res.status(200).json({ message: 'Estantería agregada exitosamente', result });
-    });
-});
-
-app.get('/shelf', (req, res) => {
-    const query = 'SELECT id FROM Estanteria';
-    db.query(query, (err, results) => {
-        if (err) return res.status(500).send('Error al consultar la base de datos');
-        res.json(results);
     });
 });
 
@@ -2013,10 +2043,6 @@ app.get('/reports/:id', (req, res) => {
                 }
             }));
         }
-
-
-
-
 
         // Manejar el caso para "Informe de material por movimiento entre depósito"
         if (report.tipo === 'Informe de material por movimiento entre depósito') {
