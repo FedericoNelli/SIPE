@@ -9,6 +9,10 @@ import axios from 'axios';
 function ShelfForm({ onClose, onSubmit, notify }) {
     const [aisles, setAisles] = useState([]);
     const [sides, setSides] = useState([]);
+    const [locations, setLocations] = useState([]);
+    const [deposits, setDeposits] = useState([]);
+    const [selectedLocation, setSelectedLocation] = useState('');
+    const [selectedDeposit, setSelectedDeposit] = useState('');
     const [formData, setFormData] = useState({
         numero: '',
         cantidad_estante: '',
@@ -18,16 +22,36 @@ function ShelfForm({ onClose, onSubmit, notify }) {
     });
 
     useEffect(() => {
-        axios.get('http://localhost:8081/aisle')
+        // Cargar ubicaciones
+        axios.get('http://localhost:8081/deposit-locations')
             .then(response => {
-                setAisles(response.data);
+                setLocations(response.data);
             })
             .catch(error => {
-                console.error('Error fetching aisles:', error);
-                notify('error', 'Error al cargar pasillos');
+                console.error('Error fetching locations:', error);
+                notify('error', 'Error al cargar ubicaciones');
             });
     }, [notify]);
-    
+
+    const fetchDepositsByLocation = (locationId) => {
+        // Obtener depósitos por ubicación
+        axios.get(`http://localhost:8081/deposit-names?locationId=${locationId}`)
+            .then(response => {
+                setDeposits(response.data);
+            })
+            .catch(error => {
+                console.error('Error fetching deposits:', error);
+                notify('error', 'Error al cargar depósitos');
+            });
+    };
+
+    const fetchAislesByDeposit = (depositoId) => {
+        axios.get(`http://localhost:8081/aisles`, {
+            params: { depositoId }
+        })
+            .then(response => setAisles(response.data))
+            .catch(error => console.error('Error fetching aisles:', error));
+    };
 
     const fetchSidesByAisle = (aisleId) => {
         axios.get(`http://localhost:8081/sides/${aisleId}`)
@@ -57,31 +81,31 @@ function ShelfForm({ onClose, onSubmit, notify }) {
                 notify('error', "La cantidad de estantes debe ser mayor que 0");
                 return;
             }
-    
+
             if (formData.cantidad_division <= 0) {
                 notify('error', "La cantidad de divisiones debe ser mayor que 0");
                 return;
             }
 
-            if(formData.numero <= 0) {
+            if (formData.numero <= 0) {
                 notify('error', "El número de estante debe ser mayor a 0");
                 return;
             }
-    
+
             const response = await axios.post('http://localhost:8081/addShelf', formData);
-    
+
             if (response.status !== 200 || response.data.error) {
                 throw new Error(response.data.error || "Error al agregar estantería");
             }
-    
+
             notify('success', "¡Estantería creada con éxito!");
-    
+
             if (onClose) onClose();
-            
+
             // Ejecuta onSubmit con el delay
             setTimeout(() => {
                 if (onSubmit) onSubmit(); // Ejecutar onSubmit después del delay
-                
+
                 // Verificar si no estamos en el tutorial y recargar la página
                 const isInTutorial = localStorage.getItem('inTutorial');
                 if (!isInTutorial || isInTutorial === 'false') {
@@ -90,7 +114,7 @@ function ShelfForm({ onClose, onSubmit, notify }) {
             }, 2000);
         } catch (error) {
             console.error('Error al agregar la estantería:', error);
-        
+
             // Verificar si el error tiene una respuesta del backend y mostrar su mensaje
             if (error.response && error.response.data && error.response.data.error) {
                 notify('error', error.response.data.error);
@@ -99,8 +123,6 @@ function ShelfForm({ onClose, onSubmit, notify }) {
             }
         }
     };
-    
-    
 
     const handleCancel = () => {
         if (onClose) onClose(); // Llama a la función de cierre pasada como prop
@@ -114,11 +136,9 @@ function ShelfForm({ onClose, onSubmit, notify }) {
                     <hr className="text-sipe-gray" />
                 </CardHeader>
                 <CardContent className="flex flex-col space-y-10">
-                <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
-                            <Label htmlFor="cantidad_estante" className="text-sm font-medium">
-                                Número de estantería
-                            </Label>
+                            <Label htmlFor="numero" className="text-sm font-medium">Número de estantería</Label>
                             <Input
                                 className="border-b"
                                 id="numero"
@@ -133,9 +153,7 @@ function ShelfForm({ onClose, onSubmit, notify }) {
                     </div>
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
-                            <Label htmlFor="cantidad_estante" className="text-sm font-medium">
-                                Cantidad de estantes
-                            </Label>
+                            <Label htmlFor="cantidad_estante" className="text-sm font-medium">Cantidad de estantes</Label>
                             <Input
                                 className="border-b"
                                 id="cantidad_estante"
@@ -150,9 +168,7 @@ function ShelfForm({ onClose, onSubmit, notify }) {
                     </div>
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
-                            <Label htmlFor="cantidad_division" className="text-sm font-medium">
-                                Cantidad de divisiones
-                            </Label>
+                            <Label htmlFor="cantidad_division" className="text-sm font-medium">Cantidad de divisiones</Label>
                             <Input
                                 className="border-b"
                                 id="cantidad_division"
@@ -165,52 +181,96 @@ function ShelfForm({ onClose, onSubmit, notify }) {
                             />
                         </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <Label className="text-sm font-medium">Ubicación</Label>
-                        <div className="flex w-full gap-4">
-                            <Select
-                                id="aisle"
-                                onValueChange={(value) => {
-                                    handleSelectChange('idPasillo', value);
-                                    fetchSidesByAisle(value); // Fetch sides based on aisle selection
-                                }}
-                            >
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Pasillo" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {aisles.map((aisle) => (
-                                        <SelectItem key={aisle.id} value={aisle.id}>{aisle.numero}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select
-                                id="aisle-side"
-                                onValueChange={(value) => handleSelectChange('idLado', value)}
-                            >
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Lado de pasillo" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {sides.map((side) => (
-                                        <SelectItem key={side.id} value={side.id}>{side.descripcion}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                    {/* Sección combinada de Ubicación y Depósito */}
+                    <div className="flex flex-col gap-4">
+                        <div className="flex w-full gap-4 flex-wrap items-center">
+                            {/* Select de Ubicación */}
+                            <div className="flex items-center gap-2">
+                                <Label className="text-sm font-medium">Ubicación</Label>
+                                <Select onValueChange={(value) => {
+                                    setSelectedLocation(value);
+                                    fetchDepositsByLocation(value);
+                                }}>
+                                    <SelectTrigger className="w-36 bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                        <SelectValue placeholder="Ubicación" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {locations.map((location) => (
+                                            <SelectItem key={location.id} value={location.id}>{location.nombre}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Select de Depósito */}
+                            <div className="flex items-center gap-2">
+                                <Label className="text-sm font-medium">Depósito</Label>
+                                <Select onValueChange={(value) => {
+                                    setSelectedDeposit(value);
+                                    fetchAislesByDeposit(value);
+                                }}>
+                                    <SelectTrigger className="w-36 bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                        <SelectValue placeholder="Depósito" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {deposits.map((deposit) => (
+                                            <SelectItem key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sección de Pasillo y Lado */}
+                    <div className="flex flex-col gap-4">
+                        <div className="flex w-full gap-4 flex-wrap items-center">
+                            {/* Select de Pasillo */}
+                            <div className="flex items-center gap-2">
+                                <Label className="text-sm font-medium">Pasillo</Label>
+                                <Select
+                                    onValueChange={(value) => {
+                                        handleSelectChange('idPasillo', value);
+                                        fetchSidesByAisle(value);
+                                    }}
+                                >
+                                    <SelectTrigger className="w-36 bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                        <SelectValue placeholder="Pasillo" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {aisles.map((aisle) => (
+                                            <SelectItem key={aisle.id} value={aisle.id}>{aisle.numero}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Select de Lado del Pasillo */}
+                            <div className="flex items-center gap-2">
+                                <Label className="text-sm font-medium">Lado</Label>
+                                <Select
+                                    onValueChange={(value) => handleSelectChange('idLado', value)}
+                                >
+                                    <SelectTrigger className="w-36 bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                        <SelectValue placeholder="Lado" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {sides.map((side) => (
+                                            <SelectItem key={side.id} value={side.id}>{side.descripcion}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </div>
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
-                    <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
-                        CANCELAR
-                    </Button>
-                    <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>
-                        AGREGAR
-                    </Button>
+                    <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>CANCELAR</Button>
+                    <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>AGREGAR</Button>
                 </CardFooter>
             </Card>
         </>
-    )
+    );
 }
 
 export default ShelfForm;

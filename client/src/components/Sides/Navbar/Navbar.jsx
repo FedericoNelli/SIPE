@@ -24,7 +24,7 @@ function Navbar() {
         const fetchNotificaciones = async () => {
             try {
                 const responseNotifications = await axios.get(`http://localhost:8081/api/notifications/${usuarioId}`);
-                
+
                 // Limitar a las últimas 5 notificaciones
                 const limitedNotifications = responseNotifications.data.slice(0, 5);
 
@@ -83,9 +83,22 @@ function Navbar() {
         }
     };
 
+    function obtenerSaludo() {
+        const hora = new Date().getHours();
+        if (hora < 12) {
+            return "Buen día";
+        } else if (hora < 18) {
+            return "Buenas tardes";
+        } else {
+            return "Buenas noches";
+        }
+    }
+
+
     return (
         <div className="flex justify-between items-center text-sipe-white font-light p-10 px-10">
-            <h1 className="text-4xl font-bold">Buen día, {userName}!</h1>
+            <h1 className="text-4xl font-bold">{obtenerSaludo()}, {userName}!</h1>
+
             <div>
                 <ul className="flex flex-row justify-center items-center gap-6 text-lg">
                     <li>{currentDate}</li>
@@ -97,22 +110,22 @@ function Navbar() {
                                     <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-sipe-white bg-red-600 rounded-full">{notificationCount}</span>
                                 )}
                             </DropdownMenuTrigger>
-                                {showNotifications && (
-                                    <DropdownMenuContent>
-                                        {notificaciones.length === 0 ? (
-                                            <p className="p-4 text-sm text-gray-600">No tienes notificaciones</p>
-                                        ) : (
-                                            notificaciones.map((notif) => (
-                                                <DropdownMenuItem key={notif.id}>
-                                                        <p className="text-sm text-gray-800">{notif.descripcion}</p>
-                                                        <p className="text-xs text-gray-500">{new Date(notif.fecha).toLocaleString()}</p> 
-                                                </DropdownMenuItem>
-                                            ))
-                                        )}
-                                    </DropdownMenuContent>
-                                )}
+                            {showNotifications && (
+                                <DropdownMenuContent>
+                                    {notificaciones.length === 0 ? (
+                                        <p className="p-4 text-sm text-gray-600">No tienes notificaciones</p>
+                                    ) : (
+                                        notificaciones.map((notif) => (
+                                            <DropdownMenuItem key={notif.id}>
+                                                <p className="text-sm text-gray-800">{notif.descripcion}</p>
+                                                <p className="text-xs text-gray-500">{new Date(notif.fecha).toLocaleString()}</p>
+                                            </DropdownMenuItem>
+                                        ))
+                                    )}
+                                </DropdownMenuContent>
+                            )}
                         </DropdownMenu>
-                    </li>   
+                    </li>
                     <div className="flex flex-row justify-center items-center">
                         <DropdownMenu>
                             <DropdownMenuTrigger className="flex items-center bg-sipe-white rounded-full pe-1">

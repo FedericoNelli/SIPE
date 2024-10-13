@@ -21,7 +21,6 @@ function MovementForm({ onClose, notify }) {
     const [cantidadDisponible, setCantidadDisponible] = useState('');
     const [maxDatetime, setMaxDatetime] = useState('');
 
-
     useEffect(() => {
         axios.get('http://localhost:8081/materials')
             .then(response => setMateriales(response.data))
@@ -38,9 +37,7 @@ function MovementForm({ onClose, notify }) {
             });
 
         axios.get('http://localhost:8081/deposit-locations-movements')
-            .then(response => {
-                setDepositos(response.data);
-            })
+            .then(response => setDepositos(response.data))
             .catch(error => {
                 console.error('Error al obtener depósitos:', error);
                 notify('error', 'Error al cargar depósitos');
@@ -61,7 +58,6 @@ function MovementForm({ onClose, notify }) {
     }, [formData.idMaterial, materiales]);
 
     useEffect(() => {
-        // Actualiza el valor máximo de la fecha y hora al cargar el componente
         const now = new Date();
         setMaxDatetime(now.toISOString().slice(0, 16));
     }, []);
@@ -73,13 +69,12 @@ function MovementForm({ onClose, notify }) {
             const now = new Date();
             const selectedDate = new Date(value);
 
-            // Verifica que la fecha y hora no sean futuras
             if (selectedDate > now) {
                 notify('error', 'La hora seleccionada no puede ser futura');
                 return;
             }
         }
-        // Verificación para que la cantidad movida no sea mayor a la cantidad disponible
+
         if (name === "cantidadMovida" && value > cantidadDisponible) {
             notify('error', 'La cantidad a mover no puede ser mayor a la disponible');
             return;
@@ -140,7 +135,7 @@ function MovementForm({ onClose, notify }) {
                             type="datetime-local"
                             value={formData.fechaMovimiento}
                             onChange={handleInputChange}
-                            max={maxDatetime} // Establece la fecha y hora máxima al momento actual
+                            max={maxDatetime}
                         />
                     </div>
                     <div className="flex items-center gap-2">

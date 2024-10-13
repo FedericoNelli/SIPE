@@ -1,18 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import ReportList from './ReportList';
 import ReportForm from './ReportForm';
+import ReportDetailModal from './ReportDetailModal';
 import axios from 'axios';
 
 function Report({ notify }) {
+    const [reports, setReports] = useState([]); // Lista de informes
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para activar el modo de eliminación
-    
+    const [isDeleteMode, setIsDeleteMode] = useState(false);
+    const [selectedReport, setSelectedReport] = useState(null); // Reporte seleccionado
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false); // Estado del modal de detalles
+    const [loading, setLoading] = useState(true);
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    // Cargar los informes al montar
+    useEffect(() => {
+        const loadReports = async () => {
+            try {
+                const response = await axios.get('http://localhost:8081/reports');
+                setReports(response.data);
+            } catch (error) {
+                console.error('Error fetching reports:', error);
+                notify('error', 'Error al cargar los informes');
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadReports();
+    }, [notify]);
+
+    // Lógica para obtener los detalles de un informe
+    const fetchReportDetails = async (reportId) => {
+        try {
+            const response = await axios.get(`http://localhost:8081/reports/${reportId}`);
+            setSelectedReport(response.data); // Guardar el informe seleccionado en el estado
+            setIsDetailModalOpen(true); // Abrir el modal
+        } catch (error) {
+            console.error('Error fetching report details:', error);
+            notify('error', 'Error al obtener detalles del informe');
+        }
+    };
+
+    // Cerrar el modal de detalles
+    const closeDetailModal = () => {
+        setIsDetailModalOpen(false);
+        setSelectedReport(null); // Limpiar el estado del reporte seleccionado
+    };
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
@@ -21,7 +57,13 @@ function Report({ notify }) {
     const closeFormModal = () => {
         setIsFormModalOpen(false);
     };
-    
+
+    // Lógica para manejar la paginación
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentReports = reports.slice(indexOfFirstItem, indexOfLastItem);
+
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     return (
         <div className="relative">
@@ -37,15 +79,20 @@ function Report({ notify }) {
                         <Button onClick={() => setIsDeleteMode(!isDeleteMode)} className="bg-red-500 font-semibold px-4 py-2 rounded hover:bg-red-600">{isDeleteMode ? "Cancelar" : "Eliminar Informe"}</Button>
                     </div>
                 </div>
+
+                {/* Componente de listado */}
                 <ReportList
                     isDeleteMode={isDeleteMode}
                     notify={notify}
-                    setIsDeleteMode={setIsDeleteMode}
+                    fetchReportDetails={fetchReportDetails}
+                    reports={currentReports} // Pasamos solo los informes de la página actual
                 />
+
+                {/* Paginación */}
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
-                            {[...Array(Math.ceil(10 / itemsPerPage)).keys()].map(page => ( // Ajustar este valor según el total real
+                            {[...Array(Math.ceil(reports.length / itemsPerPage)).keys()].map(page => (
                                 <PaginationItem key={page + 1}>
                                     <PaginationLink href="#" onClick={() => paginate(page + 1)} isActive={currentPage === page + 1}>
                                         {page + 1}
@@ -55,10 +102,26 @@ function Report({ notify }) {
                         </PaginationContent>
                     </Pagination>
                 </div>
+
+                {/* Modal de formulario de generación de informes */}
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <ReportForm onClose={closeFormModal}  notify={notify} />
+                        <ReportForm onClose={closeFormModal} notify={notify} />
                     </div>
+                )}
+
+                {/* Modal de detalles de informes */}
+                {isDetailModalOpen && selectedReport && (
+                    <ReportDetailModal
+                        isOpen={isDetailModalOpen}
+                        onClose={closeDetailModal}
+                        reportData={selectedReport.datos}
+                        reportType={selectedReport.tipo}
+                        tipoGrafico={selectedReport.tipoGrafico}
+                        selectedMaterial={selectedReport.nombreMaterial || 'Todos los materiales'}
+                        dateRange={`${selectedReport.fechaInicio || 'N/A'} - ${selectedReport.fechaFin || 'N/A'}`}
+                        selectedOption={selectedReport.deposito?.nombre || selectedReport.estado || 'Todos'}
+                    />
                 )}
             </div>
         </div>

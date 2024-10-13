@@ -140,7 +140,7 @@ function MainDashboard() {
                 <CustomCard
                     Icon={CornerDownRight}
                     colSpan={1}
-                    title="Último cambio de estado"
+                    title="Último movimiento realizado"
                     totalElement={lastMaterial}
                     buttonText={buttonSection[1].label}
                     buttonDisabled={buttonSection[1].disabled}
