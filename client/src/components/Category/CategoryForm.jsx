@@ -1,14 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function CategoryForm({ onClose, onSubmit, notify }) {
-    const [formData, setFormData] = useState({ descripcion: '' });
+function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep, ubicacionId, depositoId}) {
 
-    
+    const [formData, setFormData] = useState({
+        nombre: '',
+        idUbicacion: ubicacionId || '', // Usamos el idUbicacion pasado desde DepositForm
+        idDeposito: depositoId || '', // Usamos el idDeposito pasado desde DepositForm
+        idCategoria: ''
+    });
+
+    const [ubicaciones, setUbicaciones] = useState([]);
+    const [depositos, setDepositos] = useState([]);
+
+    useEffect(() => {
+        // Cargar ubicaciones cuando el componente se monte
+        axios.get('http://localhost:8081/deposit-locations')
+            .then(response => {
+                setUbicaciones(response.data);
+            })
+            .catch(error => {
+                console.error('Error al obtener ubicaciones:', error);
+                notify('error', 'Error al cargar ubicaciones');
+            });
+
+        axios.get('http://localhost:8081/deposits')
+            .then(response => {
+                setDepositos(response.data);
+            })
+            .catch(error => {
+                console.error('Error al obtener depósitos:', error);
+                notify('error', 'Error al cargar depósitos');
+            });
+    }, [notify]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -19,49 +47,79 @@ function CategoryForm({ onClose, onSubmit, notify }) {
     };
 
     const handleSubmit = async () => {
+
+        if (isTutorial && formData.descripcion.trim() === '') {
+            notify('error', 'Debes ingresar un nombre');
+            return;
+        }
+
         try {
             const response = await axios.post('http://localhost:8081/addCategory', formData);
-    
+
             if (response.status !== 200) {
                 throw new Error(response.data.error || "Error al agregar categoría");
             }
-    
-            notify('success', "¡Categoría agregada correctamente!");
-    
+
+            if (!isTutorial) {
+                notify('success', "¡Categoría agregada correctamente!");
+            }
+
             if (onClose) onClose();
-            
-            // Ejecuta onSubmit con el delay
-            setTimeout(() => {
-                if (onSubmit) onSubmit(); // Ejecutar onSubmit después del delay
-                
-                // Verificar si no estamos en el tutorial y recargar la página
-                const isInTutorial = localStorage.getItem('inTutorial');
-                if (!isInTutorial || isInTutorial === 'false') {
-                    window.location.reload(); // Recargar la página si no estamos en el tutorial
-                }
-            }, 2000);
+
+            const idUbicacion = ubicacionId;
+            const idDeposito = depositoId;
+            const idCategoria = response.data.id;
+
+            if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria);
+
+            // Verificar si no estamos en el tutorial y recargar la página
+            const isInTutorial = localStorage.getItem('inTutorial');
+            if (!isInTutorial || isInTutorial === 'false') {
+                window.location.reload(); // Recargar la página si no estamos en el tutorial
+            }
+
         } catch (error) {
             console.error('Error al agregar la categoría:', error);
             notify('error', error.message || "Error al agregar categoría");
         }
     };
 
-    const handleCancel = () => {
-        if (onClose) onClose();
+    const handleCancel = async () => {
+        if (!isTutorial) {
+            // Lógica normal de cancelación si no estamos en tutorial
+            if (onClose) onClose();
+        } else {
+            // Lógica cuando estamos en el tutorial y debemos volver al paso anterior
+            if (currentStep === 3 && depositoId) {
+                try {
+                    // Eliminar el depósito creado cuando se vuelve al paso anterior
+                    await axios.delete(`http://localhost:8081/deposits/delete/${depositoId}`);
+                    notify('info', "Depósito eliminado. Volviendo al paso anterior...");
+                } catch (error) {
+                    console.error('Error al eliminar el depósito:', error);
+                    notify('error', "No se pudo eliminar el depósito. Intenta nuevamente.");
+                }
+            }
+
+            // Llamar a la función para volver al paso anterior en el tutorial
+            handlePreviousStep();
+        }
     };
 
     return (
-        <Card className="bg-sipe-blue-dark text-sipe-white p-4">
+        <Card className="bg-sipe-blue-dark text-sipe-white p-4 shadow-2xl">
             <CardHeader>
-                <CardTitle className="text-3xl text-center font-bold mb-2">Agregar nueva Categoría</CardTitle>
-                <hr className="text-sipe-gray" />
+                <CardTitle className="text-3xl text-center font-bold mb-2">
+                    {isTutorial ? "Por favor, creá la primer categoría" : "Agregar nueva Categoría"}
+                </CardTitle>
+                {isTutorial ? "" : <hr className="text-sipe-gray" />}
             </CardHeader>
             <CardContent className="flex flex-col space-y-10">
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-2">
-                        <Label htmlFor="descripcion" className="text-sm font-medium">Descripción de la categoría</Label>
+                        {isTutorial ? "" : <Label htmlFor="descripcion" className="text-sm font-medium">Descripción de la categoría</Label>}
                         <Input
-                            className="border-b"
+                            className="border-b text-center"
                             id="descripcion"
                             name="descripcion"
                             placeholder="Ingresa la descripción de la categoría"
@@ -69,17 +127,27 @@ function CategoryForm({ onClose, onSubmit, notify }) {
                             onChange={handleInputChange}
                         />
                     </div>
+                    {isTutorial ? <div className='flex flex-row justify-center gap-2'>
+                        <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
+                            {ubicaciones.find(u => u.id === formData.idUbicacion)?.nombre || "Sin ubicación seleccionada"}
+                        </span>
+                        <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
+                            {depositos.find(u => u.id === formData.idDeposito)?.nombre || "Sin depósito seleccionado"}
+                        </span>
+                    </div>
+                    : ("")
+                    }
                 </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
                 <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
-                    CANCELAR
+                    {isTutorial ? "VOLVER" : "CANCELAR"}
                 </Button>
                 <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>
                     AGREGAR
                 </Button>
             </CardFooter>
-        </Card>
+        </Card >
     );
 }
 

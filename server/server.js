@@ -798,6 +798,164 @@ app.get('/materials/deposit/:idDeposito', (req, res) => {
     });
 });
 
+app.delete('/locations/delete/:id', (req, res) => {
+    const ubicacionId = req.params.id;
+
+    // Verificar si la ubicación existe en la base de datos
+    const queryCheckUbicacion = 'SELECT id FROM Ubicacion WHERE id = ?';
+    db.query(queryCheckUbicacion, [ubicacionId], (err, results) => {
+        if (err) {
+            console.error('Error al verificar la ubicación:', err);
+            return res.status(500).send('Error al verificar la ubicación');
+        }
+
+        if (results.length > 0) {
+            // Si la ubicación existe, proceder a eliminarla
+            const queryDeleteUbicacion = 'DELETE FROM Ubicacion WHERE id = ?';
+
+            db.query(queryDeleteUbicacion, [ubicacionId], (err, result) => {
+                if (err) {
+                    console.error('Error al eliminar la ubicación:', err);
+                    return res.status(500).send('Error al eliminar la ubicación');
+                }
+
+                res.status(200).send('Ubicación eliminada con éxito');
+            });
+        } else {
+            // Si la ubicación no existe
+            return res.status(404).send('Ubicación no encontrada');
+        }
+    });
+});
+
+app.delete('/deposits/delete/:id', (req, res) => {
+    const depositoId = req.params.id;
+
+    // Verificar si el depósito existe en la base de datos
+    const queryCheckDeposito = 'SELECT id FROM Deposito WHERE id = ?';
+
+    db.query(queryCheckDeposito, [depositoId], (err, results) => {
+        if (err) {
+            console.error('Error al verificar el depósito:', err);
+            return res.status(500).send('Error al verificar el depósito');
+        }
+
+        if (results.length > 0) {
+            // Si el depósito existe, proceder a eliminarlo
+            const queryDeleteDeposito = 'DELETE FROM Deposito WHERE id = ?';
+
+            db.query(queryDeleteDeposito, [depositoId], (err, result) => {
+                if (err) {
+                    console.error('Error al eliminar el depósito:', err);
+                    return res.status(500).send('Error al eliminar el depósito');
+                }
+                res.status(200).send('Depósito eliminado con éxito');
+            });
+        } else {
+            // Si el depósito no existe
+            return res.status(404).send('Depósito no encontrado');
+        }
+    });
+});
+
+app.delete('/category/delete/:id', (req, res) => {
+    const categoriaId = req.params.id;
+
+    // Verificar si el depósito existe en la base de datos
+    const queryCheckCategoria = 'SELECT id FROM Categoria WHERE id = ?';
+
+    db.query(queryCheckCategoria, [categoriaId], (err, results) => {
+        if (err) {
+            console.error('Error al verificar la categoria:', err);
+            return res.status(500).send('Error al verificar la categoria');
+        }
+
+        if (results.length > 0) {
+            // Si el depósito existe, proceder a eliminarlo
+            const queryDeleteCategoria = 'DELETE FROM Categoria WHERE id = ?';
+
+            db.query(queryDeleteCategoria, [categoriaId], (err, result) => {
+                if (err) {
+                    console.error('Error al eliminar la categoria:', err);
+                    return res.status(500).send('Error al eliminar la categoria');
+                }
+                res.status(200).send('Categoria eliminada con éxito');
+            });
+        } else {
+            // Si el depósito no existe
+            return res.status(404).send('Categoria no encontrada');
+        }
+    });
+});
+
+app.delete('/aisle/delete/:id', (req, res) => {
+    const pasilloId = req.params.id;
+
+    // Verificar si el depósito existe en la base de datos
+    const queryCheckPasillo = 'SELECT id FROM Pasillo WHERE id = ?';
+
+    db.query(queryCheckPasillo, [pasilloId], (err, results) => {
+        if (err) {
+            console.error('Error al verificar el pasillo:', err);
+            return res.status(500).send('Error al verificar el pasillo');
+        }
+
+        if (results.length > 0) {
+            // Si el depósito existe, proceder a eliminarlo
+            const queryDeletePasillo = 'DELETE FROM Pasillo WHERE id = ?';
+
+            db.query(queryDeletePasillo, [pasilloId], (err, result) => {
+                if (err) {
+                    console.error('Error al eliminar el pasillo:', err);
+                    return res.status(500).send('Error al eliminar el pasillo');
+                }
+                res.status(200).send('Pasillo eliminado con éxito');
+            });
+        } else {
+            // Si el depósito no existe
+            return res.status(404).send('Pasillo no encontrado' );
+        }
+    });
+});
+
+app.delete('/delete-shelves', (req, res) => {
+    const { shelfIds } = req.body; // Recibe los IDs de las estanterías a eliminar
+
+    if (!shelfIds || shelfIds.length === 0) {
+        return res.status(400).json({ message: 'No se proporcionaron estanterías para eliminar' });
+    }
+
+    // Construimos la consulta para eliminar múltiples IDs
+    const placeholders = shelfIds.map(() => '?').join(',');
+    const query = `DELETE FROM estanteria WHERE id IN (${placeholders})`;
+
+    db.query(query, shelfIds, (err, result) => {
+        if (err) {
+            console.error('Error eliminando estanterías:', err);
+            return res.status(500).json({ message: 'Error eliminando estanterías' });
+        }
+
+        res.status(200).json({ message: 'Estanterías eliminadas correctamente' });
+    });
+});
+
+app.get('/spaces/:shelfId', (req, res) => {
+    const { shelfId } = req.params;
+    const query = `
+        SELECT Espacio.id, Espacio.fila, Espacio.columna, Espacio.numeroEspacio,
+        CASE 
+            WHEN Material.id IS NOT NULL THEN true 
+            ELSE false 
+        END AS ocupado
+        FROM Espacio
+        LEFT JOIN Material ON Material.idEspacio = Espacio.id
+        WHERE Espacio.idEstanteria = ?
+    `;
+    db.query(query, [shelfId], (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
 
 const getNextImageNumber = (callback) => {
     const query = 'SELECT COUNT(*) AS count FROM Material WHERE imagen IS NOT NULL';
@@ -1366,7 +1524,7 @@ app.post('/addAisle', (req, res) => {
             console.error('Error al insertar pasillo:', err);
             return res.status(500).json({ error: 'Error al agregar pasillo', details: err });
         }
-        res.status(200).json({ message: 'Pasillo agregado exitosamente', result });
+        res.status(200).json({ message: 'Pasillo agregado exitosamente', id: result.insertId });
     });
 });
 
@@ -1409,6 +1567,7 @@ app.get('/aisles', (req, res) => {
         });
     }
 });
+
 
 //Endpoint para traer un pasillo a traves del ID
 app.get('/aisle/:id', (req, res) => {
@@ -1514,7 +1673,7 @@ app.post('/addDeposit', (req, res) => {
             console.error('Error al insertar depósito:', err);
             return res.status(500).json({ message: 'Error al agregar depósito' });
         }
-        res.status(200).json({ message: 'Depósito agregado exitosamente' });
+        res.status(200).json({ message: 'Depósito agregado exitosamente', id: result.insertId });
     });
 });
 
@@ -1654,7 +1813,7 @@ app.post('/addLocation', (req, res) => {
             console.error('Error al insertar ubicación:', err);
             return res.status(500).json({ message: 'Error al agregar ubicación' });
         }
-        res.status(200).json({ message: 'Ubicación agregada exitosamente' });
+        res.status(200).json({ message: 'Ubicación agregada exitosamente', id: result.insertId});
     });
 });
 
@@ -1784,7 +1943,7 @@ app.post('/addCategory', (req, res) => {
             console.error('Error al insertar categoría:', err);
             return res.status(500).json({ message: 'Error al agregar categoría' });
         }
-        res.status(200).json({ message: 'Categoría agregada exitosamente' });
+        res.status(200).json({ message: 'Categoría agregada exitosamente', id: result.insertId });
     });
 });
 

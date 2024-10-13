@@ -91,13 +91,14 @@ function Aisle({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de pasillos</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">NUEVO PASILLO</Button>
+                        <Button onClick={openFormModal} variant="sipemodal">NUEVO PASILLO</Button>
                         <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
                             {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Pasillos'}
                         </Button>
                         <Button onClick={openEditModal} className="bg-blue-600 font-semibold px-4 py-2 rounded hover:bg-blue-700">
                             Editar Pasillos
                         </Button>
+
                     </div>
                 </div>
                 <AisleList

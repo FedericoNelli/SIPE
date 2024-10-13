@@ -110,20 +110,20 @@ function Navbar() {
                                     <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-sipe-white bg-red-600 rounded-full">{notificationCount}</span>
                                 )}
                             </DropdownMenuTrigger>
-                            {showNotifications && (
-                                <DropdownMenuContent>
-                                    {notificaciones.length === 0 ? (
-                                        <p className="p-4 text-sm text-gray-600">No tienes notificaciones</p>
-                                    ) : (
-                                        notificaciones.map((notif) => (
-                                            <DropdownMenuItem key={notif.id}>
-                                                <p className="text-sm text-gray-800">{notif.descripcion}</p>
-                                                <p className="text-xs text-gray-500">{new Date(notif.fecha).toLocaleString()}</p>
-                                            </DropdownMenuItem>
-                                        ))
-                                    )}
-                                </DropdownMenuContent>
-                            )}
+                                {showNotifications && (
+                                    <DropdownMenuContent>
+                                        {notificaciones.length === 0 ? (
+                                            <p className="p-4 text-sm text-sipe-white bg-sipe-blue-dark/90 rounded-lg backdrop-blur-sm">No tienes notificaciones</p>
+                                        ) : (
+                                            notificaciones.map((notif) => (
+                                                <DropdownMenuItem key={notif.id}>
+                                                        <p className="text-sm text-gray-800">{notif.descripcion}</p>
+                                                        <p className="text-xs text-gray-500">{new Date(notif.fecha).toLocaleString()}</p> 
+                                                </DropdownMenuItem>
+                                            ))
+                                        )}
+                                    </DropdownMenuContent>
+                                )}
                         </DropdownMenu>
                     </li>
                     <div className="flex flex-row justify-center items-center">

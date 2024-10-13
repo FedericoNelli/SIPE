@@ -249,7 +249,7 @@ function Material({ notify }) {
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
                         {userRole === 'Administrador' && (
-                            <Button onClick={viewingMaterialExits ? openFormModal : openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">
+                            <Button onClick={viewingMaterialExits ? openFormModal : openFormModal} variant="sipemodal">
                                 {viewingMaterialExits ? "REGISTRAR NUEVA SALIDA" : "NUEVO MATERIAL"}
                             </Button>
                         )}

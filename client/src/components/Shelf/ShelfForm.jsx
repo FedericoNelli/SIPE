@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function ShelfForm({ onClose, onSubmit, notify }) {
+function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep, ubicacionId, depositoId, categoriaId, pasilloId }) {
     const [aisles, setAisles] = useState([]);
     const [sides, setSides] = useState([]);
     const [locations, setLocations] = useState([]);
@@ -18,8 +18,18 @@ function ShelfForm({ onClose, onSubmit, notify }) {
         cantidad_estante: '',
         cantidad_division: '',
         idPasillo: '',
-        idLado: ''
+        idLado: '',
+        idUbicacion: ubicacionId || '',
+        idDeposito: depositoId || '',
+        idCategoria: categoriaId || '',
+        idPasillo: pasilloId || ''
     });
+
+    const [ubicaciones, setUbicaciones] = useState([]);
+    const [depositos, setDepositos] = useState([]);
+    const [categorias, setCategorias] = useState([]);
+    const [locations, setLocations] = useState([]);
+
 
     useEffect(() => {
         // Cargar ubicaciones
@@ -30,6 +40,44 @@ function ShelfForm({ onClose, onSubmit, notify }) {
             .catch(error => {
                 console.error('Error fetching locations:', error);
                 notify('error', 'Error al cargar ubicaciones');
+            });
+
+        axios.get('http://localhost:8081/deposit-locations')
+            .then(response => {
+                setLocations(response.data);
+                setUbicaciones(response.data);
+            })
+            .catch(error => {
+                console.error('Error fetching locations:', error);
+                notify('error', 'Error al cargar ubicaciones');
+            });
+
+        // Obtener los lados (lado derecho e izquierdo)
+        axios.get('http://localhost:8081/sides')
+            .then(response => {
+                setSides(response.data);
+            })
+            .catch(error => {
+                console.error('Error fetching sides:', error);
+                notify('error', 'Error al cargar lados');
+            });
+
+        axios.get('http://localhost:8081/deposits')
+            .then(response => {
+                setDepositos(response.data);
+            })
+            .catch(error => {
+                console.error('Error al obtener depósitos:', error);
+                notify('error', 'Error al cargar depósitos');
+            });
+
+        axios.get('http://localhost:8081/categories')
+            .then(response => {
+                setCategorias(response.data);
+            })
+            .catch(error => {
+                console.error('Error al obtener depósitos:', error);
+                notify('error', 'Error al cargar depósitos');
             });
     }, [notify]);
 
@@ -98,23 +146,27 @@ function ShelfForm({ onClose, onSubmit, notify }) {
                 throw new Error(response.data.error || "Error al agregar estantería");
             }
 
-            notify('success', "¡Estantería creada con éxito!");
+            if (!isTutorial) {
+                notify('success', "¡Estantería creada con éxito!");
+            }
 
             if (onClose) onClose();
 
-            // Ejecuta onSubmit con el delay
-            setTimeout(() => {
-                if (onSubmit) onSubmit(); // Ejecutar onSubmit después del delay
+            const idUbicacion = ubicacionId;
+            const idDeposito = depositoId;
+            const idCategoria = categoriaId;
+            const idPasillo = pasilloId;
 
-                // Verificar si no estamos en el tutorial y recargar la página
-                const isInTutorial = localStorage.getItem('inTutorial');
-                if (!isInTutorial || isInTutorial === 'false') {
-                    window.location.reload(); // Recargar la página si no estamos en el tutorial
-                }
-            }, 2000);
+            if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria, idPasillo, response.data.result.insertId); // Ejecutar onSubmit después del delay
+
+            // Verificar si no estamos en el tutorial y recargar la página
+            const isInTutorial = localStorage.getItem('inTutorial');
+            if (!isInTutorial || isInTutorial === 'false') {
+                window.location.reload(); // Recargar la página si no estamos en el tutorial
+            }
+
         } catch (error) {
             console.error('Error al agregar la estantería:', error);
-
             // Verificar si el error tiene una respuesta del backend y mostrar su mensaje
             if (error.response && error.response.data && error.response.data.error) {
                 notify('error', error.response.data.error);
@@ -124,23 +176,45 @@ function ShelfForm({ onClose, onSubmit, notify }) {
         }
     };
 
-    const handleCancel = () => {
-        if (onClose) onClose(); // Llama a la función de cierre pasada como prop
+    const handleCancel = async () => {
+        if (!isTutorial) {
+            // Lógica normal de cancelación si no estamos en tutorial
+            if (onClose) onClose();
+        } else {
+            // Lógica cuando estamos en el tutorial y debemos volver al paso anterior
+            if (currentStep === 5 && pasilloId) {
+                try {
+                    // Eliminar la categoría creado cuando se vuelve al paso anterior
+                    await axios.delete(`http://localhost:8081/aisle/delete/${pasilloId}`);
+                    notify('info', "Pasillo eliminado. Volviendo al paso anterior...");
+                } catch (error) {
+                    console.error('Error al eliminar el pasillo', error);
+                    notify('error', "No se pudo eliminar el pasillo. Intenta nuevamente.");
+                }
+            }
+
+            // Llamar a la función para volver al paso anterior en el tutorial
+            handlePreviousStep();
+        }
     };
 
     return (
         <>
             <Card className="bg-sipe-blue-dark text-sipe-white p-4">
                 <CardHeader>
-                    <CardTitle className="text-3xl text-center font-bold mb-2">Agregar nueva estantería</CardTitle>
-                    <hr className="text-sipe-gray" />
+                    <CardTitle className="text-3xl text-center font-bold mb-2">
+                        {isTutorial ? "Por favor, creá la primer estantería" : "Agregar nuevo Estantería"}
+                    </CardTitle>
+                    {isTutorial ? "" : <hr className="text-sipe-gray" />}
                 </CardHeader>
                 <CardContent className="flex flex-col space-y-10">
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
-                            <Label htmlFor="numero" className="text-sm font-medium">Número de estantería</Label>
+                            <Label htmlFor="cantidad_estante" className="text-sm font-medium">
+                                {isTutorial ? "" : "Número de Estantería"}
+                            </Label>
                             <Input
-                                className="border-b"
+                                className="border-b text-center"
                                 id="numero"
                                 name="numero"
                                 type="number"
@@ -153,9 +227,11 @@ function ShelfForm({ onClose, onSubmit, notify }) {
                     </div>
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
-                            <Label htmlFor="cantidad_estante" className="text-sm font-medium">Cantidad de estantes</Label>
+                            <Label htmlFor="cantidad_estante" className="text-sm font-medium">
+                                {isTutorial ? "" : "Cantidad de estantes"}
+                            </Label>
                             <Input
-                                className="border-b"
+                                className="border-b text-center"
                                 id="cantidad_estante"
                                 name="cantidad_estante"
                                 type="number"
@@ -168,9 +244,12 @@ function ShelfForm({ onClose, onSubmit, notify }) {
                     </div>
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
-                            <Label htmlFor="cantidad_division" className="text-sm font-medium">Cantidad de divisiones</Label>
+                            <Label htmlFor="cantidad_division" className="text-sm font-medium">
+                                {isTutorial ? "" : "Cantidad de divisiones"}
+                            </Label>
+
                             <Input
-                                className="border-b"
+                                className="border-b text-center"
                                 id="cantidad_division"
                                 name="cantidad_division"
                                 type="number"
@@ -262,11 +341,32 @@ function ShelfForm({ onClose, onSubmit, notify }) {
                                 </Select>
                             </div>
                         </div>
+
                     </div>
+                    {isTutorial ? <div className='flex flex-row justify-center gap-2'>
+                        <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
+                            {ubicaciones.find(u => u.id === formData.idUbicacion)?.nombre || "Sin ubicación seleccionada"}
+                        </span>
+                        <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
+                            {depositos.find(u => u.id === formData.idDeposito)?.nombre || "Sin depósito seleccionado"}
+                        </span>
+                        <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
+                            {categorias.find(u => u.id === formData.idCategoria)?.descripcion || "Sin categoría seleccionado"}
+                        </span>
+                        <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
+                            {"Pasillo " + (aisles.find(u => u.id === formData.idPasillo)?.numero || "Sin pasillo seleccionado")}
+                        </span>
+                    </div>
+                        : ("")
+                    }
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
-                    <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>CANCELAR</Button>
-                    <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>AGREGAR</Button>
+                    <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
+                        {isTutorial ? "VOLVER" : "CANCELAR"}
+                    </Button>
+                    <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>
+                        AGREGAR
+                    </Button>
                 </CardFooter>
             </Card>
         </>

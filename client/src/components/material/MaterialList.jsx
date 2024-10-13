@@ -46,7 +46,7 @@ function MaterialList({ materials }) {
     return (
         <>
             {materials.length === 0 ? (
-                <p className="text-center text-white">No hay materiales cargados.</p>
+                <p className="text-center text-white">No hay materiales cargados</p>
             ) : (
                 <Table className="w-full text-sipe-white">
                     {/* Encabezado de la tabla */}

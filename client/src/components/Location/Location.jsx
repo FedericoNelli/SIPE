@@ -92,7 +92,7 @@ function Location({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de ubicaciones</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">NUEVA UBICACIÓN</Button>
+                        <Button onClick={openFormModal} variant="sipemodal">NUEVA UBICACIÓN</Button>
                         <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
                             {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Ubicaciones'}
                         </Button>
