@@ -1,24 +1,24 @@
 import React, { useEffect, useCallback, useState } from "react";
 import Map from "@/components/Common/Map/Map";
-import ModalEditMaterial from "@/components/Material/ModalEditMaterial";
+import MaterialEditModal from "@/components/Material/MaterialEditModal";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import { Button } from "@/components/Common/Button/Button";
 import { X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
-function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
+function MaterialDetailModal({ isOpen, onClose, selectedMaterial }) {
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isEditModalClosing, setIsEditModalClosing] = useState(false);
 
-    const rol = localStorage.getItem('rol'); // Obtenemos el rol del usuario
+    const rol = localStorage.getItem('rol');
 
-    // Manejo del evento 'Escape' pero solo si el ModalEditMaterial NO está abierto
+    // Manejo del evento 'Escape' pero solo si el MaterialEditModal NO está abierto
     useEffect(() => {
         const handleEscape = (event) => {
             if (event.key === 'Escape' && !isEditModalOpen) {
-                onClose(); // Cierra ModalDetailMaterial solo si ModalEditMaterial no está abierto
+                onClose();
             }
         };
 
@@ -128,19 +128,27 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
                             </div>
 
                             <h1 className="text-center text-4xl font-bold text-sipe-white">Mapa</h1>
-                            <div className="bg-sipe-blue-dark rounded-xl flex flex-col justify-center items-center w-auto p-4">
-                                <p className="text-sipe-white font-light py-2">Pasillo {selectedMaterial.pasilloNumero} | Estantería {selectedMaterial.estanteriaNumero}</p>
-                                <div className="flex justify-center items-center">
-                                    <Map
-                                        pasillo={selectedMaterial.pasilloNumero}
-                                        estanteria={selectedMaterial.estanteriaNumero}
-                                        estantes={selectedMaterial.cantidadEstante}
-                                        divisiones={selectedMaterial.cantidadDivision}
-                                        objetoEstante={selectedMaterial.estanteEstanteria}
-                                        objetoDivision={selectedMaterial.divisionEstanteria}
-                                    />
+
+                            {selectedMaterial.idEspacio ? (
+                                <div className="bg-sipe-blue-dark rounded-xl flex flex-col justify-center items-center w-auto p-4">
+                                    <p className="text-sipe-white font-light py-2">Pasillo {selectedMaterial.pasilloNumero} | Estantería {selectedMaterial.estanteriaNumero}</p>
+                                    <div className="flex justify-center items-center">
+                                        <Map
+                                            pasillo={selectedMaterial.pasilloNumero}
+                                            estanteria={selectedMaterial.estanteriaNumero}
+                                            estantes={selectedMaterial.cantidadEstante}
+                                            divisiones={selectedMaterial.cantidadDivision}
+                                            objetoEstante={selectedMaterial.estanteEstanteria}
+                                            objetoDivision={selectedMaterial.divisionEstanteria}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="bg-sipe-blue-dark rounded-xl flex flex-col justify-center items-center w-auto p-4">
+                                    <p className="text-sipe-white font-light py-2">No existe ubicación del material en ninguna estantería.</p>
+                                </div>
+                            )}
+
                             <hr />
                             <div className="flex flex-col justify-center items-center gap-4 max-w-sm mx-auto">
                                 <p className="text-sipe-white text-center">El mapa ayuda a tener una mejor noción de donde se encuentra el material. El círculo denota su posición dentro de la estantería.</p>
@@ -191,7 +199,7 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
 
                     <AnimatePresence>
                         {isEditModalOpen && (
-                            <ModalEditMaterial
+                            <MaterialEditModal
                                 isOpen={!isEditModalClosing}
                                 onClose={handleEditModalClosed}
                                 notify={toast}
@@ -205,4 +213,4 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
     );
 }
 
-export default ModalDetailMaterial;
+export default MaterialDetailModal;

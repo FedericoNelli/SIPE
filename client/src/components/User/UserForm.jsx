@@ -18,6 +18,8 @@ const UserForm = ({ onClose, notify }) => {
         email: '',
         rol: 'Colaborador'
     });
+    const [selectedFile, setSelectedFile] = useState(null);
+
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -34,6 +36,10 @@ const UserForm = ({ onClose, notify }) => {
         });
     };
 
+    const handleFileChange = (e) => {
+        setSelectedFile(e.target.files[0]);
+    };
+
     const handleAddUser = async (e) => {
         e.preventDefault();
         const emailRegex = /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
@@ -41,43 +47,63 @@ const UserForm = ({ onClose, notify }) => {
             notify('error', 'El correo electrónico debe ser válido');
             return;
         }
+    
         const token = localStorage.getItem('token');
-        const data = { ...formData };
-
+        const data = new FormData();
+    
+        // Añadir los campos del formulario a FormData
+        Object.keys(formData).forEach(key => {
+            data.append(key, formData[key]);
+        });
+    
+        // Añadir la imagen si se seleccionó una
+        if (selectedFile) {
+            data.append('imagen', selectedFile);
+        }
+    
         try {
-            await axios.post('http://localhost:8081/addUser',
+            // Realiza la solicitud y guarda la respuesta en 'response'
+            const response = await axios.post('http://localhost:8081/addUser',
                 data,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'multipart/form-data'
                     }
                 });
-            setFormData({
-                nombre: '',
-                apellido: '',
-                legajo: '',
-                nombre_usuario: '',
-                contrasenia: '',
-                email: '',
-                rol: ''
-            });
-            notify('success', "¡Usuario creado correctamente!");
             
-            if (onClose) onClose();
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-
+            if (response.status === 200) {
+                setFormData({
+                    nombre: '',
+                    apellido: '',
+                    legajo: '',
+                    nombre_usuario: '',
+                    contrasenia: '',
+                    email: '',
+                    rol: 'Colaborador'
+                });
+                setSelectedFile(null); // Limpiar la selección de imagen
+                notify('success', "¡Usuario creado correctamente!");
+    
+                if (onClose) onClose();
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
+    
         } catch (error) {
+            console.error("Error al crear usuario:", error);
+            if (error.response) {
+                console.error("Detalles del error:", error.response.data);
+            }
             notify('error', "Error al crear usuario");
         }
     };
-
+    
     const handleCancel = () => {
         if (onClose) onClose();
     };
-
+    
     return (
         <>
             <ToastContainer />
@@ -186,6 +212,20 @@ const UserForm = ({ onClose, notify }) => {
                                 value={formData.email}
                                 onChange={handleInputChange}
                                 required
+                            />
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="imagen" className="text-sm font-medium">
+                                Imagen
+                            </Label>
+                            <Input
+                                className="border-b"
+                                id="imagen"
+                                name="imagen"
+                                type="file"
+                                onChange={handleFileChange}
                             />
                         </div>
                     </div>

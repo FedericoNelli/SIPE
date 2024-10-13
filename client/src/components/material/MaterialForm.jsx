@@ -10,12 +10,13 @@ import { X } from "lucide-react";
 function MaterialForm({ onClose, notify }) {
     const [depositLocations, setDepositLocations] = useState([]);
     const [depositNames, setDepositNames] = useState([]);
-    const [locationId, setLocationId] = useState(null);
-    const [categories, setCategories] = useState([]);
-    const [statuses, setStatuses] = useState([]);
+    const [aisles, setAisles] = useState([]);
     const [shelves, setShelves] = useState([]);
     const [spaces, setSpaces] = useState([]);
-    const [selectedShelf, setSelectedShelf] = useState(null);
+    const [locationId, setLocationId] = useState(null);
+    const [selectedAisle, setSelectedAisle] = useState(null);
+    const [categories, setCategories] = useState([]);
+    const [statuses, setStatuses] = useState([]);
     const [formData, setFormData] = useState({
         nombre: '',
         cantidad: '',
@@ -59,11 +60,6 @@ function MaterialForm({ onClose, notify }) {
             .then(response => response.json())
             .then(data => setStatuses(data))
             .catch(error => console.error('Error fetching statuses:', error));
-
-        fetch('http://localhost:8081/shelves')
-            .then(response => response.json())
-            .then(data => setShelves(data))
-            .catch(error => console.error('Error fetching shelves:', error));
     }, []);
 
     useEffect(() => {
@@ -81,17 +77,40 @@ function MaterialForm({ onClose, notify }) {
     }, [locationId]);
 
     useEffect(() => {
-        if (selectedShelf) {
-            fetch(`http://localhost:8081/spaces/${selectedShelf}`)
-                .then(response => response.json())
-                .then(data => setSpaces(data))
-                .catch(error => console.error('Error fetching spaces:', error));
+        if (formData.deposito) {
+            // Obtener pasillos según el depósito seleccionado
+            axios.get(`http://localhost:8081/aisles/${formData.deposito}`)
+                .then(response => setAisles(response.data))
+                .catch(error => console.error('Error fetching aisles:', error));
+        } else {
+            setAisles([]);
         }
-    }, [selectedShelf]);
+    }, [formData.deposito]);
+
+    useEffect(() => {
+        if (selectedAisle) {
+            // Obtener estanterías según el pasillo seleccionado
+            axios.get(`http://localhost:8081/shelves/${selectedAisle}`)
+                .then(response => setShelves(response.data))
+                .catch(error => console.error('Error fetching shelves:', error));
+        } else {
+            setShelves([]);
+        }
+    }, [selectedAisle]);
+
+    useEffect(() => {
+        if (formData.shelf) {
+            // Obtener espacios según la estantería seleccionada
+            axios.get(`http://localhost:8081/spaces/${formData.shelf}`)
+                .then(response => setSpaces(response.data))
+                .catch(error => console.error('Error fetching spaces:', error));
+        } else {
+            setSpaces([]);
+        }
+    }, [formData.shelf]);
 
     const handleInputChange = (e) => {
         const { id, value } = e.target;
-
         if (id === 'cantidad' && value < 0) {
             setFormData((prevData) => ({
                 ...prevData,
@@ -113,6 +132,14 @@ function MaterialForm({ onClose, notify }) {
 
         if (id === 'depositLocation') {
             setLocationId(value);
+        } else if (id === 'deposito') {
+            setAisles([]);
+            setShelves([]);
+            setSpaces([]);
+        } else if (id === 'aisle') {
+            setSelectedAisle(value);
+            setShelves([]);
+            setSpaces([]);
         }
     };
 
@@ -188,7 +215,7 @@ function MaterialForm({ onClose, notify }) {
             setTimeout(() => {
                 window.location.reload();
             }, 2000);
-        
+
         } catch (error) {
             console.error('Error al agregar el material:', error);
             notify('error', error.message || "Error al agregar el material");
@@ -288,11 +315,22 @@ function MaterialForm({ onClose, notify }) {
                     </div>
                     <div className="grid gap-4">
                         <Label className="text-sm font-medium">Ubicación</Label>
-                        <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-3 sm:grid-cols-3 gap-4">
+                            <Select id="aisle" onValueChange={(value) => {
+                                handleSelectChange('aisle', value);
+                            }} disabled={!formData.deposito}>
+                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                    <SelectValue placeholder="Pasillo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {aisles.map(aisle => (
+                                        <SelectItem key={aisle.id} value={aisle.id}>Pasillo {aisle.numero}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                             <Select id="shelf" onValueChange={(value) => {
                                 handleSelectChange('shelf', value);
-                                setSelectedShelf(value);
-                            }}>
+                            }} disabled={!formData.aisle}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Estantería" />
                                 </SelectTrigger>
@@ -302,7 +340,7 @@ function MaterialForm({ onClose, notify }) {
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Select id="espacio" onValueChange={(value) => handleSelectChange('espacio', value)}>
+                            <Select id="espacio" onValueChange={(value) => handleSelectChange('espacio', value)} disabled={!formData.shelf}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Espacio" />
                                 </SelectTrigger>
