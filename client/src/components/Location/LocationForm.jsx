@@ -5,12 +5,14 @@ import { Input } from "@/components/Common/Input/Input";
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function LocationForm({ onClose, onSubmit, notify }) {
-    const [formData, setFormData] = useState({ nombre: '', idUbicacion: '' });
+function LocationForm({ onClose, onSubmit, notify, isTutorial = false }) {
+    const [formData, setFormData] = useState({ 
+        nombre: '', 
+        idUbicacion: '' 
+    });
     const [ubicaciones, setUbicaciones] = useState([]);
 
     useEffect(() => {
-        // Cargar ubicaciones cuando el componente se monte
         axios.get('http://localhost:8081/deposit-locations')
             .then(response => {
                 setUbicaciones(response.data);
@@ -29,31 +31,36 @@ function LocationForm({ onClose, onSubmit, notify }) {
         }));
     };
 
-
     const handleSubmit = async () => {
+        
+        if (isTutorial && formData.nombre.trim() === '') {
+            notify('error', 'Debes ingresar un nombre'); 
+            return; 
+        }
+
         try {
             const response = await axios.post('http://localhost:8081/addLocation', formData);
-    
+
             if (response.status !== 200) {
                 throw new Error(response.data.error || "Error al agregar ubicación");
             }
-    
-            notify('success', "¡Ubicación agregada correctamente!");
-    
+
+            if (!isTutorial) {
+                notify('success', "¡Ubicación agregada correctamente!");
+            }
+
             if (onClose) onClose();
+
+            const UbicacionId = response.data.id;
+
+            if (onSubmit) onSubmit(UbicacionId);  
             
-            // Ejecuta onSubmit con el delay
-            setTimeout(() => {
-                if (onSubmit) onSubmit(); // Ejecutar onSubmit después del delay
-                
-                // Verificar si no estamos en el tutorial y recargar la página
-                const isInTutorial = localStorage.getItem('inTutorial');
-                if (!isInTutorial || isInTutorial === 'false') {
-                    window.location.reload(); // Recargar la página si no estamos en el tutorial
-                }
-            }, 2000);
+            const isInTutorial = localStorage.getItem('inTutorial');
+            if (!isInTutorial || isInTutorial === 'false') {
+                window.location.reload(); 
+            }
         } catch (error) {
-            console.error('Error al agregar el Ubicación:', error);
+            console.error('Error al agregar la Ubicación:', error);
             notify('error', error.message || "Error al agregar Ubicación");
         }
     };
@@ -63,20 +70,22 @@ function LocationForm({ onClose, onSubmit, notify }) {
     };
 
     return (
-        <Card className="bg-sipe-blue-dark text-sipe-white p-4">
+        <Card className="bg-sipe-blue-dark text-sipe-white p-4 shadow-2xl">
             <CardHeader>
-                <CardTitle className="text-3xl text-center font-bold mb-2">Agregar nueva Ubicación</CardTitle>
-                <hr className="text-sipe-gray" />
+                <CardTitle className="text-3xl text-center font-bold mb-2">
+                    {isTutorial ? "Por favor, indicá la primer ubicación" : "Agregar nueva ubicación"}
+                </CardTitle>
+                {isTutorial ? "" : <hr className="text-sipe-gray" />}
             </CardHeader>
             <CardContent className="flex flex-col space-y-10">
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-2">
-                        <Label htmlFor="nombre" className="text-sm font-medium">Nombre de la Ubicación</Label>
+                        {isTutorial ? "" : <Label htmlFor="nombre" className="text-sm font-medium">Nombre de la ubicación</Label>}
                         <Input
-                            className="border-b"
+                            className="border-b text-center"
                             id="nombre"
                             name="nombre"
-                            placeholder="Ingresa el nombre del Ubicación"
+                            placeholder="Ingresa el nombre del ubicación"
                             value={formData.nombre}
                             onChange={handleInputChange}
                         />
@@ -84,9 +93,12 @@ function LocationForm({ onClose, onSubmit, notify }) {
                 </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
-                <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
-                    CANCELAR
-                </Button>
+                {isTutorial ?
+                    "" :
+                    <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
+                        CANCELAR
+                    </Button>
+                }
                 <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>
                     AGREGAR
                 </Button>

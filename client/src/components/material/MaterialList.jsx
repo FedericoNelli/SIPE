@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
 import { Badge } from "@/components/Common/Badge/Badge";
 import axios from "axios";
-import ModalDetailMaterial from "@/components/Material/ModalDetailMaterial";
+import MaterialDetailModal from "@/components/Material/MaterialDetailModal";
 
 function MaterialList({ materials }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,7 +46,7 @@ function MaterialList({ materials }) {
     return (
         <>
             {materials.length === 0 ? (
-                <p className="text-center text-white">No hay materiales cargados.</p>
+                <p className="text-center text-white">No hay materiales cargados</p>
             ) : (
                 <Table className="w-full text-sipe-white">
                     {/* Encabezado de la tabla */}
@@ -89,7 +89,7 @@ function MaterialList({ materials }) {
                 </Table>
             )}
 
-            <ModalDetailMaterial 
+            <MaterialDetailModal 
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 selectedMaterial={selectedMaterial}

@@ -94,27 +94,27 @@ function MainDashboard() {
     const rol = localStorage.getItem('rol');
     const buttonSection = [
         { 
-            label: 'Ir a Estanterías',
+            label: 'IR A ESTANTERÍAS',
             disabled: rol !== 'Administrador',
             path: '/shelf' 
         },
         { 
-            label: 'Ir a Movimientos',
+            label: 'IR A MOVIMIENTOS',
             disabled: rol !== 'Administrador',
             path: '/movement' 
         },
         { 
-            label: 'Ir a Materiales',
+            label: 'IR A MATERIALES',
             disabled: rol !== 'Administrador' && rol !== 'Colaborador',
             path: '/mtls' 
         },
         { 
-            label: 'Ir a Informes',
+            label: 'IR A INFORMES',
             disabled: rol !== 'Administrador',
             path: '/inf' 
         },
         { 
-            label: 'Ir a Categorias',
+            label: 'IR A CATEGORÍAS',
             disabled: rol !== 'Administrador',
             path: '/category'  
         }
@@ -132,7 +132,7 @@ function MainDashboard() {
                     Icon={Rows3}
                     colSpan={1}
                     title="Total de estanterías"
-                    totalElement={`${totalEstanterias} estanterías`} 
+                    totalElement={`${totalEstanterias} ${totalEstanterias === 1 ? 'estantería' : 'estanterías'}`} 
                     buttonText={buttonSection[0].label}
                     buttonDisabled={buttonSection[0].disabled}
                     onButtonClick={() => handleButtonClick(buttonSection[0].path)}
@@ -140,7 +140,7 @@ function MainDashboard() {
                 <CustomCard
                     Icon={CornerDownRight}
                     colSpan={1}
-                    title="Último cambio de estado"
+                    title={lastMaterial ? "Último cambio de estado" : "No existen cambios de estado"}
                     totalElement={lastMaterial}
                     buttonText={buttonSection[1].label}
                     buttonDisabled={buttonSection[1].disabled}

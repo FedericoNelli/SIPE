@@ -3,6 +3,7 @@ import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import UserForm from '@/components/User/UserForm';
 import UserList from '@/components/User/UserList';
+import UserDetailModal from '@/components/User/UserDetailModal'; // Importa el nuevo componente de detalle de usuario
 import axios from 'axios';
 
 function User({ notify }) {
@@ -10,6 +11,8 @@ function User({ notify }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false); // Nuevo estado para controlar el modal de detalles
+    const [selectedUser, setSelectedUser] = useState(null); // Estado para almacenar el usuario seleccionado
 
     useEffect(() => {
         axios.get('http://localhost:8081/users')
@@ -35,6 +38,16 @@ function User({ notify }) {
         setIsFormModalOpen(false);
     };
 
+    const openDetailModal = (user) => {
+        setSelectedUser(user);
+        setIsDetailModalOpen(true);
+    };
+
+    const closeDetailModal = () => {
+        setIsDetailModalOpen(false);
+        setSelectedUser(null);
+    };
+
     return (
         <div className="relative">
             <div className="absolute inset-0 bg-sipe-white opacity-5 z-10 rounded-2xl" />
@@ -45,10 +58,10 @@ function User({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de usuarios</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">NUEVO USUARIO</Button>
+                        <Button onClick={openFormModal} variant="sipemodal">NUEVO USUARIO</Button>
                     </div>
                 </div>
-                <UserList users={currentUsers} />
+                <UserList users={currentUsers} onUserClick={openDetailModal} /> {/* Pasa la función openDetailModal */}
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
@@ -66,6 +79,13 @@ function User({ notify }) {
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <UserForm onClose={closeFormModal} notify={notify} />
                     </div>
+                )}
+                {isDetailModalOpen && selectedUser && (
+                    <UserDetailModal
+                        isOpen={isDetailModalOpen}
+                        onClose={closeDetailModal}
+                        selectedUser={selectedUser}
+                    />
                 )}
             </div>
         </div>
