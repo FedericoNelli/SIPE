@@ -73,7 +73,7 @@ function Shelf({ notify }) {
             })
             .catch(error => {
                 console.error('Error eliminando estanterías:', error);
-                notify('error', 'Error al eliminar estanterías');
+                notify('error', 'Error: Debe vaciar la estantería antes de eliminarla');
             });
     };
 

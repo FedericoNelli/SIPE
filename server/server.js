@@ -2145,19 +2145,39 @@ app.delete('/delete-shelves', (req, res) => {
         return res.status(400).json({ message: 'No se proporcionaron estanterías para eliminar' });
     }
 
-    // Construimos la consulta para eliminar múltiples IDs
-    const placeholders = shelfIds.map(() => '?').join(',');
-    const query = `DELETE FROM estanteria WHERE id IN (${placeholders})`;
+    // Verificamos si hay materiales en los espacios de las estanterías seleccionadas
+    const checkMaterialsQuery = `
+        SELECT Material.id 
+        FROM Material 
+        INNER JOIN Espacio ON Material.idEspacio = Espacio.id 
+        WHERE Espacio.idEstanteria IN (${shelfIds.map(() => '?').join(',')})
+    `;
 
-    db.query(query, shelfIds, (err, result) => {
+    db.query(checkMaterialsQuery, shelfIds, (err, materials) => {
         if (err) {
-            console.error('Error eliminando estanterías:', err);
-            return res.status(500).json({ message: 'Error eliminando estanterías' });
+            console.error('Error verificando materiales:', err);
+            return res.status(500).json({ message: 'Error verificando materiales en las estanterías' });
         }
 
-        res.status(200).json({ message: 'Estanterías eliminadas correctamente' });
+        if (materials.length > 0) {
+            // Si hay materiales en los espacios de alguna estantería, no permitimos la eliminación
+            return res.status(400).json({ message: 'No se pueden eliminar estanterías con materiales asignados' });
+        }
+
+        // Si no hay materiales, construimos la consulta para eliminar las estanterías
+        const deleteQuery = `DELETE FROM estanteria WHERE id IN (${shelfIds.map(() => '?').join(',')})`;
+
+        db.query(deleteQuery, shelfIds, (err, result) => {
+            if (err) {
+                console.error('Error eliminando estanterías:', err);
+                return res.status(500).json({ message: 'Error: Debe vaciar la estantería antes de eliminarla' });
+            }
+
+            res.status(200).json({ message: 'Estanterías eliminadas correctamente' });
+        });
     });
 });
+
 
 
 app.get('/spaces/:shelfId', (req, res) => {
