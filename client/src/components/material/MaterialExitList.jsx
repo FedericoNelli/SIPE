@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
 import { Button } from "@/components/Common/Button/Button";
 
-function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handleDeleteExits, materialExits }) {
+function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handleDeleteExits, materialExits = [] }) {
     const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false);
 
     const toggleExitSelection = (exitId) => {
@@ -36,32 +36,32 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
 
     return (
         <>
-            {materialExits.length === 0 ? (
-                <p className="text-center text-white">No hay salidas registradas.</p>
+            {Array.isArray(materialExits) && materialExits.length === 0 ? (
+                <p className="text-center text-white">No hay salidas registradas</p>
             ) : (
-                <Table className="w-full text-sipe-white">
-                    <TableHeader>
-                        <TableRow>
-                            {isDeleteMode && (
-                                <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedExits.length === materialExits.length && materialExits.length > 0}
-                                        onChange={handleSelectAll}
-                                    />
-                                </TableHead>
-                            )}
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">ID</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Fecha</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Material</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Ubicación</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {materialExits.map(salida => {
-                            return (
+                Array.isArray(materialExits) && (
+                    <Table className="w-full text-sipe-white">
+                        <TableHeader>
+                            <TableRow>
+                                {isDeleteMode && (
+                                    <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedExits.length === materialExits.length && materialExits.length > 0}
+                                            onChange={handleSelectAll}
+                                        />
+                                    </TableHead>
+                                )}
+                                <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">ID</TableHead>
+                                <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Fecha</TableHead>
+                                <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Material</TableHead>
+                                <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad</TableHead>
+                                <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito</TableHead>
+                                <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Ubicación</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {materialExits.map(salida => (
                                 <TableRow key={salida.salidaId}>
                                     {isDeleteMode && (
                                         <TableCell className="text-center">
@@ -111,10 +111,10 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            );
-                        })}
-                    </TableBody>
-                </Table>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )
             )}
             {isDeleteMode && (
                 <div className="flex flex-col items-center mt-4">

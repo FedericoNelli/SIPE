@@ -113,7 +113,7 @@ const Tutorial = ({ notify }) => {
     }, [notify]);
 
     useEffect(() => {
-        axios.get('http://localhost:8081/aisle')
+        axios.get('http://localhost:8081/aisles')
             .then(response => {
                 setAisles(response.data);
             })
@@ -382,7 +382,7 @@ const Tutorial = ({ notify }) => {
                                             </CardHeader>
                                             <CardContent className="text-center">
                                                 <span>
-                                                    {depositos.find(d => d.id === depositoId)?.nombre}
+                                                    {depositos.find(d => d.id === depositoId)?.nombreDeposito}
                                                 </span>
                                             </CardContent>
                                         </Card>

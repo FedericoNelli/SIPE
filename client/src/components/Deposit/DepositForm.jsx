@@ -63,7 +63,6 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
             if (onClose) onClose();
             
             const idUbicacion = ubicacionId;
-
             
             if (onSubmit) onSubmit(idUbicacion, response.data.id);
     

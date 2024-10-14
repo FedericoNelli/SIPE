@@ -61,7 +61,7 @@ function User({ notify }) {
                         <Button onClick={openFormModal} variant="sipemodal">NUEVO USUARIO</Button>
                     </div>
                 </div>
-                <UserList users={currentUsers} onUserClick={openDetailModal} /> {/* Pasa la función openDetailModal */}
+                <UserList users={currentUsers} onUserClick={openDetailModal} />
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
