@@ -64,7 +64,7 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                     setSelectedLocation(data.idUbicacion);
                     setSelectedDeposit(data.idDeposito);
                     setSelectedSide1(data.idLado1);
-                    setSelectedSide2(data.idLado2 !== undefined && data.idLado2 !== null ? data.idLado2 : "null"); // Asignar "null" si no hay lado 2
+                    setSelectedSide2(data.idLado2 !== undefined && data.idLado2 !== null ? data.idLado2 : null); // Asignar "null" si no hay lado 2
                 } catch (error) {
                     notify('error', 'Error al cargar los datos del pasillo');
                 }

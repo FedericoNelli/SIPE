@@ -8,9 +8,8 @@ const multer = require('multer');
 const path = require('path');
 const app = express();
 const fs = require('fs');
-const SECRET_KEY = 'peron74';
+const SECRET_KEY = 'SIPE';
 const { format } = require('date-fns');
-
 
 app.use(cors());
 app.use(express.json());
@@ -798,6 +797,30 @@ app.get('/materials/deposit/:idDeposito', (req, res) => {
     });
 });
 
+app.get('/aisles-shelves', (req, res) => {
+    const query = `
+        SELECT 
+            p.id, p.numero, d.Nombre AS nombreDeposito, u.nombre AS ubicacionDeposito,
+            COALESCE(l1.descripcion, 'Sin lado') AS lado1Descripcion, 
+            COALESCE(l2.descripcion, 'Sin lado') AS lado2Descripcion
+        FROM 
+            Pasillo p
+        LEFT JOIN 
+            Deposito d ON p.idDeposito = d.id
+        LEFT JOIN 
+            Lado l1 ON p.idLado1 = l1.id
+        LEFT JOIN 
+            Lado l2 ON p.idLado2 = l2.id
+        LEFT JOIN 
+            Ubicacion u ON d.idUbicacion = u.id
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
 app.delete('/locations/delete/:id', (req, res) => {
     const ubicacionId = req.params.id;
 
@@ -918,27 +941,6 @@ app.delete('/aisle/delete/:id', (req, res) => {
     });
 });
 
-app.delete('/delete-shelves', (req, res) => {
-    const { shelfIds } = req.body; // Recibe los IDs de las estanterías a eliminar
-
-    if (!shelfIds || shelfIds.length === 0) {
-        return res.status(400).json({ message: 'No se proporcionaron estanterías para eliminar' });
-    }
-
-    // Construimos la consulta para eliminar múltiples IDs
-    const placeholders = shelfIds.map(() => '?').join(',');
-    const query = `DELETE FROM estanteria WHERE id IN (${placeholders})`;
-
-    db.query(query, shelfIds, (err, result) => {
-        if (err) {
-            console.error('Error eliminando estanterías:', err);
-            return res.status(500).json({ message: 'Error eliminando estanterías' });
-        }
-
-        res.status(200).json({ message: 'Estanterías eliminadas correctamente' });
-    });
-});
-
 app.get('/spaces/:shelfId', (req, res) => {
     const { shelfId } = req.params;
     const query = `
@@ -1054,8 +1056,6 @@ function notifyNewMaterialCreation(nombre, idDeposito, callback) {
         );
     });
 }
-
-
 
 function assignStatus(cantidad, bajoStock) {
 
@@ -1627,13 +1627,16 @@ app.put('/edit-aisle/:id', (req, res) => {
         return res.status(400).json({ error: 'Todos los campos requeridos deben estar completos' });
     }
 
+    // Si idLado2 no está definido o es una cadena vacía, se asigna null
+    const idLado2Value = idLado2 !== undefined && idLado2 !== '' ? idLado2 : null;
+
     const query = `
         UPDATE Pasillo 
         SET numero = ?, idDeposito = ?, idLado1 = ?, idLado2 = ? 
         WHERE id = ?
     `;
 
-    const values = [numero, idDeposito, idLado1, idLado2 || null, aisleId];
+    const values = [numero, idDeposito, idLado1, idLado2Value, aisleId];
 
     db.query(query, values, (err, result) => {
         if (err) {
@@ -1646,6 +1649,7 @@ app.put('/edit-aisle/:id', (req, res) => {
         res.status(200).json({ message: 'Pasillo actualizado correctamente' });
     });
 });
+
 
 
 // Endpoint para obtener los lados
@@ -1688,7 +1692,7 @@ app.get('/deposits', (req, res) => {
         COUNT(m.id) AS totalMateriales
     FROM 
         Deposito d
-    JOIN 
+    LEFT JOIN 
         Ubicacion u ON d.idUbicacion = u.id
     LEFT JOIN 
         Pasillo p ON d.id = p.idDeposito
@@ -1985,8 +1989,6 @@ app.put('/categories/:id', (req, res) => {
     });
 });
 
-
-
 app.get('/total-categories', (req, res) => {
     const query = 'SELECT COUNT(id) AS total FROM Categoria';
     db.query(query, (err, results) => {
@@ -1994,7 +1996,6 @@ app.get('/total-categories', (req, res) => {
         res.json({ total: results[0].total });
     });
 });
-
 
 // Obtener Estados
 app.get('/statuses', (req, res) => {
@@ -2111,6 +2112,27 @@ app.put('/edit-shelf/:id', (req, res) => {
             return res.status(404).json({ error: 'Estantería no encontrada' });
         }
         res.status(200).json({ message: 'Estantería actualizada correctamente' });
+    });
+});
+
+// Endpoint para vaciar estanterías
+app.post('/empty-shelves', (req, res) => {
+    const { shelfIds } = req.body;
+
+    if (!shelfIds || shelfIds.length === 0) {
+        return res.status(400).json({ message: 'No se proporcionaron estanterías para vaciar.' });
+    }
+
+    // Consulta SQL para eliminar los espacios de las estanterías seleccionadas
+    const query = 'DELETE FROM Espacio WHERE idEstanteria IN (?)';
+
+    db.query(query, [shelfIds], (err, results) => {
+        if (err) {
+            console.error('Error al vaciar estanterías:', err);
+            return res.status(500).json({ message: 'Error al vaciar estanterías.' });
+        }
+
+        return res.status(200).json({ message: 'Estanterías vaciadas correctamente.' });
     });
 });
 

@@ -9,6 +9,7 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
 
     const [formData, setFormData] = useState({
         nombre: '',
+        descripcion: '',
         idUbicacion: ubicacionId || '', // Usamos el idUbicacion pasado desde DepositForm
         idDeposito: depositoId || '', // Usamos el idDeposito pasado desde DepositForm
         idCategoria: ''
@@ -132,7 +133,7 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
                             {ubicaciones.find(u => u.id === formData.idUbicacion)?.nombre || "Sin ubicación seleccionada"}
                         </span>
                         <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
-                            {depositos.find(u => u.id === formData.idDeposito)?.nombre || "Sin depósito seleccionado"}
+                            {depositos.find(u => u.id === formData.idDeposito)?.nombreDeposito || "Sin depósito seleccionado"}
                         </span>
                     </div>
                     : ("")
