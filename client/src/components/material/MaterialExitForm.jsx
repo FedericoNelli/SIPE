@@ -213,7 +213,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la
                 </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-4">
-                <Button className="" variant="sipebuttonalt" size="sipebutton" onClick={onClose}>Cancelar</Button>
+                <Button className="" variant="sipebuttonalt" size="sipebutton" onClick={onClose}>CANCELAR</Button>
                 <Button className="" variant="sipebutton" size="sipebutton" onClick={handleSubmit}>Registrar Salida</Button>
             </CardFooter>
         </Card>

@@ -79,7 +79,7 @@ function ReportList({ isDeleteMode, notify, fetchReportDetails }) {
     return (
         <>
             {reports.length === 0 ? (
-                <p className="text-center text-white">No hay informes generados.</p>
+                <p className="text-center text-white">No hay informes generados</p>
             ) : (
                 <Table className="w-full text-sipe-white">
                     <TableHeader>
@@ -135,15 +135,15 @@ function ReportList({ isDeleteMode, notify, fetchReportDetails }) {
             {isDeleteMode && (
                 <div className="flex justify-center mt-4 gap-4">
                     {!isConfirmingDeletion ? (
-                        <Button onClick={handleDeleteReports} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
+                        <Button onClick={handleDeleteReports} variant="sipemodal">
                             Eliminar Seleccionados
                         </Button>
                     ) : (
                         <div className="flex flex-col items-center gap-4">
                             <p className="text-white font-semibold">Si confirma la eliminación, no se podrán recuperar los datos.</p>
                             <div className="flex gap-4">
-                                <Button onClick={cancelDelete} className="bg-gray-600 font-semibold px-4 py-2 rounded hover:bg-gray-700">Cancelar</Button>
-                                <Button onClick={confirmDelete} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">Aceptar</Button>
+                                <Button onClick={cancelDelete} className="bg-gray-600 font-semibold px-4 py-2 rounded hover:bg-gray-700">CANCELAR</Button>
+                                <Button onClick={confirmDelete} variant="sipemodal">ACEPTAR</Button>
                             </div>
                         </div>
                     )}

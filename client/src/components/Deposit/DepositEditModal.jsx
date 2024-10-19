@@ -123,13 +123,13 @@ const DepositEditModal = ({ onClose, onDepositUpdated, notify }) => {
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="depositName" className="text-sm font-medium">Nombre del Depósito</Label>
+                            <Label htmlFor="depositName" className="text-sm font-medium">Nombre del depósito</Label>
                             <Input
                                 id="depositName"
                                 value={depositName}
                                 onChange={(e) => setDepositName(e.target.value)}
                                 required
-                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
+                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
                             />
                         </div>
 
@@ -151,8 +151,8 @@ const DepositEditModal = ({ onClose, onDepositUpdated, notify }) => {
                     </CardContent>
 
                     <CardFooter className="flex justify-end gap-4">
-                        <Button variant="sipebuttonalt" size="sipebutton" onClick={onClose}>Cancelar</Button>
-                        <Button variant="sipebutton" size="sipebutton" onClick={handleUpdateDeposit}>Actualizar Depósito</Button>
+                        <Button variant="sipebuttonalt" size="sipebutton" onClick={onClose}>CANCELAR</Button>
+                        <Button variant="sipebutton" size="sipebutton" onClick={handleUpdateDeposit}>ACTUALIZAR</Button>
                     </CardFooter>
                 </Card>
             </div>

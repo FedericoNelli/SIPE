@@ -262,7 +262,7 @@ function UserEditModal({ isOpen, onClose, user }) {
                                 </div>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-4">
-                                <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>Cancelar</Button>
+                                <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>CANCELAR</Button>
                                 <Button variant="sipebutton" size="sipebutton" onClick={handleSave}>Guardar</Button>
                             </CardFooter>
                         </Card>

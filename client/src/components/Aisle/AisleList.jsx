@@ -3,7 +3,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Button } from "@/components/Common/Button/Button";
 
 function AisleList({ aisles, isDeleteMode, selectedAisles, setSelectedAisles, handleDeleteAisles, notify }) {
-    const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false); // Estado para confirmar eliminación
+    const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false); // Estado para CONFIRMAR ELIMINACIÓN
 
     // Función para alternar la selección de un pasillo
     const toggleAisleSelection = (aisleId) => {
@@ -33,7 +33,7 @@ function AisleList({ aisles, isDeleteMode, selectedAisles, setSelectedAisles, ha
         setIsConfirmingDeletion(true);
     };
 
-    // Función para cancelar la confirmación de eliminación
+    // Función para CANCELAR la confirmación de eliminación
     const cancelDelete = () => {
         setIsConfirmingDeletion(false);
     };
@@ -84,19 +84,19 @@ function AisleList({ aisles, isDeleteMode, selectedAisles, setSelectedAisles, ha
                 <div className="flex flex-col items-center mt-4">
                     {isConfirmingDeletion ? (
                         <>
-                            <p className="text-red-500 font-bold">Si confirma la eliminación no se podrán recuperar los datos.</p>
+                            <p className="text-red-500 font-bold">Si confirma la eliminación no se podrán recuperar los datos</p>
                             <div className="flex gap-4 mt-2">
-                                <Button onClick={cancelDelete} className="bg-gray-400 font-semibold px-4 py-2 rounded hover:bg-gray-500">
-                                    Cancelar
+                                <Button onClick={cancelDelete} variant="sipemodalalt">
+                                    CANCELAR
                                 </Button>
-                                <Button onClick={handleDeleteAisles} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
-                                    Aceptar
+                                <Button onClick={handleDeleteAisles} variant="sipemodal">
+                                    ACEPTAR
                                 </Button>
                             </div>
                         </>
                     ) : (
-                        <Button onClick={confirmDelete} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
-                            Confirmar Eliminación
+                        <Button onClick={confirmDelete} variant="sipemodalalt" size="sipebutton">
+                            CONFIRMAR ELIMINACIÓN
                         </Button>
                     )}
                 </div>

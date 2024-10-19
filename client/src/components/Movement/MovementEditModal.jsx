@@ -134,7 +134,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                 </div>
                 <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl">
                     <CardHeader>
-                        <CardTitle className="text-3xl font-bold mb-2 text-center">Editar Movimiento</CardTitle>
+                        <CardTitle className="text-3xl font-bold mb-2 text-center">Editar movimiento</CardTitle>
                         <hr />
                     </CardHeader>
                     <CardContent className="grid gap-4">
@@ -154,7 +154,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                             </Select>
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha Movimiento</Label>
+                            <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha del movimiento</Label>
                             <Input
                                 id="fechaMovimiento"
                                 type="date"
@@ -171,7 +171,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                 value={cantidad}
                                 onChange={(e) => setCantidad(e.target.value)}
                                 required
-                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
+                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
                             />
                         </div>
                         <div className="grid gap-2">
@@ -205,7 +205,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                             </Select>
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="depositoOrigen" className="text-sm font-medium">Depósito Origen</Label>
+                            <Label htmlFor="depositoOrigen" className="text-sm font-medium">Depósito de origen</Label>
                             <Select value={selectedDepositoOrigen} onValueChange={setSelectedDepositoOrigen}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Seleccionar depósito origen" />
@@ -220,7 +220,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                             </Select>
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="depositoDestino" className="text-sm font-medium">Depósito Destino</Label>
+                            <Label htmlFor="depositoDestino" className="text-sm font-medium">Depósito de destino</Label>
                             <Select value={selectedDepositoDestino} onValueChange={setSelectedDepositoDestino}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Seleccionar depósito destino" />
@@ -236,8 +236,8 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                         </div>
                     </CardContent>
                     <CardFooter className="flex justify-end gap-4">
-                        <Button variant="sipebuttonalt" size="sipebutton" onClick={onClose}>Cancelar</Button>
-                        <Button variant="sipebutton" size="sipebutton" onClick={handleUpdateMovement}>Actualizar Movimiento</Button>
+                        <Button variant="sipebuttonalt" size="sipebutton" onClick={onClose}>CANCELAR</Button>
+                        <Button variant="sipebutton" size="sipebutton" onClick={handleUpdateMovement}>ACTUALIZAR</Button>
                     </CardFooter>
                 </Card>
             </div>

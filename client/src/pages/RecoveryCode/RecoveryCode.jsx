@@ -68,7 +68,7 @@ function RecoveryCode() {
                                 </Button>
                                 <Link to="/rPsw">
                                     <Button variant="sipebuttonalt" size="sipebutton" type="submit">
-                                        Cancelar
+                                        CANCELAR
                                     </Button>
                                 </Link>
                             </div>

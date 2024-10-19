@@ -119,11 +119,11 @@ function Shelf({ notify }) {
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
                         <Button onClick={openFormModal} variant="sipemodal">NUEVA ESTANTERÍA</Button>
-                        <Button onClick={openEditModal} className="bg-blue-600 font-semibold px-4 py-2 rounded hover:bg-blue-700">EDITAR ESTANTERÍAS</Button>
-                        <Button onClick={toggleEmptyMode} className="bg-yellow-600 font-semibold px-4 py-2 rounded hover:bg-yellow-700">
+                        <Button onClick={openEditModal} variant="sipemodalalt">EDITAR ESTANTERÍAS</Button>
+                        <Button onClick={toggleEmptyMode} variant="sipemodalalt3">
                             {isEmptyMode ? 'CANCELAR VACIAR' : 'VACIAR ESTANTERÍAS'}
                         </Button>
-                        <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
+                        <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
                             {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR ESTANTERÍAS'}
                         </Button>
                     </div>

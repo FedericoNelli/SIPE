@@ -286,8 +286,8 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                     {/* Botón para agregar otro lado */}
                     {!showSecondSide && (
                         <div className="flex justify-start">
-                            <Button variant="sipebutton" size="sipebutton" onClick={() => setShowSecondSide(true)}>
-                                Agregar otro lado
+                            <Button variant="sipebuttonalt2" size="sipebutton" onClick={() => setShowSecondSide(true)}>
+                                AGREGAR LADO NUEVO
                             </Button>
                         </div>
                     )}

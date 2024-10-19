@@ -18,6 +18,18 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
     const [ubicaciones, setUbicaciones] = useState([]);
     const [depositos, setDepositos] = useState([]);
 
+    // useEffect(() => {
+    //     const handleKeyDown = (event) => {
+    //         if (event.key === 'Enter') {
+    //             event.preventDefault();
+    //             handleSubmit();
+    //         }
+    //     };
+
+    //     window.addEventListener('keydown', handleKeyDown);
+
+    // }, [handleSubmit]);
+
     useEffect(() => {
         // Cargar ubicaciones cuando el componente se monte
         axios.get('http://localhost:8081/deposit-locations')

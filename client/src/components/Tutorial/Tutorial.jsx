@@ -360,7 +360,7 @@ const Tutorial = ({ notify }) => {
                         {currentStep === 6 && (
                             <div className='bg-sipe-blue-dark rounded-lg'>
                                 <div className="bg-sipe-blue-dark text-white rounded-lg pt-8 px-12">
-                                    <h2 className="text-3xl font-bold mb-4 text-center">Confirmación de Datos</h2>
+                                    <h2 className="text-3xl font-bold mb-4 text-center">Confirmación de datos</h2>
                                     <div className="flex flex-row items-center mb-4 gap-10">
 
                                         {/* Card de Ubicación */}

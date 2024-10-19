@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Input } from "@/components/Common/Input/Input";
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, ArrowBigRight } from 'lucide-react';
 import { AnimatePresence, motion } from "framer-motion";
 import MaterialForm from '@/components/Material/MaterialForm';
 import MaterialList from '@/components/Material/MaterialList';
@@ -255,18 +255,20 @@ function Material({ notify }) {
                         )}
                         {viewingMaterialExits ? (
                             <>
-                                <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
-                                    {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Salidas'}
+                                <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
+                                    {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR SALIDAS'}
                                 </Button>
-                                <Button onClick={backToMaterialList} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2">SALIR</Button>
+                                <Button onClick={backToMaterialList} variant="sipemodalalt">SALIR</Button>
                             </>
                         ) : (
                             <>
-                                <Button onClick={viewMaterialExits} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2">VER SALIDAS DE MATERIALES</Button>
-                                <Button onClick={openFilterModal} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2 ">
+                                <Button onClick={viewMaterialExits} variant="secondary" className="bg-transparent text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2">
+                                    <ArrowBigRight />SALIDAS DE MATERIALES
+                                </Button>
+                                <Button onClick={openFilterModal} variant="secondary" className="bg-transparent text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
                                     <Filter /> FILTRAR
                                 </Button>
-                                <Button onClick={openModalSearch} variant="secondary" className="bg-transparent border-sipe-white border text-sipe-white font-semibold px-2 py-2 flex items-center gap-2">
+                                <Button onClick={openModalSearch} variant="secondary" className="bg-transparent border border-sipe-white/20 text-sipe-white font-semibold px-2 py-2 flex items-center gap-2">
                                     <Search /> BUSCAR
                                 </Button>
                             </>
@@ -303,7 +305,7 @@ function Material({ notify }) {
                         <div className="bg-sipe-blue-dark rounded-lg p-6 w-full max-w-4xl">
                             <div className="flex justify-between items-center">
                                 <h2 className="text-lg font-bold text-sipe-white">Buscar material</h2>
-                                <button onClick={closeModalSearch} className="text-gray-300">Cerrar</button>
+                                <button onClick={closeModalSearch} className="text-gray-300">X</button>
                             </div>
                             <Input
                                 type="text"
