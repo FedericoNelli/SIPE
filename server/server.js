@@ -918,27 +918,6 @@ app.delete('/aisle/delete/:id', (req, res) => {
     });
 });
 
-app.delete('/delete-shelves', (req, res) => {
-    const { shelfIds } = req.body; // Recibe los IDs de las estanterías a eliminar
-
-    if (!shelfIds || shelfIds.length === 0) {
-        return res.status(400).json({ message: 'No se proporcionaron estanterías para eliminar' });
-    }
-
-    // Construimos la consulta para eliminar múltiples IDs
-    const placeholders = shelfIds.map(() => '?').join(',');
-    const query = `DELETE FROM estanteria WHERE id IN (${placeholders})`;
-
-    db.query(query, shelfIds, (err, result) => {
-        if (err) {
-            console.error('Error eliminando estanterías:', err);
-            return res.status(500).json({ message: 'Error eliminando estanterías' });
-        }
-
-        res.status(200).json({ message: 'Estanterías eliminadas correctamente' });
-    });
-});
-
 app.get('/spaces/:shelfId', (req, res) => {
     const { shelfId } = req.params;
     const query = `

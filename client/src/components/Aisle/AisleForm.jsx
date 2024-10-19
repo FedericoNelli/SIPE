@@ -274,7 +274,7 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                             {ubicaciones.find(u => u.id === formData.idUbicacion)?.nombre || "Sin ubicación seleccionada"}
                         </span>
                         <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
-                            {depositos.find(u => u.id === formData.idDeposito)?.nombre || "Sin depósito seleccionado"}
+                            {depositos.find(u => u.id === formData.idDeposito)?.nombreDeposito || "Sin depósito seleccionado"}
                         </span>
                         <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
                             {categorias.find(u => u.id === formData.idCategoria)?.descripcion || "Sin categoría seleccionado"}
