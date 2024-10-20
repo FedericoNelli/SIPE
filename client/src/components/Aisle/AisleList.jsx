@@ -40,6 +40,9 @@ function AisleList({ aisles, isDeleteMode, selectedAisles, setSelectedAisles, ha
 
     return (
         <>
+        {aisles.length === 0 ? (
+                <p className="text-center text-white">No hay pasillos generados</p>
+            ) : (
             <Table className="w-full text-white">
                 <TableHeader>
                     <TableRow>
@@ -80,6 +83,7 @@ function AisleList({ aisles, isDeleteMode, selectedAisles, setSelectedAisles, ha
                     ))}
                 </TableBody>
             </Table>
+            )}
             {isDeleteMode && (
                 <div className="flex flex-col items-center mt-4">
                     {isConfirmingDeletion ? (

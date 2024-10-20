@@ -17,6 +17,9 @@ function UserList({ onUserClick }) {
 
     return (
         <>
+        {users.length === 0 ? (
+                <p className="text-center text-white">No hay usuarios generados</p>
+            ) : (
             <Table className="w-full text-white">
                 <TableHeader>
                     <TableRow>
@@ -45,6 +48,7 @@ function UserList({ onUserClick }) {
                     ))}
                 </TableBody>
             </Table>
+            )}
         </>
     )
 }
