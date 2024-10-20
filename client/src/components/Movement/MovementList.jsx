@@ -33,7 +33,7 @@ function MovementList({ movements, isDeleteMode, selectedMovements, setSelectedM
         setIsConfirmingDeletion(true);
     };
 
-    // Función para cancelar la confirmación de eliminación
+    // Función para CANCELAR la confirmación de eliminación
     const cancelDelete = () => {
         setIsConfirmingDeletion(false);
     };
@@ -53,7 +53,7 @@ function MovementList({ movements, isDeleteMode, selectedMovements, setSelectedM
     return (
         <>
             {movements.length === 0 ? (
-                <p className="text-center text-white">No hay movimientos generados.</p>
+                <p className="text-center text-white">No hay movimientos generados</p>
             ) : (
                 <Table className="w-full text-white">
                     <TableHeader>
@@ -102,19 +102,19 @@ function MovementList({ movements, isDeleteMode, selectedMovements, setSelectedM
                 <div className="flex flex-col items-center mt-4">
                     {isConfirmingDeletion ? (
                         <>
-                            <p className="text-red-500 font-bold">Si confirma la eliminación no se podrán recuperar los datos.</p>
+                            <p className="text-red-500 font-bold">Si confirma la eliminación no se podrán recuperar los datos</p>
                             <div className="flex gap-4 mt-2">
-                                <Button onClick={cancelDelete} className="bg-gray-400 font-semibold px-4 py-2 rounded hover:bg-gray-500">
-                                    Cancelar
+                                <Button onClick={cancelDelete} variant="sipemodalalt">
+                                    CANCELAR
                                 </Button>
-                                <Button onClick={handleDeleteMovements} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
-                                    Aceptar
+                                <Button onClick={handleDeleteMovements} variant="sipemodal">
+                                    ACEPTAR
                                 </Button>
                             </div>
                         </>
                     ) : (
-                        <Button onClick={confirmDelete} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
-                            Confirmar Eliminación
+                        <Button onClick={confirmDelete} variant="sipemodalalt">
+                            CONFIRMAR ELIMINACIÓN
                         </Button>
                     )}
                 </div>

@@ -240,17 +240,17 @@ function MaterialForm({ onClose, notify }) {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="nombre" className="text-sm font-medium">Nombre del material</Label>
-                            <Input className="border-b" id="nombre" placeholder="Ingresa el nombre del material" value={formData.nombre} onChange={handleInputChange} />
+                            <Input className="border-b text-sm" id="nombre" placeholder="Ingresa el nombre del material" value={formData.nombre} onChange={handleInputChange} />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="depositLocation" className="text-sm font-medium">Ubicación del depósito</Label>
                             <Select id="depositLocation" onValueChange={(value) => handleSelectChange('depositLocation', value)}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Selecciona la ubicación" />
+                                    <SelectValue className="bg-sipe-orange-light text-white p-4 flex items-center gap-2" placeholder="Selecciona la ubicación" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent> 
                                     {depositLocations.map(location => (
-                                        <SelectItem key={location.id} value={location.id}>{location.nombre}</SelectItem>
+                                        <SelectItem className="bg-sipe-orange-light text-white p-4 flex items-center gap-2" key={location.id} value={location.id}>{location.nombre}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -285,32 +285,19 @@ function MaterialForm({ onClose, notify }) {
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                        {/* <div className="grid gap-2">
-                            <Label htmlFor="estado" className="text-sm font-medium">Estado</Label>
-                            <Select id="estado" onValueChange={(value) => handleSelectChange('estado', value)}>
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Selecciona el estado" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {statuses.map(status => (
-                                        <SelectItem key={status.id} value={status.id}>{status.descripcion}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div> */}
                         <div className="grid gap-2">
                             <Label htmlFor="cantidad" className="text-sm font-medium">Cantidad</Label>
-                            <Input className="border-b" id="cantidad" type="number" placeholder="Ingresa la cantidad" value={formData.cantidad} onChange={handleInputChange} min="0" />
+                            <Input className="border-b text-sm" id="cantidad" type="number" placeholder="Ingresa la cantidad" value={formData.cantidad} onChange={handleInputChange} min="0" />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="bajoStock" className="text-sm font-medium">Bajo stock</Label>
-                            <Input className="border-b" id="bajoStock" type="number" placeholder="Ingresa el umbral de bajo stock" value={formData.bajoStock} onChange={handleInputChange} min="0" />
+                            <Input className="border-b text-sm" id="bajoStock" type="number" placeholder="Ingresa el umbral de bajo stock" value={formData.bajoStock} onChange={handleInputChange} min="0" />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="matricula" className="text-sm font-medium">Matrícula</Label>
-                            <Input className="border-b" id="matricula" placeholder="Ingresa la matrícula" value={formData.matricula} onChange={handleInputChange} />
+                            <Input className="border-b text-sm" id="matricula" placeholder="Ingresa la matrícula" value={formData.matricula} onChange={handleInputChange} />
                         </div>
                     </div>
                     <div className="grid gap-4">
@@ -355,7 +342,12 @@ function MaterialForm({ onClose, notify }) {
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="image" className="text-sm font-medium">Imagen</Label>
-                            <Input className="text-white font-thin px-10 file:text-white pb-10 bg-sipe-blue-light border rounded-xl" id="image" type="file" accept="image/*" onChange={handleFileChange} />
+                            <Input
+                                className="text-white font-thin file:text-white pb-8 bg-sipe-blue-light border rounded-xl text-sm"
+                                id="image"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange} />
                         </div>
                     </div>
                 </CardContent>

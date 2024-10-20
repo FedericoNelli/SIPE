@@ -60,22 +60,22 @@ module.exports = {
           "blue-light": "#2C3B4D",
           white: "#F9F6EE",
           "orange-dark": "#A35139",
+          "orange-dark-2": "#C46D53",
           "orange-light": "#FFB162",
-          "orange-light-variant": "#FFA04D",
+          "orange-super-light": "#F3997B",
           "orange-dark-variant": "#7B3E2A",
+          "orange-light-variant": "#FFA04D",
+          "orange-super-light-variant": "#FF8F69",
           gray: "#959DA6",
-        },
-        sipeBadges: {
-          disponible: "#88B04B",
-          "en-uso": "#5D8AA8",
-          "sin-stock": "#D9534F",
-          "bajo-stock": "#FF8C42",
         },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      borderWidth: {
+        '1': '1px'
       },
       keyframes: {
         "accordion-down": {

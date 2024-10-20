@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Common/Select/Select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/Common/Dropdown/Dropdown-menu";
 import { Button } from "@/components/Common/Button/Button";
 import { X } from 'lucide-react';
 
@@ -69,10 +70,9 @@ const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
                 <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
                     <X size={14} strokeWidth={4} onClick={onClose} />
                 </div>
-
                 <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl">
                     <CardHeader>
-                        <CardTitle className="text-3xl font-bold mb-2 text-center">Editar Categoría</CardTitle>
+                        <CardTitle className="text-3xl font-bold mb-2 text-center">Editar categoría</CardTitle>
                         <hr />
                     </CardHeader>
                     <CardContent className="grid gap-4">
@@ -80,8 +80,8 @@ const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
                             <div className="grid gap-2">
                                 <Label htmlFor="category" className="text-sm font-medium">Selecciona una categoría</Label>
                                 <Select id="category" value={selectedCategory} onValueChange={setSelectedCategory}>
-                                    <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                        <SelectValue placeholder="-- Selecciona una categoría --" />
+                                    <SelectTrigger className="bg-sipe-blue-dark text-sipe-white/60 border-sipe-white rounded-lg font-light">
+                                        <SelectValue placeholder="Categorías disponibles" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {categories.map((category) => (
@@ -94,9 +94,10 @@ const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="newDescription" className="text-sm font-medium">Nueva Descripción</Label>
+                                <Label htmlFor="newDescription" className="text-sm font-medium">Nueva descripción</Label>
                                 <Input
                                     id="newDescription"
+                                    className="border-b-1"
                                     placeholder="Ingresa la nueva descripción"
                                     value={newDescription}
                                     onChange={(e) => setNewDescription(e.target.value)}
@@ -106,8 +107,8 @@ const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
                         </div>
                     </CardContent>
                     <CardFooter className="flex justify-end gap-4">
-                        <Button variant="sipebuttonalt" size="sipebutton" onClick={onClose}>Cancelar</Button>
-                        <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>Guardar</Button>
+                        <Button variant="sipebuttonalt" size="sipebutton" onClick={onClose}>CANCELAR</Button>
+                        <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>GUARDAR</Button>
                     </CardFooter>
                 </Card>
             </div>

@@ -33,7 +33,7 @@ function ShelfList({ shelves, isDeleteMode, isEmptyMode, selectedShelves, setSel
         setIsConfirmingAction(true);
     };
 
-    // Función para cancelar la confirmación de acción
+    // Función para CANCELAR la confirmación de acción
     const cancelAction = () => {
         setIsConfirmingAction(false);
     };
@@ -52,7 +52,7 @@ function ShelfList({ shelves, isDeleteMode, isEmptyMode, selectedShelves, setSel
                                 />
                             </TableHead>
                         )}
-                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Estanteria número</TableHead>
+                        <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Estantería número</TableHead>
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad de estantes</TableHead>
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad de divisiones</TableHead>
                         <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Ubicación</TableHead>
@@ -74,7 +74,7 @@ function ShelfList({ shelves, isDeleteMode, isEmptyMode, selectedShelves, setSel
                                     />
                                 </TableCell>
                             )}
-                            <TableCell className="text-center font-light">Estanteria {shelf.numero}</TableCell>
+                            <TableCell className="text-center font-light">Estantería {shelf.numero}</TableCell>
                             <TableCell className="text-center font-light">{shelf.cantidad_estante}</TableCell>
                             <TableCell className="text-center font-light">{shelf.cantidad_division}</TableCell>
                             <TableCell className="text-center font-light">{shelf.nombreUbicacion}</TableCell>
@@ -91,23 +91,23 @@ function ShelfList({ shelves, isDeleteMode, isEmptyMode, selectedShelves, setSel
                     {isConfirmingAction ? (
                         <>
                             <p className="text-red-500 font-bold">
-                                {isDeleteMode ? 'Confirmar eliminación de estanterías.' : 'Confirmar vaciar estanterías.'}
+                                {isDeleteMode ? 'CONFIRMAR ELIMINACIÓN DE ESTANTERÍAS' : 'CONFIRMAR VACIADO DE ESTANTERÍAS'}
                             </p>
                             <div className="flex gap-4 mt-2">
-                                <Button onClick={cancelAction} className="bg-gray-400 font-semibold px-4 py-2 rounded hover:bg-gray-500">
-                                    Cancelar
+                                <Button onClick={cancelAction} variant="sipemodalalt">
+                                    CANCELAR
                                 </Button>
                                 <Button
                                     onClick={isDeleteMode ? handleDeleteShelves : handleEmptyShelves}
-                                    className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700"
+                                    variant="sipemodal"
                                 >
-                                    Aceptar
+                                    ACEPTAR
                                 </Button>
                             </div>
                         </>
                     ) : (
-                        <Button onClick={confirmAction} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
-                            {isDeleteMode ? 'Confirmar Eliminación' : 'Confirmar Vaciar Estanterías'}
+                        <Button onClick={confirmAction} variant="sipemodalalt">
+                            {isDeleteMode ? 'CONFIRMAR ELIMINACIÓN' : 'CONFIRMAR VACIADO DE ESTANTERÍAS'}
                         </Button>
                     )}
                 </div>
