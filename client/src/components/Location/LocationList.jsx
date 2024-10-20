@@ -40,6 +40,9 @@ function LocationList({ locations, isDeleteMode, selectedLocations, setSelectedL
 
     return (
         <>
+        {locations.length === 0 ? (
+                <p className="text-center text-white">No hay ubicaciones generadas</p>
+            ) : (
             <Table className="w-full text-white">
                 <TableHeader>
                     <TableRow>
@@ -74,6 +77,7 @@ function LocationList({ locations, isDeleteMode, selectedLocations, setSelectedL
                     ))}
                 </TableBody>
             </Table>
+            )}
             {isDeleteMode && (
                 <div className="flex flex-col items-center mt-4">
                     {isConfirmingDeletion ? (

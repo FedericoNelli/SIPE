@@ -40,6 +40,9 @@ function CategoryList({ categories, isDeleteMode, selectedCategories, setSelecte
 
     return (
         <>
+        {categories.length === 0 ? (
+                <p className="text-center text-white">No hay categorías generadas</p>
+            ) : (
             <Table className="w-full text-white">
                 <TableHeader>
                     <TableRow>
@@ -74,6 +77,7 @@ function CategoryList({ categories, isDeleteMode, selectedCategories, setSelecte
                     ))}
                 </TableBody>
             </Table>
+            )}
             {isDeleteMode && (
                 <div className="flex flex-col items-center mt-4">
                     {isConfirmingDeletion ? (

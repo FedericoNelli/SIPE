@@ -40,6 +40,9 @@ function DepositList({ deposits, isDeleteMode, selectedDeposits, setSelectedDepo
 
     return (
         <>
+        {deposits.length === 0 ? (
+                <p className="text-center text-white">No hay depósitos generados</p>
+            ) : (
             <Table className="w-full text-white">
                 <TableHeader>
                     <TableRow>
@@ -80,6 +83,7 @@ function DepositList({ deposits, isDeleteMode, selectedDeposits, setSelectedDepo
                     ))}
                 </TableBody>
             </Table>
+            )}
             {isDeleteMode && (
                 <div className="flex flex-col items-center mt-4">
                     {isConfirmingDeletion ? (

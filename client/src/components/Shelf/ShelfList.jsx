@@ -40,6 +40,9 @@ function ShelfList({ shelves, isDeleteMode, isEmptyMode, selectedShelves, setSel
 
     return (
         <>
+        {shelves.length === 0 ? (
+                <p className="text-center text-white">No hay estanterías generadas</p>
+            ) : (
             <Table className="w-full text-white">
                 <TableHeader>
                     <TableRow>
@@ -86,6 +89,7 @@ function ShelfList({ shelves, isDeleteMode, isEmptyMode, selectedShelves, setSel
                     ))}
                 </TableBody>
             </Table>
+            )}
             {(isDeleteMode || isEmptyMode) && (
                 <div className="flex flex-col items-center mt-4">
                     {isConfirmingAction ? (
