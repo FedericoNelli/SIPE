@@ -160,7 +160,7 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {aisles.map((aisle) => (
-                                        <SelectItem key={aisle.id} value={aisle.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>
                                             {aisle.numero}
                                         </SelectItem>
                                     ))}
@@ -187,7 +187,7 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {locations.map((location) => (
-                                        <SelectItem key={location.id} value={location.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={location.id} value={location.id}>
                                             {location.nombre}
                                         </SelectItem>
                                     ))}
@@ -202,7 +202,7 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {deposits.map((deposit) => (
-                                        <SelectItem key={deposit.id} value={deposit.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposit.id} value={deposit.id}>
                                             {deposit.nombre}
                                         </SelectItem>
                                     ))}
@@ -217,7 +217,7 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {sides.map((side) => (
-                                        <SelectItem key={side.id} value={side.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>
                                             {side.descripcion}
                                         </SelectItem>
                                     ))}
@@ -231,11 +231,11 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                     <SelectValue>{selectedSide2 === null ? "Sin Lado" : sides.find(side => side.id === selectedSide2)?.descripcion || "Seleccionar lado 2"}</SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem key="null" value="null">Sin Lado</SelectItem>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key="null" value="null">Sin Lado</SelectItem>
                                     {sides
                                         .filter((side) => side.id !== selectedSide1) // Filtrar para que no se seleccione el mismo lado
                                         .map((side) => (
-                                            <SelectItem key={side.id} value={side.id}>
+                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>
                                                 {side.descripcion}
                                             </SelectItem>
                                         ))}

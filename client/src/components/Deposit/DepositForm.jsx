@@ -141,7 +141,7 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
                             </SelectTrigger>
                             <SelectContent>
                                 {ubicaciones.map((ubicacion) => (
-                                    <SelectItem key={ubicacion.id} value={ubicacion.id}>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={ubicacion.id} value={ubicacion.id}>
                                         {ubicacion.nombre}
                                     </SelectItem>
                                 ))}

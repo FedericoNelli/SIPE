@@ -85,7 +85,7 @@ const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {categories.map((category) => (
-                                            <SelectItem key={category.id} value={category.id}>
+                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={category.id} value={category.id}>
                                                 {category.descripcion}
                                             </SelectItem>
                                         ))}

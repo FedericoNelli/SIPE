@@ -150,7 +150,7 @@ function MovementForm({ onClose, notify }) {
                             </SelectTrigger>
                             <SelectContent>
                                 {materiales.map((material) => (
-                                    <SelectItem key={material.id} value={material.id}>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id}>
                                         {material.nombre}
                                     </SelectItem>
                                 ))}
@@ -192,7 +192,7 @@ function MovementForm({ onClose, notify }) {
                             </SelectTrigger>
                             <SelectContent>
                                 {usuarios.map((usuario) => (
-                                    <SelectItem key={usuario.id} value={usuario.id}>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={usuario.id} value={usuario.id}>
                                         {usuario.nombre}
                                     </SelectItem>
                                 ))}
@@ -212,7 +212,7 @@ function MovementForm({ onClose, notify }) {
                             </SelectTrigger>
                             <SelectContent>
                                 {depositos.map((deposito) => (
-                                    <SelectItem key={deposito.id} value={deposito.id}>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
                                         {deposito.nombre} - {deposito.ubicacion}
                                     </SelectItem>
                                 ))}
@@ -233,7 +233,7 @@ function MovementForm({ onClose, notify }) {
                                 {depositos
                                     .filter(deposito => deposito.id !== formData.idDepositoOrigen)
                                     .map((deposito) => (
-                                        <SelectItem key={deposito.id} value={deposito.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
                                             {deposito.nombre} - {deposito.ubicacion}
                                         </SelectItem>
                                     ))}

@@ -386,7 +386,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {depositLocations.map(location => (
-                                                    <SelectItem key={location.id} value={location.id}>{location.nombre}</SelectItem>
+                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={location.id} value={location.id}>{location.nombre}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -401,7 +401,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {depositNames.map(deposit => (
-                                                    <SelectItem key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
+                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -414,7 +414,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {categories.map(category => (
-                                                    <SelectItem key={category.id} value={category.id}>{category.descripcion}</SelectItem>
+                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={category.id} value={category.id}>{category.descripcion}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -444,7 +444,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {aisles.map(aisle => (
-                                                    <SelectItem key={aisle.id} value={aisle.id}>{`Pasillo ${aisle.numero}`}</SelectItem>
+                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>{`Pasillo ${aisle.numero}`}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -462,7 +462,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {shelves.map(shelf => (
-                                                    <SelectItem key={shelf.id} value={shelf.id}>{`Estantería ${shelf.numero}`}</SelectItem>
+                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={shelf.id} value={shelf.id}>{`Estantería ${shelf.numero}`}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -481,7 +481,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {spaces.map(space => (
-                                                        <SelectItem key={space.id} value={space.id} disabled={space.ocupado}>
+                                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={space.id} value={space.id} disabled={space.ocupado}>
                                                             {`Espacio ${space.numeroEspacio}`}
                                                         </SelectItem>
                                                     ))}

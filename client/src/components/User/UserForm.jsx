@@ -238,8 +238,8 @@ const UserForm = ({ onClose, notify }) => {
                                 <SelectValue placeholder="Rol" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="Colaborador">Colaborador</SelectItem>
-                                <SelectItem value="Administrador">Administrador</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Colaborador">Colaborador</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Administrador">Administrador</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

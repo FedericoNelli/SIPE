@@ -146,7 +146,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {movements.map((movement) => (
-                                        <SelectItem key={movement.id} value={movement.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={movement.id} value={movement.id}>
                                             Movimiento {movement.id}
                                         </SelectItem>
                                     ))}
@@ -182,7 +182,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {materials.map((material) => (
-                                        <SelectItem key={material.id} value={material.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id}>
                                             {material.nombre}
                                         </SelectItem>
                                     ))}
@@ -197,7 +197,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {usuarios.map((usuario) => (
-                                        <SelectItem key={usuario.id} value={usuario.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={usuario.id} value={usuario.id}>
                                             {usuario.nombre}
                                         </SelectItem>
                                     ))}
@@ -212,7 +212,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {depositos.map((deposito) => (
-                                        <SelectItem key={deposito.id} value={deposito.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
                                             {deposito.nombre} - {deposito.ubicacion}
                                         </SelectItem>
                                     ))}
@@ -227,7 +227,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {depositos.map((deposito) => (
-                                        <SelectItem key={deposito.id} value={deposito.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
                                             {deposito.nombre} - {deposito.ubicacion}
                                         </SelectItem>
                                     ))}
