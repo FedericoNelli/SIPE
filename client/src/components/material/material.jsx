@@ -36,13 +36,9 @@ function Material({ notify }) {
     const [availableDeposits, setAvailableDeposits] = useState([]);
     const [availableCategories, setAvailableCategories] = useState([]);
     const [availableStatuses, setAvailableStatuses] = useState([]);
-
     const userRole = localStorage.getItem('rol');
-
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
-
-    // Estado para controlar si se está visualizando la lista de salidas de materiales
     const [viewingMaterialExits, setViewingMaterialExits] = useState(false);
 
     useEffect(() => {
@@ -255,8 +251,8 @@ function Material({ notify }) {
                         )}
                         {viewingMaterialExits ? (
                             <>
-                                <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
-                                    {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Salidas'}
+                                <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold text-sipe-white px-4 py-2 rounded hover:bg-red-700">
+                                    {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR SALIDAS'}
                                 </Button>
                                 <Button onClick={backToMaterialList} variant="secondary" className="bg-transparent text-sipe-white font-semibold px-2 py-2 flex items-center gap-2">SALIR</Button>
                             </>
