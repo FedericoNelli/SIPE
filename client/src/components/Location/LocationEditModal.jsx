@@ -94,7 +94,7 @@ const LocationEditModal = ({ onClose, onLocationUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {locations.map((location) => (
-                                        <SelectItem key={location.id} value={location.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={location.id} value={location.id}>
                                             {location.nombre}
                                         </SelectItem>
                                     ))}

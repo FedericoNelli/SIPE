@@ -150,7 +150,7 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {shelves.map((shelf) => (
-                                        <SelectItem key={shelf.id} value={shelf.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={shelf.id} value={shelf.id}>
                                             {shelf.numero}
                                         </SelectItem>
                                     ))}
@@ -197,7 +197,7 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {aisles.map((aisle) => (
-                                        <SelectItem key={aisle.id} value={aisle.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>
                                             {`Pasillo ${aisle.numero} - Ubicación: ${aisle.ubicacionDeposito} - Depósito: ${aisle.nombreDeposito}`}
                                         </SelectItem>
                                     ))}
@@ -212,7 +212,7 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {sides.map((side) => (
-                                        <SelectItem key={side.id} value={side.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>
                                             {side.descripcion}
                                         </SelectItem>
                                     ))}

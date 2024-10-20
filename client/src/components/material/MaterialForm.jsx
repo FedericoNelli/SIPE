@@ -246,11 +246,11 @@ function MaterialForm({ onClose, notify }) {
                             <Label htmlFor="depositLocation" className="text-sm font-medium">Ubicación del depósito</Label>
                             <Select id="depositLocation" onValueChange={(value) => handleSelectChange('depositLocation', value)}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue className="bg-sipe-orange-light text-white p-4 flex items-center gap-2" placeholder="Selecciona la ubicación" />
+                                    <SelectValue className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" placeholder="Selecciona la ubicación" />
                                 </SelectTrigger>
                                 <SelectContent> 
                                     {depositLocations.map(location => (
-                                        <SelectItem className="bg-sipe-orange-light text-white p-4 flex items-center gap-2" key={location.id} value={location.id}>{location.nombre}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={location.id} value={location.id}>{location.nombre}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -265,7 +265,7 @@ function MaterialForm({ onClose, notify }) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {depositNames.map(deposit => (
-                                        <SelectItem key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -278,7 +278,7 @@ function MaterialForm({ onClose, notify }) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {categories.map(category => (
-                                        <SelectItem key={category.id} value={category.id}>{category.descripcion}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={category.id} value={category.id}>{category.descripcion}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -311,7 +311,7 @@ function MaterialForm({ onClose, notify }) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {aisles.map(aisle => (
-                                        <SelectItem key={aisle.id} value={aisle.id}>Pasillo {aisle.numero}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>Pasillo {aisle.numero}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -323,7 +323,7 @@ function MaterialForm({ onClose, notify }) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {shelves.map(shelf => (
-                                        <SelectItem key={shelf.id} value={shelf.id}>Estantería {shelf.numero}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={shelf.id} value={shelf.id}>Estantería {shelf.numero}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -333,7 +333,7 @@ function MaterialForm({ onClose, notify }) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {spaces.map(space => (
-                                        <SelectItem key={space.numeroEspacio} value={space.id} disabled={space.ocupado}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={space.numeroEspacio} value={space.id} disabled={space.ocupado}>
                                             {`Espacio ${space.numeroEspacio}`}
                                         </SelectItem>
                                     ))}

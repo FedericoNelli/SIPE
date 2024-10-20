@@ -285,7 +285,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                         </SelectTrigger>
                                         <SelectContent>
                                             {locations.map((location) => (
-                                                <SelectItem key={location.id} value={location.id}>{location.nombre}</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={location.id} value={location.id}>{location.nombre}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -303,7 +303,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                         </SelectTrigger>
                                         <SelectContent>
                                             {deposits.map((deposit) => (
-                                                <SelectItem key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -329,13 +329,13 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                     {isTutorial ?
                                         <SelectContent>
                                             {pasillos.map((aisle) => (
-                                                <SelectItem key={aisle.id} value={aisle.id}>{aisle.numero}</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>{aisle.numero}</SelectItem>
                                             ))}
                                         </SelectContent> 
                                         :
                                         <SelectContent>
                                             {aisles.map((aisle) => (
-                                                <SelectItem key={aisle.id} value={aisle.id}>{aisle.numero}</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>{aisle.numero}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     }
@@ -353,7 +353,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                     </SelectTrigger>
                                     <SelectContent>
                                         {sides.map((side) => (
-                                            <SelectItem key={side.id} value={side.id}>{side.descripcion}</SelectItem>
+                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>{side.descripcion}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>

@@ -174,11 +174,11 @@ const ReportForm = ({ onClose, notify }) => {
                                 <SelectValue placeholder="Selecciona el tipo de informe" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="Informe de inventario general">Informe de inventario general</SelectItem>
-                                <SelectItem value="Informe de material por deposito">Informe de material por depósito</SelectItem>
-                                <SelectItem value="Informe de material por estado">Informe de material por estado</SelectItem>
-                                <SelectItem value="Informe de material por movimiento entre deposito">Informe de material por movimiento entre depósito</SelectItem>
-                                <SelectItem value="Informe de salida de material">Informe de salida de material</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de inventario general">Informe de inventario general</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de material por deposito">Informe de material por depósito</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de material por estado">Informe de material por estado</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de material por movimiento entre deposito">Informe de material por movimiento entre depósito</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de salida de material">Informe de salida de material</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -194,9 +194,9 @@ const ReportForm = ({ onClose, notify }) => {
                                 <SelectValue placeholder="Selecciona el tipo de gráfico" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="Area">Área</SelectItem>
-                                <SelectItem value="Barra">Barra</SelectItem>
-                                <SelectItem value="Torta">Torta</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Area">Área</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Barra">Barra</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Torta">Torta</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -214,7 +214,7 @@ const ReportForm = ({ onClose, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {depositos.map(deposito => (
-                                        <SelectItem key={deposito.id} value={deposito.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
                                             {deposito.nombre}
                                         </SelectItem>
                                     ))}
@@ -235,9 +235,9 @@ const ReportForm = ({ onClose, notify }) => {
                                     <SelectValue placeholder="Selecciona un estado" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Todos">Todos</SelectItem>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Todos">Todos</SelectItem>
                                     {estadosMaterial.map(estado => (
-                                        <SelectItem key={estado.id} value={estado.id}>{estado.descripcion}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={estado.id} value={estado.id}>{estado.descripcion}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -256,9 +256,9 @@ const ReportForm = ({ onClose, notify }) => {
                                     <SelectValue placeholder="Selecciona un material" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Todos">Todos</SelectItem>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Todos">Todos</SelectItem>
                                     {exits.map(exit => (
-                                        <SelectItem key={exit.salidaId} value={exit.salidaId}>{exit.nombreMaterial}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={exit.salidaId} value={exit.salidaId}>{exit.nombreMaterial}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -278,7 +278,7 @@ const ReportForm = ({ onClose, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {movements.map(movement => (
-                                        <SelectItem key={movement.id} value={movement.id}>{movement.nombreMaterial}{' '}{movement.depositoOrigen}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={movement.id} value={movement.id}>{movement.nombreMaterial}{' '}{movement.depositoOrigen}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>

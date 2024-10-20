@@ -121,7 +121,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la
                             </SelectTrigger>
                             <SelectContent>
                                 {ubicaciones.map(ubicacion => (
-                                    <SelectItem key={ubicacion.id} value={ubicacion.id}>{ubicacion.nombre}</SelectItem>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={ubicacion.id} value={ubicacion.id}>{ubicacion.nombre}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -134,7 +134,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la
                             </SelectTrigger>
                             <SelectContent>
                                 {depositos.map(deposito => (
-                                    <SelectItem key={deposito.id} value={deposito.id}>{deposito.nombre}</SelectItem>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>{deposito.nombre}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -149,7 +149,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la
                         </SelectTrigger>
                         <SelectContent>
                             {materials.map(material => (
-                                <SelectItem key={material.id} value={material.id} disabled={selectedMaterials.find(m => m.id === material.id)}>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id} disabled={selectedMaterials.find(m => m.id === material.id)}>
                                     {material.nombre}
                                 </SelectItem>
                             ))}
@@ -206,7 +206,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la
                         </SelectTrigger>
                         <SelectContent>
                             {users.map(user => (
-                                <SelectItem key={user.id} value={user.id}>{user.nombre}</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={user.id} value={user.id}>{user.nombre}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>

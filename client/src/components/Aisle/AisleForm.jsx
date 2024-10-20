@@ -202,7 +202,7 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                         </SelectTrigger>
                                         <SelectContent>
                                             {locations.map((location) => (
-                                                <SelectItem key={location.id} value={location.id}>{location.nombre}</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={location.id} value={location.id}>{location.nombre}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -222,7 +222,7 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                         </SelectTrigger>
                                         <SelectContent>
                                             {depositNames.map((deposit) => (
-                                                <SelectItem key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -240,7 +240,7 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                 </SelectTrigger>
                                 <SelectContent>
                                     {sides.map((side) => (
-                                        <SelectItem key={side.id} value={side.id}>{side.descripcion}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>{side.descripcion}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -261,7 +261,7 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                         {sides
                                             .filter((side) => side.id !== formData.idLado1)
                                             .map((side) => (
-                                                <SelectItem key={side.id} value={side.id}>{side.descripcion}</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>{side.descripcion}</SelectItem>
                                             ))}
                                     </SelectContent>
                                 </Select>

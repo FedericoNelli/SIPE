@@ -237,8 +237,8 @@ function UserEditModal({ isOpen, onClose, user }) {
                                                 <SelectValue placeholder="Selecciona el rol" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="Administrador">Administrador</SelectItem>
-                                                <SelectItem value="Colaborador">Colaborador</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Administrador">Administrador</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Colaborador">Colaborador</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>

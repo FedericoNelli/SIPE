@@ -114,7 +114,7 @@ const DepositEditModal = ({ onClose, onDepositUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {deposits.map((deposit) => (
-                                        <SelectItem key={deposit.id} value={deposit.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposit.id} value={deposit.id}>
                                             {deposit.nombreDeposito}
                                         </SelectItem>
                                     ))}
@@ -141,7 +141,7 @@ const DepositEditModal = ({ onClose, onDepositUpdated, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {locations.map((location) => (
-                                        <SelectItem key={location.id} value={location.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={location.id} value={location.id}>
                                             {location.nombre}
                                         </SelectItem>
                                     ))}
