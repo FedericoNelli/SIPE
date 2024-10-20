@@ -6,7 +6,7 @@ const Map = ({ pasillo, estanteria, estantes, divisiones, objetoEstante, objetoD
     const cellHeight = 35;
     const fontSize = 16;
     const objectFontSize = 20;
-    const fontFamily = 'Poppins, sans-serif';
+    const fontFamily = 'Outfit, sans-serif';
 
     return (
         <div className="flex justify-center items-center max-w-full max-h-full overflow-hidden">
