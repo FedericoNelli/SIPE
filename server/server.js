@@ -1423,6 +1423,10 @@ app.post('/sendRecoveryCode', (req, res) => {
             return res.status(404).send('Email no encontrado');
         }
 
+        // Obtener el nombre del usuario
+        const userName = results[0].nombre;
+        // Obtener el año actual
+        const currentYear = new Date().getFullYear();
         // Generar un código de verificación de 5 dígitos
         const recoveryCode = Math.floor(10000 + Math.random() * 90000).toString();
 
@@ -1443,8 +1447,10 @@ app.post('/sendRecoveryCode', (req, res) => {
                 }
 
                 // Reemplazar el código de recuperación en la plantilla HTML
-                const customizedTemplate = data.replace('ABCDE', recoveryCode);
-
+                let customizedTemplate = data.replace('ABCDE', recoveryCode);
+                customizedTemplate = customizedTemplate.replace('Usuario', userName);
+                customizedTemplate = customizedTemplate.replace('2024', currentYear);
+                
                 // Configurar las opciones del correo con el contenido HTML
                 const mailOptions = {
                     from: 'sipe.supp@gmail.com',
