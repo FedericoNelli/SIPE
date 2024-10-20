@@ -82,7 +82,7 @@ const LocationEditModal = ({ onClose, onLocationUpdated, notify }) => {
 
                 <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl">
                     <CardHeader>
-                        <CardTitle className="text-3xl font-bold mb-2 text-center">Editar Ubicación</CardTitle>
+                        <CardTitle className="text-3xl font-bold mb-2 text-center">Editar ubicación</CardTitle>
                         <hr />
                     </CardHeader>
                     <CardContent className="grid gap-4">
@@ -109,14 +109,14 @@ const LocationEditModal = ({ onClose, onLocationUpdated, notify }) => {
                                 value={locationName}
                                 onChange={(e) => setLocationName(e.target.value)}
                                 required
-                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
+                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
                             />
                         </div>
                     </CardContent>
 
                     <CardFooter className="flex justify-end gap-4">
-                        <Button variant="sipebuttonalt" size="sipebutton" onClick={onClose}>Cancelar</Button>
-                        <Button variant="sipebutton" size="sipebutton" onClick={handleUpdateLocation}>Actualizar Ubicación</Button>
+                        <Button variant="sipebuttonalt" size="sipebutton" onClick={onClose}>CANCELAR</Button>
+                        <Button variant="sipebutton" size="sipebutton" onClick={handleUpdateLocation}>ACTUALIZAR</Button>
                     </CardFooter>
                 </Card>
             </div>

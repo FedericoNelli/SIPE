@@ -9,6 +9,7 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
 
     const [formData, setFormData] = useState({
         nombre: '',
+        descripcion: '',
         idUbicacion: ubicacionId || '', // Usamos el idUbicacion pasado desde DepositForm
         idDeposito: depositoId || '', // Usamos el idDeposito pasado desde DepositForm
         idCategoria: ''
@@ -16,6 +17,18 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
 
     const [ubicaciones, setUbicaciones] = useState([]);
     const [depositos, setDepositos] = useState([]);
+
+    // useEffect(() => {
+    //     const handleKeyDown = (event) => {
+    //         if (event.key === 'Enter') {
+    //             event.preventDefault();
+    //             handleSubmit();
+    //         }
+    //     };
+
+    //     window.addEventListener('keydown', handleKeyDown);
+
+    // }, [handleSubmit]);
 
     useEffect(() => {
         // Cargar ubicaciones cuando el componente se monte

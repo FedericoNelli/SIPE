@@ -119,11 +119,11 @@ const UserForm = ({ onClose, notify }) => {
                                 Nombre
                             </Label>
                             <Input
-                                className="border-b"
+                                className="border-b text-sm"
                                 id="nombre"
                                 name="nombre"
                                 type="text"
-                                placeholder="Nombre"
+                                placeholder="Ingrese el nombre"
                                 value={formData.nombre}
                                 onChange={handleInputChange}
                                 required
@@ -136,11 +136,11 @@ const UserForm = ({ onClose, notify }) => {
                                 Apellido
                             </Label>
                             <Input
-                                className="border-b"
+                                className="border-b text-sm"
                                 id="apellido"
                                 name="apellido"
                                 type="text"
-                                placeholder="Apellido"
+                                placeholder="Ingrese el apellido"
                                 value={formData.apellido}
                                 onChange={handleInputChange}
                                 required
@@ -153,11 +153,11 @@ const UserForm = ({ onClose, notify }) => {
                                 Legajo
                             </Label>
                             <Input
-                                className="border-b"
+                                className="border-b text-sm"
                                 id="legajo"
                                 name="legajo"
                                 type="text"
-                                placeholder="Legajo"
+                                placeholder="Ingrese el legajo"
                                 value={formData.legajo}
                                 onChange={handleInputChange}
                                 required
@@ -165,16 +165,16 @@ const UserForm = ({ onClose, notify }) => {
                         </div>
                     </div>
                     <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center">
                             <Label htmlFor="nombre_usuario" className="text-sm font-medium">
-                                Nombre Usuario
+                                Nombre de usuario
                             </Label>
                             <Input
-                                className="border-b"
+                                className="border-b text-sm"
                                 id="nombre_usuario"
                                 name="nombre_usuario"
                                 type="text"
-                                placeholder="Nombre de Usuario"
+                                placeholder="Ingrese un nombre de usuario"
                                 value={formData.nombre_usuario}
                                 onChange={handleInputChange}
                                 required
@@ -187,11 +187,11 @@ const UserForm = ({ onClose, notify }) => {
                                 Contraseña
                             </Label>
                             <Input
-                                className="border-b"
+                                className="border-b text-sm"
                                 id="contrasenia"
                                 name="contrasenia"
                                 type="password"
-                                placeholder="Contraseña"
+                                placeholder="Ingrese una contraseña"
                                 value={formData.contrasenia}
                                 onChange={handleInputChange}
                                 required
@@ -204,11 +204,11 @@ const UserForm = ({ onClose, notify }) => {
                                 Email
                             </Label>
                             <Input
-                                className="border-b"
+                                className="border-b text-sm"
                                 id="email"
                                 name="email"
                                 type="email"
-                                placeholder="Email"
+                                placeholder="Ingrese un email"
                                 value={formData.email}
                                 onChange={handleInputChange}
                                 required
@@ -221,7 +221,7 @@ const UserForm = ({ onClose, notify }) => {
                                 Imagen
                             </Label>
                             <Input
-                                className="border-b"
+                                className="text-white font-thin file:text-white pb-8 bg-sipe-blue-light border rounded-xl text-sm"
                                 id="imagen"
                                 name="imagen"
                                 type="file"
@@ -234,7 +234,7 @@ const UserForm = ({ onClose, notify }) => {
                             Rol
                         </Label>
                         <Select id="rol" onValueChange={(value) => handleSelectChange('rol', value)}>
-                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-gray border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Rol" />
                             </SelectTrigger>
                             <SelectContent>

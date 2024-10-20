@@ -51,11 +51,11 @@ function RecoveryPassword() {
                                 </div>
                                 <div>
                                     <Button className="mb-5" variant="sipebutton" size="sipebutton" type="button" onClick={handleSubmit}>
-                                        Enviar correo
+                                        ENVIAR CORREO
                                     </Button>
                                     <Link to="/">
                                         <Button variant="sipebuttonalt" size="sipebutton" type="submit">
-                                            Cancelar
+                                            CANCELAR
                                         </Button>
                                     </Link>
                                 </div>

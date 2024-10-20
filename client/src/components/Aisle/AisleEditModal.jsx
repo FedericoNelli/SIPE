@@ -64,7 +64,7 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                     setSelectedLocation(data.idUbicacion);
                     setSelectedDeposit(data.idDeposito);
                     setSelectedSide1(data.idLado1);
-                    setSelectedSide2(data.idLado2 !== undefined && data.idLado2 !== null ? data.idLado2 : "null"); // Asignar "null" si no hay lado 2
+                    setSelectedSide2(data.idLado2 !== undefined && data.idLado2 !== null ? data.idLado2 : null); // Asignar "null" si no hay lado 2
                 } catch (error) {
                     notify('error', 'Error al cargar los datos del pasillo');
                 }
@@ -176,7 +176,7 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                 value={aisleNumber}
                                 onChange={(e) => setAisleNumber(e.target.value)}
                                 required
-                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
+                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
                             />
                         </div>
                         <div className="grid gap-2">
@@ -244,8 +244,8 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                         </div>
                     </CardContent>
                     <CardFooter className="flex justify-end gap-4">
-                        <Button variant="sipebuttonalt" size="sipebutton" onClick={onClose}>Cancelar</Button>
-                        <Button variant="sipebutton" size="sipebutton" onClick={handleUpdateAisle}>Actualizar Pasillo</Button>
+                        <Button variant="sipebuttonalt" size="sipebutton" onClick={onClose}>CANCELAR</Button>
+                        <Button variant="sipebutton" size="sipebutton" onClick={handleUpdateAisle}>ACTUALIZAR</Button>
                     </CardFooter>
                 </Card>
             </div>

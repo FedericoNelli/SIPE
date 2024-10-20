@@ -14,6 +14,7 @@ function Shelf({ notify }) {
     const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para el modo de eliminación
     const [selectedShelves, setSelectedShelves] = useState([]); // Estado para las estanterías seleccionadas
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isEmptyMode, setIsEmptyMode] = useState(false);
 
     // Nueva función para cargar estanterías
     const loadShelves = () => {
@@ -51,6 +52,11 @@ function Shelf({ notify }) {
         setSelectedShelves([]); // Limpiar selección al salir del modo de eliminación
     };
 
+    const toggleEmptyMode = () => { // Activar el modo vaciar estanterías
+        setIsEmptyMode(!isEmptyMode);
+        setSelectedShelves([]);
+    };
+
     // Función para manejar la eliminación de estanterías
     const handleDeleteShelves = () => {
         if (selectedShelves.length === 0) {
@@ -67,7 +73,24 @@ function Shelf({ notify }) {
             })
             .catch(error => {
                 console.error('Error eliminando estanterías:', error);
-                notify('error', 'Error al eliminar estanterías');
+                notify('error', 'Error: Debe vaciar la estantería antes de eliminarla');
+            });
+    };
+
+    const handleEmptyShelves = () => { // Nueva función para vaciar las estanterías
+        if (selectedShelves.length === 0) {
+            notify('error', 'No hay estanterías seleccionadas para vaciar');
+            return;
+        }
+
+        axios.post('http://localhost:8081/empty-shelves', { shelfIds: selectedShelves })
+            .then(() => {
+                notify('success', 'Estanterías vaciadas correctamente');
+                setSelectedShelves([]);
+                setIsEmptyMode(false);
+            })
+            .catch(error => {
+                notify('error', 'Error al vaciar estanterías');
             });
     };
 
@@ -96,18 +119,23 @@ function Shelf({ notify }) {
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
                         <Button onClick={openFormModal} variant="sipemodal">NUEVA ESTANTERÍA</Button>
-                        <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
-                            {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Estanterías'}
+                        <Button onClick={openEditModal} variant="sipemodalalt">EDITAR ESTANTERÍAS</Button>
+                        <Button onClick={toggleEmptyMode} variant="sipemodalalt3">
+                            {isEmptyMode ? 'CANCELAR VACIAR' : 'VACIAR ESTANTERÍAS'}
                         </Button>
-                        <Button onClick={openEditModal} className="bg-blue-600 font-semibold px-4 py-2 rounded hover:bg-blue-700">Editar Estanterías</Button>
+                        <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
+                            {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR ESTANTERÍAS'}
+                        </Button>
                     </div>
                 </div>
                 <ShelfList
                     shelves={currentShelves}
                     isDeleteMode={isDeleteMode}
+                    isEmptyMode={isEmptyMode}
                     selectedShelves={selectedShelves}
                     setSelectedShelves={setSelectedShelves}
                     handleDeleteShelves={handleDeleteShelves}
+                    handleEmptyShelves={handleEmptyShelves}
                     notify={notify}
                 />
                 <div className="flex justify-center p-4">

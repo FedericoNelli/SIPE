@@ -138,12 +138,12 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
 
                 <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl">
                     <CardHeader>
-                        <CardTitle className="text-3xl font-bold mb-2 text-center">Editar Estantería</CardTitle>
+                        <CardTitle className="text-3xl font-bold mb-2 text-center">Editar estantería</CardTitle>
                         <hr />
                     </CardHeader>
                     <CardContent className="grid gap-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="shelf" className="text-sm font-medium">Seleccionar Estantería</Label>
+                            <Label htmlFor="shelf" className="text-sm font-medium">Seleccionar estantería</Label>
                             <Select value={selectedShelfId} onValueChange={setSelectedShelfId}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Seleccionar estantería" />
@@ -159,34 +159,34 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="shelfNumber" className="text-sm font-medium">Número de Estantería</Label>
+                            <Label htmlFor="shelfNumber" className="text-sm font-medium">Número de estantería</Label>
                             <Input
                                 id="shelfNumber"
                                 value={shelfNumber}
                                 onChange={(e) => setShelfNumber(e.target.value)}
                                 required
-                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
+                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
                             />
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="shelfQuantity" className="text-sm font-medium">Cantidad de Estantes</Label>
+                            <Label htmlFor="shelfQuantity" className="text-sm font-medium">Cantidad de estantes</Label>
                             <Input
                                 id="shelfQuantity"
                                 value={shelfQuantity}
                                 onChange={(e) => setShelfQuantity(e.target.value)}
                                 required
-                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
+                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="divisionQuantity" className="text-sm font-medium">Cantidad de Divisiones</Label>
+                            <Label htmlFor="divisionQuantity" className="text-sm font-medium">Cantidad de divisiones</Label>
                             <Input
                                 id="divisionQuantity"
                                 value={divisionQuantity}
                                 onChange={(e) => setDivisionQuantity(e.target.value)}
                                 required
-                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
+                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
                             />
                         </div>
                         <div className="grid gap-2">
@@ -222,9 +222,9 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                     </CardContent>
 
                     <CardFooter className="flex justify-end gap-4">
-                        <Button variant="sipebuttonalt" size="sipebutton" onClick={onClose}>Cancelar</Button>
+                        <Button variant="sipebuttonalt" size="sipebutton" onClick={onClose}>CANCELAR</Button>
                         <Button variant="sipebutton" size="sipebutton" onClick={handleUpdateShelf} disabled={loading}>
-                            {loading ? 'Actualizando...' : 'Actualizar Estantería'}
+                            {loading ? 'ACTUALIZAR...' : 'ACTUALIZAR'}
                         </Button>
                     </CardFooter>
                 </Card>

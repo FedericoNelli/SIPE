@@ -75,8 +75,8 @@ function Report({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de informes</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">Generar Informe</Button>
-                        <Button onClick={() => setIsDeleteMode(!isDeleteMode)} className="bg-red-500 font-semibold px-4 py-2 rounded hover:bg-red-600">{isDeleteMode ? "Cancelar" : "Eliminar Informe"}</Button>
+                        <Button onClick={openFormModal} variant="sipemodal">GENERAR INFORME</Button>
+                        <Button onClick={() => setIsDeleteMode(!isDeleteMode)} variant="sipemodalalt">{isDeleteMode ? "CANCELAR ELIMINACIÓN" : "ELIMINAR INFORMES"}</Button>
                     </div>
                 </div>
 

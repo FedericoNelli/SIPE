@@ -6,7 +6,18 @@ import { useNavigate } from "react-router-dom";
 
 function Navbar() {
     const navigate = useNavigate();
-    const [currentDate, setCurrentDate] = useState(new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }));
+    const [currentDate, setCurrentDate] = useState(() => {
+        const formattedDate = new Date().toLocaleDateString('es-ES', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        });
+
+        // Capitalizar solo la primera letra del mes
+        return formattedDate.replace(/(\d{1,2}\sde\s)([a-záéíóúñ]+)/, (match, dayPart, month) => {
+            return dayPart + month.charAt(0).toUpperCase() + month.slice(1);
+        });
+    });
     const [userName, setUserName] = useState('Usuario');
     const [initial, setInitial] = useState('');
     const [notificaciones, setNotificaciones] = useState([]);
@@ -107,23 +118,24 @@ function Navbar() {
                             <DropdownMenuTrigger className="bg-sipe-blue-dark rounded-full flex justify-center p-2 notification-container" onClick={handleBellClick}>
                                 <Bell />
                                 {notificationCount > 0 && (
-                                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-sipe-white bg-red-600 rounded-full">{notificationCount}</span>
+                                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-sipe-white bg-sipe-orange-dark rounded-full">{notificationCount}</span>
                                 )}
                             </DropdownMenuTrigger>
-                                {showNotifications && (
-                                    <DropdownMenuContent>
-                                        {notificaciones.length === 0 ? (
-                                            <p className="p-4 text-sm text-sipe-white bg-sipe-blue-dark/90 rounded-lg backdrop-blur-sm">No tienes notificaciones</p>
-                                        ) : (
-                                            notificaciones.map((notif) => (
-                                                <DropdownMenuItem key={notif.id}>
-                                                        <p className="text-sm text-gray-800">{notif.descripcion}</p>
-                                                        <p className="text-xs text-gray-500">{new Date(notif.fecha).toLocaleString()}</p> 
-                                                </DropdownMenuItem>
-                                            ))
-                                        )}
-                                    </DropdownMenuContent>
-                                )}
+                            {showNotifications && (
+                                <DropdownMenuContent>
+                                    {notificaciones.length === 0 ? (
+                                        <p className="p-4 text-sm text-sipe-white bg-sipe-blue-dark/90 rounded-lg backdrop-blur-sm">No tienes notificaciones</p>
+                                    ) : (
+                                        notificaciones.map((notif) => (
+                                            <DropdownMenuItem key={notif.id} className="bg-sipe-blue-dark p-4 flex items-center gap-2">
+                                                <p className="text-sm text-sipe-white">{notif.descripcion}</p>
+                                                <p className="text-sm text-sipe-white">|</p>
+                                                <p className="text-xs text-sipe-white/80">{new Date(notif.fecha).toLocaleString()}</p>
+                                            </DropdownMenuItem>
+                                        ))
+                                    )}
+                                </DropdownMenuContent>
+                            )}
                         </DropdownMenu>
                     </li>
                     <div className="flex flex-row justify-center items-center">
@@ -136,7 +148,7 @@ function Navbar() {
                                     <ChevronDown className="text-black" />
                                 </div>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="mt-2 bg-sipe-white shadow-md rounded-lg">
+                            <DropdownMenuContent className="mt-2 bg-sipe-white shadow-md rounded-lg bg-sipe-blue-dark/90 text-white">
                                 <DropdownMenuItem className="p-2 hover:bg-gray-200 rounded-t-lg" onClick={handleChangePassword}>
                                     Cambiar contraseña
                                 </DropdownMenuItem>

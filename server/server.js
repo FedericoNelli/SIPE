@@ -8,9 +8,8 @@ const multer = require('multer');
 const path = require('path');
 const app = express();
 const fs = require('fs');
-const SECRET_KEY = 'peron74';
+const SECRET_KEY = 'SIPE';
 const { format } = require('date-fns');
-
 
 app.use(cors());
 app.use(express.json());
@@ -798,6 +797,30 @@ app.get('/materials/deposit/:idDeposito', (req, res) => {
     });
 });
 
+app.get('/aisles-shelves', (req, res) => {
+    const query = `
+        SELECT 
+            p.id, p.numero, d.Nombre AS nombreDeposito, u.nombre AS ubicacionDeposito,
+            COALESCE(l1.descripcion, 'Sin lado') AS lado1Descripcion, 
+            COALESCE(l2.descripcion, 'Sin lado') AS lado2Descripcion
+        FROM 
+            Pasillo p
+        LEFT JOIN 
+            Deposito d ON p.idDeposito = d.id
+        LEFT JOIN 
+            Lado l1 ON p.idLado1 = l1.id
+        LEFT JOIN 
+            Lado l2 ON p.idLado2 = l2.id
+        LEFT JOIN 
+            Ubicacion u ON d.idUbicacion = u.id
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).send('Error al consultar la base de datos');
+        res.json(results);
+    });
+});
+
 app.delete('/locations/delete/:id', (req, res) => {
     const ubicacionId = req.params.id;
 
@@ -1033,8 +1056,6 @@ function notifyNewMaterialCreation(nombre, idDeposito, callback) {
         );
     });
 }
-
-
 
 function assignStatus(cantidad, bajoStock) {
 
@@ -1606,13 +1627,16 @@ app.put('/edit-aisle/:id', (req, res) => {
         return res.status(400).json({ error: 'Todos los campos requeridos deben estar completos' });
     }
 
+    // Si idLado2 no está definido o es una cadena vacía, se asigna null
+    const idLado2Value = idLado2 !== undefined && idLado2 !== '' ? idLado2 : null;
+
     const query = `
         UPDATE Pasillo 
         SET numero = ?, idDeposito = ?, idLado1 = ?, idLado2 = ? 
         WHERE id = ?
     `;
 
-    const values = [numero, idDeposito, idLado1, idLado2 || null, aisleId];
+    const values = [numero, idDeposito, idLado1, idLado2Value, aisleId];
 
     db.query(query, values, (err, result) => {
         if (err) {
@@ -1625,6 +1649,7 @@ app.put('/edit-aisle/:id', (req, res) => {
         res.status(200).json({ message: 'Pasillo actualizado correctamente' });
     });
 });
+
 
 
 // Endpoint para obtener los lados
@@ -1667,7 +1692,7 @@ app.get('/deposits', (req, res) => {
         COUNT(m.id) AS totalMateriales
     FROM 
         Deposito d
-    JOIN 
+    LEFT JOIN 
         Ubicacion u ON d.idUbicacion = u.id
     LEFT JOIN 
         Pasillo p ON d.id = p.idDeposito
@@ -1964,8 +1989,6 @@ app.put('/categories/:id', (req, res) => {
     });
 });
 
-
-
 app.get('/total-categories', (req, res) => {
     const query = 'SELECT COUNT(id) AS total FROM Categoria';
     db.query(query, (err, results) => {
@@ -1973,7 +1996,6 @@ app.get('/total-categories', (req, res) => {
         res.json({ total: results[0].total });
     });
 });
-
 
 // Obtener Estados
 app.get('/statuses', (req, res) => {
@@ -2093,6 +2115,27 @@ app.put('/edit-shelf/:id', (req, res) => {
     });
 });
 
+// Endpoint para vaciar estanterías
+app.post('/empty-shelves', (req, res) => {
+    const { shelfIds } = req.body;
+
+    if (!shelfIds || shelfIds.length === 0) {
+        return res.status(400).json({ message: 'No se proporcionaron estanterías para vaciar.' });
+    }
+
+    // Consulta SQL para eliminar los espacios de las estanterías seleccionadas
+    const query = 'DELETE FROM Espacio WHERE idEstanteria IN (?)';
+
+    db.query(query, [shelfIds], (err, results) => {
+        if (err) {
+            console.error('Error al vaciar estanterías:', err);
+            return res.status(500).json({ message: 'Error al vaciar estanterías.' });
+        }
+
+        return res.status(200).json({ message: 'Estanterías vaciadas correctamente.' });
+    });
+});
+
 
 // Endpoint para eliminar múltiples estanterías
 app.delete('/delete-shelves', (req, res) => {
@@ -2102,19 +2145,39 @@ app.delete('/delete-shelves', (req, res) => {
         return res.status(400).json({ message: 'No se proporcionaron estanterías para eliminar' });
     }
 
-    // Construimos la consulta para eliminar múltiples IDs
-    const placeholders = shelfIds.map(() => '?').join(',');
-    const query = `DELETE FROM estanteria WHERE id IN (${placeholders})`;
+    // Verificamos si hay materiales en los espacios de las estanterías seleccionadas
+    const checkMaterialsQuery = `
+        SELECT Material.id 
+        FROM Material 
+        INNER JOIN Espacio ON Material.idEspacio = Espacio.id 
+        WHERE Espacio.idEstanteria IN (${shelfIds.map(() => '?').join(',')})
+    `;
 
-    db.query(query, shelfIds, (err, result) => {
+    db.query(checkMaterialsQuery, shelfIds, (err, materials) => {
         if (err) {
-            console.error('Error eliminando estanterías:', err);
-            return res.status(500).json({ message: 'Error eliminando estanterías' });
+            console.error('Error verificando materiales:', err);
+            return res.status(500).json({ message: 'Error verificando materiales en las estanterías' });
         }
 
-        res.status(200).json({ message: 'Estanterías eliminadas correctamente' });
+        if (materials.length > 0) {
+            // Si hay materiales en los espacios de alguna estantería, no permitimos la eliminación
+            return res.status(400).json({ message: 'No se pueden eliminar estanterías con materiales asignados' });
+        }
+
+        // Si no hay materiales, construimos la consulta para eliminar las estanterías
+        const deleteQuery = `DELETE FROM estanteria WHERE id IN (${shelfIds.map(() => '?').join(',')})`;
+
+        db.query(deleteQuery, shelfIds, (err, result) => {
+            if (err) {
+                console.error('Error eliminando estanterías:', err);
+                return res.status(500).json({ message: 'Error: Debe vaciar la estantería antes de eliminarla' });
+            }
+
+            res.status(200).json({ message: 'Estanterías eliminadas correctamente' });
+        });
     });
 });
+
 
 
 app.get('/spaces/:shelfId', (req, res) => {

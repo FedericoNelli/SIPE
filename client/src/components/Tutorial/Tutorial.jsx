@@ -113,7 +113,7 @@ const Tutorial = ({ notify }) => {
     }, [notify]);
 
     useEffect(() => {
-        axios.get('http://localhost:8081/aisle')
+        axios.get('http://localhost:8081/aisles')
             .then(response => {
                 setAisles(response.data);
             })
@@ -360,7 +360,7 @@ const Tutorial = ({ notify }) => {
                         {currentStep === 6 && (
                             <div className='bg-sipe-blue-dark rounded-lg'>
                                 <div className="bg-sipe-blue-dark text-white rounded-lg pt-8 px-12">
-                                    <h2 className="text-3xl font-bold mb-4 text-center">Confirmación de Datos</h2>
+                                    <h2 className="text-3xl font-bold mb-4 text-center">Confirmación de datos</h2>
                                     <div className="flex flex-row items-center mb-4 gap-10">
 
                                         {/* Card de Ubicación */}
@@ -382,7 +382,7 @@ const Tutorial = ({ notify }) => {
                                             </CardHeader>
                                             <CardContent className="text-center">
                                                 <span>
-                                                    {depositos.find(d => d.id === depositoId)?.nombre}
+                                                    {depositos.find(d => d.id === depositoId)?.nombreDeposito}
                                                 </span>
                                             </CardContent>
                                         </Card>

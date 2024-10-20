@@ -93,11 +93,11 @@ function Category({ notify }) {
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
                         <Button onClick={openFormModal} variant="sipemodal">NUEVA CATEGORÍA</Button>
-                        <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
-                            {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Categorías'}
+                        <Button onClick={openEditModal} variant="sipemodalalt2">
+                            EDITAR CATEGORÍAS
                         </Button>
-                        <Button onClick={openEditModal} className="bg-blue-600 font-semibold px-4 py-2 rounded hover:bg-blue-700">
-                            Editar Categorías
+                        <Button onClick={toggleDeleteMode} variant="sipemodalalt">
+                            {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR CATEGORÍAS'}
                         </Button>
                     </div>
                 </div>

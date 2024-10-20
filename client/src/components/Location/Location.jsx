@@ -93,10 +93,10 @@ function Location({ notify }) {
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
                         <Button onClick={openFormModal} variant="sipemodal">NUEVA UBICACIÓN</Button>
-                        <Button onClick={toggleDeleteMode} className="bg-red-600 font-semibold px-4 py-2 rounded hover:bg-red-700">
-                            {isDeleteMode ? 'Cancelar Eliminación' : 'Eliminar Ubicaciones'}
+                        <Button onClick={openEditModal} variant="sipemodalalt">EDITAR UBICACIÓN</Button>
+                        <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
+                            {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR UBICACIONES'}
                         </Button>
-                        <Button onClick={openEditModal} className="bg-blue-600 font-semibold px-4 py-2 rounded hover:bg-blue-700">EDITAR UBICACIÓN</Button>
                     </div>
                 </div>
                 <LocationList
