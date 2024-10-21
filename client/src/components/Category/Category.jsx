@@ -94,7 +94,7 @@ function Category({ notify }) {
                     <div className="flex flex-row gap-4 text-sipe-white">
                         <Button onClick={openFormModal} variant="sipemodal">NUEVA CATEGORÍA</Button>
                         <Button onClick={openEditModal} variant="sipemodalalt2">
-                            EDITAR CATEGORÍAS
+                            EDITAR CATEGORÍA
                         </Button>
                         <Button onClick={toggleDeleteMode} variant="sipemodalalt">
                             {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR CATEGORÍAS'}

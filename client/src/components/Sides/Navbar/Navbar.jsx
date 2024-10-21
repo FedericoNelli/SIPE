@@ -72,8 +72,9 @@ function Navbar() {
     };
 
     const handleChangePassword = () => {
-        navigate('/rPsw');
+        navigate('/rPsw', { state: { source: 'navbar' } });
     };
+
 
     const handleLogout = async () => {
         try {

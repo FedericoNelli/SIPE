@@ -93,7 +93,7 @@ function Aisle({ notify }) {
                     <div className="flex flex-row gap-4 text-sipe-white">
                         <Button onClick={openFormModal} variant="sipemodal">NUEVO PASILLO</Button>
                         <Button onClick={openEditModal} variant="sipemodalalt">
-                            EDITAR PASILLOS
+                            EDITAR PASILLO
                         </Button>
                         <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
                             {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR PASILLOS'}
