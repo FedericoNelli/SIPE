@@ -203,6 +203,7 @@ function Material({ notify }) {
 
     const backToMaterialList = () => {
         setViewingMaterialExits(false);
+        window.location.reload();
     };
 
     const handleDeleteExits = () => {
@@ -251,7 +252,7 @@ function Material({ notify }) {
                         )}
                         {viewingMaterialExits ? (
                             <> 
-                          <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
+                        <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
                                     {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR SALIDAS'}
                                 </Button>
                                 <Button onClick={backToMaterialList} variant="sipemodalalt">SALIR</Button>

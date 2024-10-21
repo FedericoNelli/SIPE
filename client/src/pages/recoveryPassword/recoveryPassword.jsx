@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Label } from '@/components/Common/Label/Label';
 import { Input } from '@/components/Common/Input/Input';
 import { Button } from '@/components/Common/Button/Button';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 
 function RecoveryPassword() {
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
+    const { state } = useLocation();
     const navigate = useNavigate();
 
     const handleSubmit = async (event) => {
@@ -26,6 +27,8 @@ function RecoveryPassword() {
         }
     };
 
+    const messageTitle = state?.source === 'navbar' ? 'Cambiá tu contraseña' : 'Recuperá tu contraseña';
+
     return (
         <div className="bg-sipe-blue-dark">
             <motion.div
@@ -40,7 +43,7 @@ function RecoveryPassword() {
                     <div className="flex items-center min-h-screen px-4 w-2/6 bg-sipe-blue-dark">
                         <div className="mx-auto w-full max-w-md space-y-4">
                             <div className="space-y-2">
-                                <h1 className="font-bold text-sipe-white text-4xl">Recuperá tu contraseña</h1>
+                                <h1 className="font-bold text-sipe-white text-4xl">{messageTitle}</h1>
                                 <p className="font-thin text-sipe-white">Escribí tu email y recibí allí un código para reestablecer tu contraseña</p>
                             </div>
                             <div className="space-y-4">

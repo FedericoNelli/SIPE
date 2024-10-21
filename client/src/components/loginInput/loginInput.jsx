@@ -48,7 +48,7 @@ function LoginInput({ onLoginSuccess, onFirstLogin }) {
             setErrorMessage('Usuario y/o contraseña incorrectos.');
         }
     }
-    
+
     function handleCheckboxChange(isChecked) {
         setRememberMe(isChecked);
         if (isChecked) {
@@ -84,7 +84,7 @@ function LoginInput({ onLoginSuccess, onFirstLogin }) {
                     </div>
                     <div className='flex justify-center items-center gap-2 text-sipe-gray'>
                         <Checkbox checked={rememberMe} onCheckedChange={handleCheckboxChange} /> <span className="text-xs">Recordarme</span>
-                        <Link className="ml-auto text-xs" to="/rPsw">
+                        <Link className="ml-auto text-xs" to="/rPsw" state={{ source: 'login' }}>
                             ¿Olvidaste tu contraseña?
                         </Link>
                     </div>
