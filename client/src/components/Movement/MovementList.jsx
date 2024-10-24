@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
 import { Button } from "@/components/Common/Button/Button";
 
-function MovementList({ movements, isDeleteMode, selectedMovements, setSelectedMovements, handleDeleteMovements, notify }) {
+function MovementList({ movements, pendingMovements, isDeleteMode, selectedMovements, setSelectedMovements, handleDeleteMovements, onConfirmMovement, notify }) {
     const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false); // Estado para la confirmación de eliminación
+
 
     // Función para alternar la selección de un movimiento
     const toggleMovementSelection = (movementId) => {
@@ -16,10 +17,10 @@ function MovementList({ movements, isDeleteMode, selectedMovements, setSelectedM
 
     // Función para manejar la selección de todos los movimientos
     const handleSelectAll = () => {
-        if (selectedMovements.length === movements.length) {
+        const allMovementIds = movements.map(movement => movement.id);
+        if (selectedMovements.length === allMovementIds.length) {
             setSelectedMovements([]);
         } else {
-            const allMovementIds = movements.map(movement => movement.id);
             setSelectedMovements(allMovementIds);
         }
     };
@@ -52,7 +53,7 @@ function MovementList({ movements, isDeleteMode, selectedMovements, setSelectedM
 
     return (
         <>
-            {movements.length === 0 ? (
+            {(movements.length === 0 && pendingMovements.length === 0) ? (
                 <p className="text-center text-white">No hay movimientos generados</p>
             ) : (
                 <Table className="w-full text-white">
@@ -72,7 +73,8 @@ function MovementList({ movements, isDeleteMode, selectedMovements, setSelectedM
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Material</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad Movida</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito Origen</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Depósito Destino</TableHead>
+                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito Destino</TableHead>
+                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -93,6 +95,25 @@ function MovementList({ movements, isDeleteMode, selectedMovements, setSelectedM
                                 <TableCell className="text-center font-light">{movement.cantidad}</TableCell>
                                 <TableCell className="text-center font-light">{movement.depositoOrigen}</TableCell>
                                 <TableCell className="text-center font-light">{movement.depositoDestino}</TableCell>
+                                <TableCell className="text-center" />
+                            </TableRow>
+                        ))}
+                        {pendingMovements.map((movement, index) => (
+                            <TableRow key={`pending-${index}`} className="bg-gray-600">
+                                <TableCell className="text-center font-light">{formatDate(movement.fechaMovimiento)}</TableCell>
+                                <TableCell className="text-center font-light">{movement.idUsuario}</TableCell>
+                                <TableCell className="text-center font-light">{movement.idMaterial}</TableCell>
+                                <TableCell className="text-center font-light">{movement.cantidadMovida}</TableCell>
+                                <TableCell className="text-center font-light">{movement.idDepositoOrigen}</TableCell>
+                                <TableCell className="text-center font-light">{movement.idDepositoDestino}</TableCell>
+                                <TableCell className="text-center">
+                                    <Button
+                                        onClick={() => onConfirmMovement(movement)}
+                                        variant="sipemodal"
+                                    >
+                                        Confirmar
+                                    </Button>
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

@@ -248,7 +248,7 @@ function MaterialForm({ onClose, notify }) {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" placeholder="Selecciona la ubicación" />
                                 </SelectTrigger>
-                                <SelectContent> 
+                                <SelectContent>
                                     {depositLocations.map(location => (
                                         <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={location.id} value={location.id}>{location.nombre}</SelectItem>
                                     ))}
@@ -327,17 +327,36 @@ function MaterialForm({ onClose, notify }) {
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Select id="espacio" onValueChange={(value) => handleSelectChange('espacio', value)} disabled={!formData.shelf}>
+                            <Select
+                                id="espacio"
+                                onValueChange={(value) => handleSelectChange('espacio', value)}
+                                disabled={!formData.shelf || spaces.length === 0}
+                            >
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Espacio" />
+                                    {formData.shelf ? (
+                                        spaces.length > 0 ? (
+                                            <SelectValue placeholder="Espacio" />
+                                        ) : (
+                                            <p className="text-xs text-sipe-white">Sin espacios generados en la estantería</p>
+                                        )
+                                    ) : (
+                                        <SelectValue placeholder="Espacio" />
+                                    )}
                                 </SelectTrigger>
-                                <SelectContent>
-                                    {spaces.map(space => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={space.numeroEspacio} value={space.id} disabled={space.ocupado}>
-                                            {`Espacio ${space.numeroEspacio}`}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
+                                {spaces.length > 0 && (
+                                    <SelectContent>
+                                        {spaces.map((space) => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                key={space.id}
+                                                value={space.id}
+                                                disabled={space.ocupado}
+                                            >
+                                                {`Espacio ${space.numeroEspacio}`}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                )}
                             </Select>
                         </div>
                         <div className="grid gap-2">

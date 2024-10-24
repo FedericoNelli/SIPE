@@ -294,7 +294,8 @@ app.get('/materials/:id', (req, res) => {
         et.cantidad_estante AS cantidadEstante,   
         et.cantidad_division AS cantidadDivision, 
         e.fila AS estanteEstanteria,                
-        e.columna AS divisionEstanteria,             
+        e.columna AS divisionEstanteria,
+        p.id AS idPasillo,             
         p.numero AS pasilloNumero,
         l.descripcion AS lado
     FROM 
@@ -580,6 +581,7 @@ app.get('/exits', (req, res) => {
     const query = `
         SELECT 
         s.id AS salidaId,
+        motivo,
         DATE_FORMAT(s.fecha, '%d-%m-%Y') AS fechaSalida,
         GROUP_CONCAT(m.nombre ORDER BY ds.idMaterial ASC SEPARATOR ', ') AS nombresMateriales,
         GROUP_CONCAT(ds.cantidad ORDER BY ds.idMaterial ASC SEPARATOR ' , ') AS cantidadesMateriales,
@@ -649,7 +651,6 @@ app.get('/exits-details', (req, res) => {
     });
 });
 
-// Endpoint POST para registrar la salida de un material
 app.post('/materials/exits', async (req, res) => {
     const salidas = req.body; // Aquí recibes un array de objetos
 
@@ -996,7 +997,7 @@ function handleStockNotifications(nombre, cantidad, bajoStock, callback) {
             const notificacionId = result.insertId;
 
             db.query(
-                `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
+                `INSERT INTO usuario_notificacion (idUsuario, idNotificacion, visto) 
                 SELECT id, ?, FALSE FROM usuario`,
                 [notificacionId],
                 (error) => {
@@ -1041,7 +1042,7 @@ function notifyNewMaterialCreation(nombre, idDeposito, callback) {
                 const notificacionId = result.insertId;
 
                 db.query(
-                    `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
+                    `INSERT INTO usuario_notificacion (idUsuario, idNotificacion, visto) 
                     SELECT id, ?, FALSE FROM usuario`,
                     [notificacionId],
                     (error) => {
@@ -2313,7 +2314,7 @@ app.get('/movements', (req, res) => {
 
 
 app.post('/addMovements', (req, res) => {
-    const { idMaterial, idUsuario, idDepositoDestino, cantidadMovida } = req.body;
+    const { idMaterial, idUsuario, idDepositoDestino, cantidadMovida, nombreUsuarioConfirmacion } = req.body;
 
     // Obtener toda la información del material en el depósito de origen, incluyendo el nombre
     const queryMaterialOrigen = `
@@ -2463,8 +2464,8 @@ app.post('/addMovements', (req, res) => {
                                     }
 
                                     const insertMovementQuery = `
-                                        INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
-                                        VALUES (?, ?, ?, ?, ?, NOW())
+                                        INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento, confirmado) 
+                                        VALUES (?, ?, ?, ?, ?, NOW(), TRUE, ?)
                                     `;
 
                                     db.query(insertMovementQuery, [idUsuario, idMaterial, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err) => {
@@ -2664,7 +2665,6 @@ app.put('/edit-movements/:id', async (req, res) => {
         res.status(500).json({ error: 'Error al actualizar el movimiento' });
     }
 });
-
 
 app.get('/deposit-locations-movements', (req, res) => {
     const query = `SELECT d.id, d.nombre, u.nombre AS ubicacion 
@@ -3222,8 +3222,8 @@ app.get('/api/notifications/:userId', (req, res) => {
     db.query(
         `SELECT n.id, n.descripcion, n.fecha, un.visto
             FROM notificacion n
-            JOIN usuario_notificacion un ON n.id = un.notificacion_id
-            WHERE un.usuario_id = ?
+            JOIN usuario_notificacion un ON n.id = un.idNotificacion
+            WHERE un.idUsuario = ?
             ORDER BY n.fecha DESC`,
         [userId],
         (error, results) => {
@@ -3247,7 +3247,7 @@ app.post('/api/notifications/mark-as-viewed', (req, res) => {
     const query = `
         UPDATE usuario_notificacion
         SET visto = TRUE
-        WHERE usuario_id = ? AND notificacion_id IN (?)
+        WHERE idUsuario = ? AND idNotificacion IN (?)
     `;
 
     db.query(query, [userId, notificationIds], (error) => {

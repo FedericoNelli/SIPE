@@ -224,9 +224,8 @@ function Material({ notify }) {
                 console.error('Error eliminando salidas:', error);
                 notify('error', 'Error al eliminar salidas');
             });
-        setTimeout(() => {
             window.location.reload();
-        }, 2000);
+        
     };
 
     const toggleDeleteMode = () => {

@@ -42,6 +42,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
             axios.get(`http://localhost:8081/materials/${material.id}`)
                 .then(response => {
                     const data = response.data;
+
                     setFormData({
                         nombre: data.nombre,
                         cantidad: data.cantidad,
@@ -52,17 +53,16 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                         deposito: data.idDeposito,
                         ubicacion: data.ubicacionId,
                         espacio: data.idEspacio,
-                        pasillo: data.pasilloNumero,
+                        pasillo: data.idPasillo,
                         estanteria: data.estanteriaId,
                         imagen: null,
                         imagenPreview: data.imagen ? `http://localhost:8081${data.imagen}` : ''
                     });
+                    setSelectedAisle(data.idPasillo);
+                    setSelectedShelf(data.estanteriaId);
                     setLocationId(data.ubicacionId);
-                    setSelectedShelf(data.estanteriaId || '');
                     setSelectedShelfNumber(data.estanteriaNumero);
-                    setSelectedAisle(data.pasilloNumero || '');
                     setSelectedSpace(data.idEspacio);
-
                 })
                 .catch(error => {
                     console.error('Error al obtener los detalles del material:', error);
@@ -70,6 +70,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                 });
         }
     }, [material]);
+
 
     useEffect(() => {
         setIsVisible(isOpen);
@@ -90,41 +91,51 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
     }, [locationId]);
 
 
-    // Este useEffect solo se ejecuta cuando ya tienes el idDeposito
     useEffect(() => {
         if (formData.deposito) {
             axios.get(`http://localhost:8081/aisles/${formData.deposito}`)
                 .then(response => {
                     setAisles(response.data);
-                    setSelectedAisle(material?.pasilloNumero || '');  // Pre-carga el pasillo
+                    if (material?.idPasillo) {
+                        setSelectedAisle(material.idPasillo);
+                    }
                 })
                 .catch(error => console.error('Error fetching aisles:', error));
         }
     }, [formData.deposito]);
 
-    // Este useEffect solo se ejecuta cuando ya tienes el pasillo seleccionado
+
+    // Cargar las estanterías cuando se selecciona o ya se tiene un pasillo
     useEffect(() => {
         if (selectedAisle) {
             axios.get(`http://localhost:8081/shelves/${selectedAisle}`)
                 .then(response => {
                     setShelves(response.data);
-                    setSelectedShelf(formData.estanteria || '');  // Pre-carga la estantería
+                    // Pre-carga la estantería solo si ya está definida en el material
+                    if (material?.estanteria) {
+                        console.log(`Pre-cargando estantería: ${material.estanteria}`);
+                        setSelectedShelf(material.estanteria);
+                    }
                 })
                 .catch(error => console.error('Error fetching shelves:', error));
         }
     }, [selectedAisle]);
 
-    // Este useEffect se asegura de cargar los espacios cuando ya tienes la estantería
+    // Cargar los espacios cuando se selecciona o ya se tiene una estantería
     useEffect(() => {
         if (selectedShelf) {
             axios.get(`http://localhost:8081/spaces/${selectedShelf}`)
                 .then(response => {
                     setSpaces(response.data);
-                    setSelectedSpace(material?.idEspacio || '');  // Pre-carga el espacio
+                    // Pre-carga el espacio solo si ya está definido en el material
+                    if (material?.idEspacio) {
+                        setSelectedSpace(material.idEspacio);
+                    }
                 })
                 .catch(error => console.error('Error fetching spaces:', error));
         }
     }, [selectedShelf]);
+
 
     // Peticiones para obtener las ubicaciones de depósitos, categorías, estados y ubicaciones iniciales
     useEffect(() => {
@@ -471,22 +482,31 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="grid gap-2">
                                             <Label htmlFor="space" className="text-sm font-medium">Espacio</Label>
-                                            <Select
-                                                id="space"
-                                                value={selectedSpace}
-                                                onValueChange={(value) => handleSpaceChange(value)}
-                                            >
-                                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                                    <SelectValue>{selectedSpace ? spaces.find(space => space.id === selectedSpace)?.numeroEspacio : "Selecciona el espacio"}</SelectValue>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {spaces.map(space => (
-                                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={space.id} value={space.id} disabled={space.ocupado}>
-                                                            {`Espacio ${space.numeroEspacio}`}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            {spaces.length > 0 ? (
+                                                <Select
+                                                    id="space"
+                                                    value={selectedSpace}
+                                                    onValueChange={(value) => handleSpaceChange(value)}
+                                                >
+                                                    <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                                        <SelectValue>{selectedSpace ? spaces.find(space => space.id === selectedSpace)?.numeroEspacio : "Selecciona el espacio"}</SelectValue>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {spaces.map(space => (
+                                                            <SelectItem
+                                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                                key={space.id}
+                                                                value={space.id}
+                                                                disabled={space.ocupado}
+                                                            >
+                                                                {`Espacio ${space.numeroEspacio}`}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            ) : (
+                                                <p className="text-sm text-gray-500">Estantería sin espacios, por favor vuelva a generar los espacios</p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="grid gap-2">

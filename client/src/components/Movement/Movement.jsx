@@ -3,19 +3,30 @@ import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import MovementForm from '@/components/Movement/MovementForm';
 import MovementList from '@/components/Movement/MovementList';
-import MovementEditModal from './MovementEditModal'; // Importamos el modal de edición
+import MovementEditModal from '@/components/Movement/MovementEditModal';
+import MovementConfirmModal from '@/components/Movement/MovementConfirmModal';
 import axios from 'axios';
 
 function Movement({ notify }) {
     const [movements, setMovements] = useState([]);
+    const [pendingMovements, setPendingMovements] = useState(() => {
+        const savedPendingMovements = localStorage.getItem('pendingMovements');
+        if (savedPendingMovements) {
+            const parsedMovements = JSON.parse(savedPendingMovements);
+            const now = new Date().getTime();
+            return parsedMovements.filter(movement => movement.expiry > now);
+        }
+        return [];
+    });
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Estado para abrir modal de editar
-    const [isDeleteMode, setIsDeleteMode] = useState(false); 
-    const [selectedMovements, setSelectedMovements] = useState([]); 
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteMode, setIsDeleteMode] = useState(false);
+    const [selectedMovements, setSelectedMovements] = useState([]);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [selectedMovement, setSelectedMovement] = useState(null);
 
-    // Nueva función para cargar movimientos
     const loadMovements = () => {
         axios.get('http://localhost:8081/movements')
             .then(response => {
@@ -29,6 +40,10 @@ function Movement({ notify }) {
     useEffect(() => {
         loadMovements();
     }, []);
+
+    useEffect(() => {
+        localStorage.setItem('pendingMovements', JSON.stringify(pendingMovements));
+    }, [pendingMovements]);
 
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -45,25 +60,46 @@ function Movement({ notify }) {
     };
 
     const openEditModal = () => {
-        setIsEditModalOpen(true); // Abrir el modal de edición
+        setIsEditModalOpen(true);
     };
 
     const closeEditModal = () => {
-        setIsEditModalOpen(false); // Cerrar el modal de edición
+        setIsEditModalOpen(false);
     };
 
     const handleMovementUpdated = () => {
-        loadMovements(); // Recargar movimientos
-        closeEditModal(); // Cerrar modal de edición después de actualizar
+        loadMovements();
+        closeEditModal();
     };
 
-    // Función para activar el modo de eliminación
+    // Modificar la función para abrir el modal de confirmación en lugar de ejecutar el endpoint
+    const handleConfirmMovement = (movement) => {
+        setSelectedMovement(movement);
+        setIsConfirmModalOpen(true);
+    };
+
+    // Función para remover un movimiento pendiente
+    const removePendingMovement = (movementToRemove) => {
+        setPendingMovements(pendingMovements.filter(movement => movement !== movementToRemove));
+    };
+
+    const closeConfirmModal = () => {
+        setIsConfirmModalOpen(false);
+        setSelectedMovement(null);
+    };
+
+    const handleAddPendingMovement = (newMovement) => {
+        const expiryTime = new Date().getTime() + 7 * 24 * 60 * 60 * 1000;
+        const movementWithExpiry = { ...newMovement, expiry: expiryTime };
+        setPendingMovements([...pendingMovements, movementWithExpiry]);
+        closeFormModal();
+    };
+
     const toggleDeleteMode = () => {
         setIsDeleteMode(!isDeleteMode);
-        setSelectedMovements([]); // Limpiar la selección al salir del modo de eliminación
+        setSelectedMovements([]);
     };
 
-    // Función para manejar la eliminación de movimientos
     const handleDeleteMovements = () => {
         if (selectedMovements.length === 0) {
             notify('error', 'No hay movimientos seleccionados para eliminar');
@@ -101,11 +137,13 @@ function Movement({ notify }) {
                     </div>
                 </div>
                 <MovementList
-                    movements={currentMovements}
+                    movements={movements}
+                    pendingMovements={pendingMovements}
                     isDeleteMode={isDeleteMode}
                     selectedMovements={selectedMovements}
                     setSelectedMovements={setSelectedMovements}
                     handleDeleteMovements={handleDeleteMovements}
+                    onConfirmMovement={handleConfirmMovement}
                     notify={notify}
                 />
                 <div className="flex justify-center p-4">
@@ -123,7 +161,11 @@ function Movement({ notify }) {
                 </div>
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <MovementForm onClose={closeFormModal} notify={notify} />
+                        <MovementForm
+                            onClose={closeFormModal}
+                            onAddPendingMovement={handleAddPendingMovement}
+                            notify={notify}
+                        />
                     </div>
                 )}
                 {isEditModalOpen && (
@@ -134,6 +176,19 @@ function Movement({ notify }) {
                             notify={notify}
                         />
                     </div>
+                )}
+                {isConfirmModalOpen && selectedMovement && (
+                    <MovementConfirmModal
+                        movement={selectedMovement}
+                        onClose={closeConfirmModal}
+                        notify={notify}
+                        onMovementConfirmed={() => {
+                            closeConfirmModal();
+                            setPendingMovements(pendingMovements.filter(m => m !== selectedMovement));
+                            loadMovements();
+                        }}
+                        onRemovePendingMovement={removePendingMovement}
+                    />
                 )}
             </div>
         </div>

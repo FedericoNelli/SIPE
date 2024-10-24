@@ -3,7 +3,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Button } from "@/components/Common/Button/Button";
 
 function ShelfList({ shelves, isDeleteMode, isEmptyMode, selectedShelves, setSelectedShelves, handleDeleteShelves, handleEmptyShelves, notify }) {
-    const [isConfirmingAction, setIsConfirmingAction] = useState(false); // Estado para la confirmación de acción (eliminar o vaciar)
+    const [isConfirmingAction, setIsConfirmingAction] = useState(false);
 
     // Función para alternar la selección de una estantería
     const toggleShelfSelection = (shelfId) => {

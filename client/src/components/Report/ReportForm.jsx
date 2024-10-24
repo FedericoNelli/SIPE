@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import axios from 'axios';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 import { Label } from "@/components/Common/Label/Label";
 import { Button } from "@/components/Common/Button/Button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/Common/Select/Select";
 import { Input } from "@/components/Common/Input/Input";
+import axios from 'axios';
 
 const ReportForm = ({ onClose, notify }) => {
     const [formData, setFormData] = useState({
@@ -14,7 +14,7 @@ const ReportForm = ({ onClose, notify }) => {
         fechaFin: '',
         deposito: '',
         estadoMaterial: '',
-        idMaterial: '', // Añadir material al formulario
+        idMaterial: '',
         tipoGrafico: '',
         idSalida: '',
         idDetalleSalida: '',
@@ -70,10 +70,7 @@ const ReportForm = ({ onClose, notify }) => {
             }
         };
 
-        // Agregar el evento de tecla al montar el componente
         window.addEventListener("keydown", handleEscape);
-
-        // Limpiar el evento al desmontar el componente
         return () => {
             window.removeEventListener("keydown", handleEscape);
         };
