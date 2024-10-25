@@ -128,7 +128,7 @@ function Report({ notify }) {
                         selectedMaterial={selectedReport.nombreMaterial || 'Todos los materiales'}
                         dateRange={`${selectedReport.fechaInicio || 'N/A'} - ${selectedReport.fechaFin || 'N/A'}`}
                         selectedOption={selectedReport.deposito?.nombre}
-                        selectedOption1={selectedReport.estadoDescripcion || 'Todos'}
+                        selectedOption1={selectedReport.estadoDescripcion || 'N/A'}
                     />
                 )}
             </div>

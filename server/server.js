@@ -2807,7 +2807,6 @@ app.post('/addReport', (req, res) => {
                 break;
 
             case 'Informe de material por estado':
-                console.log('Valor de estadoMaterial antes de construir la consulta:', estadoMaterial);
                 if (estadoMaterial === 'Todos') {
                     reportQuery = `
                         SELECT 

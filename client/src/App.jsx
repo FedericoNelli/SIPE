@@ -27,7 +27,7 @@ function App() {
         <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/rPsw" element={<RecoveryPassword />} />
           <Route path="/rCod" element={<RecoveryCode />} />
-          <Route path="/chPsw" element={<ChangePassword />} />
+          <Route path="/chPsw" element={<PrivateRoute><ChangePassword /></PrivateRoute>} />
           <Route path="/testing" element={<CompTesting />} />
           <Route path="/nbr" element={<Navbar />} />
           <Route path="/tuto" element={<AdminRoute><Tutorials /></AdminRoute>} />

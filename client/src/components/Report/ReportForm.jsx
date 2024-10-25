@@ -232,7 +232,6 @@ const ReportForm = ({ onClose, notify }) => {
                                     <SelectValue placeholder="Selecciona un estado" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Todos">Todos</SelectItem>
                                     {estadosMaterial.map(estado => (
                                         <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={estado.id} value={estado.id}>{estado.descripcion}</SelectItem>
                                     ))}
