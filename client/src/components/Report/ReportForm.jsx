@@ -107,8 +107,9 @@ const ReportForm = ({ onClose, notify }) => {
         try {
             const token = localStorage.getItem('token');
             // Formatear las fechas a 'yyyy-MM-dd' si están presentes
-            const formattedStartDate = formData.fechaInicio ? format(new Date(formData.fechaInicio), 'yyyy-MM-dd') : null;
-            const formattedEndDate = formData.fechaFin ? format(new Date(formData.fechaFin), 'yyyy-MM-dd') : null;
+            const formattedStartDate = formData.fechaInicio ? format(new Date(formData.fechaInicio + 'T00:00:00'), 'yyyy-MM-dd') : null;
+            const formattedEndDate = formData.fechaFin ? format(new Date(formData.fechaFin + 'T00:00:00'), 'yyyy-MM-dd') : null;
+
 
             const reportDataToSend = {
                 ...formData,
@@ -121,9 +122,6 @@ const ReportForm = ({ onClose, notify }) => {
                 idMovimiento: formData.tipo === 'Informe de material por movimiento entre deposito' ? formData.idMovimiento : null
             };
 
-            // Aquí agregas el log para verificar qué tipo de informe se está enviando
-            console.log("Enviando informe al backend:", reportDataToSend);
-
             const response = await axios.post('http://localhost:8081/addReport', reportDataToSend, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -133,11 +131,9 @@ const ReportForm = ({ onClose, notify }) => {
             console.log('Response del informe generado:', response.data);
             if (response.status === 200) {
                 notify('success', "¡Informe generado con éxito!");
-
-                // Recargar la página después de 2 segundos
-                /* setTimeout(() => {
+                setTimeout(() => {
                     window.location.reload();
-                }, 2000); */  // Recargar después de 2 segundos
+                }, 2000); 
             } else {
                 throw new Error(response.data.mensaje || "Error al generar informe");
             }
@@ -148,6 +144,10 @@ const ReportForm = ({ onClose, notify }) => {
             setLoading(false);
         }
     };
+
+    // Obtener la fecha actual y formatearla para el atributo max
+    const today = new Date();
+    const formattedToday = format(today, 'yyyy-MM-dd');
 
     const handleCancel = () => {
         if (onClose) onClose();
@@ -292,6 +292,7 @@ const ReportForm = ({ onClose, notify }) => {
                             value={formData.fechaInicio}
                             onChange={handleInputChange}
                             className="border-b bg-sipe-blue-dark text-white"
+                            max={formattedToday}
                         />
                         <Label className="text-sm font-medium">Fecha de fin</Label>
                         <Input
@@ -300,6 +301,7 @@ const ReportForm = ({ onClose, notify }) => {
                             value={formData.fechaFin}
                             onChange={handleInputChange}
                             className="border-b bg-sipe-blue-dark text-white"
+                            max={formattedToday}
                         />
                     </div>
                 </CardContent>
