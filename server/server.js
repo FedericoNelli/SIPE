@@ -2102,25 +2102,76 @@ app.put('/edit-shelf/:id', (req, res) => {
     const shelfId = req.params.id;
     const { numero, cantidad_estante, cantidad_division, idPasillo, idLado } = req.body;
 
-    const query = `
-        UPDATE Estanteria
-        SET numero = ?, cantidad_estante = ?, cantidad_division = ?, idPasillo = ?, idLado = ?
+    // Primero obtenemos los valores actuales de la estantería
+    const getCurrentShelfQuery = `
+        SELECT cantidad_estante, cantidad_division 
+        FROM Estanteria 
         WHERE id = ?
     `;
 
-    const values = [numero, cantidad_estante, cantidad_division, idPasillo, idLado, shelfId];
-
-    db.query(query, values, (err, result) => {
+    db.query(getCurrentShelfQuery, [shelfId], (err, rows) => {
         if (err) {
-            console.error('Error al actualizar estantería:', err);
-            return res.status(500).json({ error: 'Error al actualizar la estantería' });
+            console.error('Error al obtener datos actuales de la estantería:', err);
+            return res.status(500).json({ error: 'Error al obtener los datos de la estantería' });
         }
-        if (result.affectedRows === 0) {
+
+        if (rows.length === 0) {
             return res.status(404).json({ error: 'Estantería no encontrada' });
         }
-        res.status(200).json({ message: 'Estantería actualizada correctamente' });
+
+        const currentShelf = rows[0];
+
+        // Comparamos si los valores de cantidad_estante o cantidad_division cambian
+        if (currentShelf.cantidad_estante !== cantidad_estante || currentShelf.cantidad_division !== cantidad_division) {
+            // Validamos si hay materiales en los espacios de la estantería
+            const checkMaterialsQuery = `
+                SELECT Material.id 
+                FROM Material 
+                INNER JOIN Espacio ON Material.idEspacio = Espacio.id 
+                WHERE Espacio.idEstanteria = ?
+            `;
+
+            db.query(checkMaterialsQuery, [shelfId], (err, materials) => {
+                if (err) {
+                    console.error('Error verificando materiales:', err);
+                    return res.status(500).json({ error: 'Error verificando materiales en la estantería' });
+                }
+
+                if (materials.length > 0) {
+                    return res.status(400).json({ message: 'No se pueden modificar cantidad_estante o cantidad_division si hay materiales en los espacios de la estantería' });
+                }
+
+                // Si no hay materiales, procedemos con la actualización
+                updateShelf();
+            });
+        } else {
+            // Si no cambian esos valores, procedemos directamente con la actualización
+            updateShelf();
+        }
     });
+
+    function updateShelf() {
+        const query = `
+            UPDATE Estanteria
+            SET numero = ?, cantidad_estante = ?, cantidad_division = ?, idPasillo = ?, idLado = ?
+            WHERE id = ?
+        `;
+
+        const values = [numero, cantidad_estante, cantidad_division, idPasillo, idLado, shelfId];
+
+        db.query(query, values, (err, result) => {
+            if (err) {
+                console.error('Error al actualizar estantería:', err);
+                return res.status(500).json({ error: 'Para modificar este campo primero debe vaciar la estantería' });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: 'Estantería no encontrada' });
+            }
+            res.status(200).json({ message: 'Estantería actualizada correctamente' });
+        });
+    }
 });
+
 
 // Endpoint para vaciar estanterías
 app.post('/empty-shelves', (req, res) => {

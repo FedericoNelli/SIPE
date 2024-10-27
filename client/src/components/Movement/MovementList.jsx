@@ -74,7 +74,9 @@ function MovementList({ movements, pendingMovements, isDeleteMode, selectedMovem
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad Movida</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito Origen</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito Destino</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Acciones</TableHead>
+                            {pendingMovements.length > 0 && (
+                                <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Acciones</TableHead>
+                            )}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -95,7 +97,7 @@ function MovementList({ movements, pendingMovements, isDeleteMode, selectedMovem
                                 <TableCell className="text-center font-light">{movement.cantidad}</TableCell>
                                 <TableCell className="text-center font-light">{movement.depositoOrigen}</TableCell>
                                 <TableCell className="text-center font-light">{movement.depositoDestino}</TableCell>
-                                <TableCell className="text-center" />
+                                {pendingMovements.length > 0 && <TableCell className="text-center" />}
                             </TableRow>
                         ))}
                         {pendingMovements.map((movement, index) => (

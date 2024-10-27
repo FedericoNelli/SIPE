@@ -122,7 +122,7 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
             }
         } catch (error) {
             console.error('Error actualizando la estantería:', error);
-            notify('error', 'Error al actualizar la estantería');
+            notify('error', 'Para modificar este campo debe vaciar la estantería');
         } finally {
             setLoading(false); // Detener estado de carga
         }
