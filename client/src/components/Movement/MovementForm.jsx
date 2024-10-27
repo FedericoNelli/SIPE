@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function MovementForm({ onClose, notify }) {
+function MovementForm({ onClose, onAddPendingMovement, notify }) {
     const [formData, setFormData] = useState({
         fechaMovimiento: '',
         idMaterial: '',
@@ -93,25 +93,9 @@ function MovementForm({ onClose, notify }) {
         }));
     };
 
-    const handleSubmit = async () => {
-        try {
-            const response = await axios.post('http://localhost:8081/addMovements', formData);
-
-            if (response.status !== 200) {
-                throw new Error(response.data.error || "Error al agregar movimiento");
-            }
-
-            notify('success', "¡Movimiento agregado correctamente!");
-
-            if (onClose) onClose();
-
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        } catch (error) {
-            console.error('Error al agregar el movimiento:', error);
-            notify('error', error.message || "Error al agregar movimiento");
-        }
+    const handleSubmit = () => {
+        // Pasar el movimiento al componente padre como pendiente
+        onAddPendingMovement(formData);
     };
 
     const handleCancel = () => {

@@ -36,13 +36,20 @@ function Report({ notify }) {
     const fetchReportDetails = async (reportId) => {
         try {
             const response = await axios.get(`http://localhost:8081/reports/${reportId}`);
-            setSelectedReport(response.data); // Guardar el informe seleccionado en el estado
+            setSelectedReport(response.data);
             setIsDetailModalOpen(true); // Abrir el modal
         } catch (error) {
             console.error('Error fetching report details:', error);
             notify('error', 'Error al obtener detalles del informe');
         }
     };
+
+    useEffect(() => {
+        if (selectedReport) {
+            console.log('selectedReport actualizado:', selectedReport);
+        }
+    }, [selectedReport]);
+
 
     // Cerrar el modal de detalles
     const closeDetailModal = () => {
@@ -120,7 +127,8 @@ function Report({ notify }) {
                         tipoGrafico={selectedReport.tipoGrafico}
                         selectedMaterial={selectedReport.nombreMaterial || 'Todos los materiales'}
                         dateRange={`${selectedReport.fechaInicio || 'N/A'} - ${selectedReport.fechaFin || 'N/A'}`}
-                        selectedOption={selectedReport.deposito?.nombre || selectedReport.estado || 'Todos'}
+                        selectedOption={selectedReport.deposito?.nombre}
+                        selectedOption1={selectedReport.estadoDescripcion || 'N/A'}
                     />
                 )}
             </div>

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/Common/Button/Button";
 import { format } from "date-fns"; // Usar para formatear fechas
 
-function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafico, selectedMaterial, dateRange, selectedOption }) {
+function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafico, selectedMaterial, dateRange, selectedOption, selectedOption1 }) {
     const [chartData, setChartData] = useState([]);
     const [materialDetails, setMaterialDetails] = useState([]); // Para los detalles de materiales en los informes de salida de material y movimientos
 
@@ -61,10 +61,9 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
         } else {
             setChartData([]);
         }
+        console.log('selectedOption:', selectedOption1);
     }, [reportData, reportType]);
 
-
-    // Supongamos que dateRange está en el formato: "2024-09-30T00:00:00.000Z - 2024-10-09T00:00:00.000Z"
     const [startDate, endDate] = dateRange.split(' - '); // Dividimos las dos fechas
     const formattedStartDate = startDate ? format(new Date(startDate), 'dd/MM/yyyy') : 'N/A';
     const formattedEndDate = endDate ? format(new Date(endDate), 'dd/MM/yyyy') : 'N/A';
@@ -137,7 +136,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
 
                         {reportType === "Informe de material por estado" && (
                             <h3 className="text-center text-lg font-medium text-sipe-white mb-4">
-                                Estado: {selectedOption} <br />
+                                Estado: {selectedOption1} <br />
                                 {formattedStartDate} - {formattedEndDate}
                             </h3>
                         )}

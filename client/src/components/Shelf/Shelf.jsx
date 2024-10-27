@@ -88,6 +88,7 @@ function Shelf({ notify }) {
                 notify('success', 'Estanterías vaciadas correctamente');
                 setSelectedShelves([]);
                 setIsEmptyMode(false);
+                window.location.reload();
             })
             .catch(error => {
                 notify('error', 'Error al vaciar estanterías');

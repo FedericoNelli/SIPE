@@ -294,7 +294,8 @@ app.get('/materials/:id', (req, res) => {
         et.cantidad_estante AS cantidadEstante,   
         et.cantidad_division AS cantidadDivision, 
         e.fila AS estanteEstanteria,                
-        e.columna AS divisionEstanteria,             
+        e.columna AS divisionEstanteria,
+        p.id AS idPasillo,             
         p.numero AS pasilloNumero,
         l.descripcion AS lado
     FROM 
@@ -580,6 +581,7 @@ app.get('/exits', (req, res) => {
     const query = `
         SELECT 
         s.id AS salidaId,
+        motivo,
         DATE_FORMAT(s.fecha, '%d-%m-%Y') AS fechaSalida,
         GROUP_CONCAT(m.nombre ORDER BY ds.idMaterial ASC SEPARATOR ', ') AS nombresMateriales,
         GROUP_CONCAT(ds.cantidad ORDER BY ds.idMaterial ASC SEPARATOR ' , ') AS cantidadesMateriales,
@@ -649,7 +651,6 @@ app.get('/exits-details', (req, res) => {
     });
 });
 
-// Endpoint POST para registrar la salida de un material
 app.post('/materials/exits', async (req, res) => {
     const salidas = req.body; // Aquí recibes un array de objetos
 
@@ -936,7 +937,7 @@ app.delete('/aisle/delete/:id', (req, res) => {
             });
         } else {
             // Si el depósito no existe
-            return res.status(404).send('Pasillo no encontrado' );
+            return res.status(404).send('Pasillo no encontrado');
         }
     });
 });
@@ -996,7 +997,7 @@ function handleStockNotifications(nombre, cantidad, bajoStock, callback) {
             const notificacionId = result.insertId;
 
             db.query(
-                `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
+                `INSERT INTO usuario_notificacion (idUsuario, idNotificacion, visto) 
                 SELECT id, ?, FALSE FROM usuario`,
                 [notificacionId],
                 (error) => {
@@ -1041,7 +1042,7 @@ function notifyNewMaterialCreation(nombre, idDeposito, callback) {
                 const notificacionId = result.insertId;
 
                 db.query(
-                    `INSERT INTO usuario_notificacion (usuario_id, notificacion_id, visto) 
+                    `INSERT INTO usuario_notificacion (idUsuario, idNotificacion, visto) 
                     SELECT id, ?, FALSE FROM usuario`,
                     [notificacionId],
                     (error) => {
@@ -1450,7 +1451,7 @@ app.post('/sendRecoveryCode', (req, res) => {
                 let customizedTemplate = data.replace('ABCDE', recoveryCode);
                 customizedTemplate = customizedTemplate.replace('Usuario', userName);
                 customizedTemplate = customizedTemplate.replace('2024', currentYear);
-                
+
                 // Configurar las opciones del correo con el contenido HTML
                 const mailOptions = {
                     from: 'sipe.supp@gmail.com',
@@ -1823,7 +1824,7 @@ app.post('/addLocation', (req, res) => {
             console.error('Error al insertar ubicación:', err);
             return res.status(500).json({ message: 'Error al agregar ubicación' });
         }
-        res.status(200).json({ message: 'Ubicación agregada exitosamente', id: result.insertId});
+        res.status(200).json({ message: 'Ubicación agregada exitosamente', id: result.insertId });
     });
 });
 
@@ -2313,7 +2314,7 @@ app.get('/movements', (req, res) => {
 
 
 app.post('/addMovements', (req, res) => {
-    const { idMaterial, idUsuario, idDepositoDestino, cantidadMovida } = req.body;
+    const { idMaterial, idUsuario, idDepositoDestino, cantidadMovida, nombreUsuarioConfirmacion } = req.body;
 
     // Obtener toda la información del material en el depósito de origen, incluyendo el nombre
     const queryMaterialOrigen = `
@@ -2463,8 +2464,8 @@ app.post('/addMovements', (req, res) => {
                                     }
 
                                     const insertMovementQuery = `
-                                        INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
-                                        VALUES (?, ?, ?, ?, ?, NOW())
+                                        INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento, confirmado) 
+                                        VALUES (?, ?, ?, ?, ?, NOW(), TRUE, ?)
                                     `;
 
                                     db.query(insertMovementQuery, [idUsuario, idMaterial, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err) => {
@@ -2665,7 +2666,6 @@ app.put('/edit-movements/:id', async (req, res) => {
     }
 });
 
-
 app.get('/deposit-locations-movements', (req, res) => {
     const query = `SELECT d.id, d.nombre, u.nombre AS ubicacion 
                 FROM deposito d 
@@ -2738,13 +2738,26 @@ app.post('/addReport', (req, res) => {
         return res.status(400).json({ mensaje: 'Campos obligatorios faltantes' });
     }
 
-    // Agrega este log para verificar qué tipo de informe está recibiendo el backend
-    console.log('Tipo de informe recibido:', tipo);
-
     // Crear la consulta SQL para insertar el informe en la base de datos
     const insertQuery = `
     INSERT INTO Informe (tipo, tipoGrafico, fechaGeneracion, idUsuario, idMaterial, idDeposito, idEstado, idMovimiento, idSalida, idDetalleSalida, fechaInicio, fechaFin) 
     VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    // Formatear las fechas que llegan del frontend para asegurarse de que se guarden en UTC
+    const formatDateForDB = (date) => {
+        if (!date) return null;
+        const dateObj = new Date(date);
+        // Formatear la fecha a 'yyyy-MM-dd' para que sea compatible con MySQL
+        const year = dateObj.getUTCFullYear();
+        const month = String(dateObj.getUTCMonth() + 1).padStart(2, '0'); // Agregar un 0 si es necesario
+        const day = String(dateObj.getUTCDate()).padStart(2, '0'); // Agregar un 0 si es necesario
+        return `${year}-${month}-${day}`;
+    };
+
+    // Aplicar la función de formateo a las fechas recibidas del frontend
+    const formattedFechaInicio = formatDateForDB(fechaInicio);
+    const formattedFechaFin = formatDateForDB(fechaFin);
+
 
     const insertValues = [
         tipo,
@@ -2756,8 +2769,8 @@ app.post('/addReport', (req, res) => {
         tipo === 'Informe de material por movimiento entre deposito' ? idMovimiento || null : null,
         tipo === 'Informe de salida de material' ? idSalida || null : null,
         tipo === 'Informe de salida de material' ? idDetalleSalida || null : null,
-        fechaInicio,
-        fechaFin
+        formattedFechaInicio,
+        formattedFechaFin
     ];
 
     db.query(insertQuery, insertValues, (err, result) => {
@@ -2981,7 +2994,6 @@ app.post('/addReport', (req, res) => {
                 console.error('Error al generar el informe:', err);
                 return res.status(500).json({ mensaje: 'Error al generar el informe' });
             }
-
             res.status(200).json({
                 mensaje: 'Informe generado con éxito',
                 informeId: informeId,
@@ -3010,57 +3022,81 @@ app.get('/reports/:id', (req, res) => {
         report.datos = [];
 
 
-        // Evitar ejecutar consultas innecesarias si el tipo no es el adecuado
-        if (report.tipo === 'Informe de inventario general') {
-            const generalQuery = 'SELECT nombre, cantidad, idEstado FROM Material';
-            db.query(generalQuery, (err, generalResults) => {
+        // Si hay un idEstado en el informe, obtenemos la descripción del estado
+        if (report.idEstado) {
+            const estadoQuery = `SELECT descripcion FROM Estado WHERE id = ?`;
+            db.query(estadoQuery, [report.idEstado], (err, estadoResults) => {
                 if (err) {
-                    console.error('Error al obtener datos generales:', err);
-                    return res.status(500).send('Error al obtener datos generales');
+                    console.error('Error al obtener la descripción del estado:', err);
+                    return res.status(500).send('Error al obtener la descripción del estado');
                 }
-                return res.json({ ...report, datos: generalResults.length > 0 ? generalResults : [] });
+
+                // Asignamos la descripción del estado al objeto report
+                report.estadoDescripcion = estadoResults[0]?.descripcion || 'Desconocido';
+
+                // Continuamos con las consultas adicionales
+                ejecutarConsultasAdicionales(report, res);
             });
-            return;
+        } else {
+            // Si no hay un idEstado, continuamos directamente con las consultas adicionales
+            ejecutarConsultasAdicionales(report, res);
         }
+    });
+});
+// Función para manejar las consultas adicionales y la respuesta final
+function ejecutarConsultasAdicionales(report, res) {
+    const additionalQueries = [];
 
-        const additionalQueries = [];
+    // Lógica existente para manejar reportes con idMaterial
+    if (report.idMaterial) {
+        additionalQueries.push(new Promise((resolve, reject) => {
+            const materialQuery = 'SELECT * FROM Material WHERE id = ?';
+            db.query(materialQuery, [report.idMaterial], (err, materialResults) => {
+                if (err) return reject(err);
+                report.material = materialResults[0] || null;
+                resolve();
+            });
+        }));
+    }
 
-        if (report.idMaterial) {
-            additionalQueries.push(new Promise((resolve, reject) => {
-                const materialQuery = 'SELECT * FROM Material WHERE id = ?';
-                db.query(materialQuery, [report.idMaterial], (err, materialResults) => {
-                    if (err) return reject(err);
-                    report.material = materialResults[0] || null;
-                    resolve();
-                });
-            }));
-        }
+    // Lógica existente para manejar reportes con idDeposito
+    if (report.idDeposito) {
+        additionalQueries.push(new Promise((resolve, reject) => {
+            const depositoQuery = 'SELECT * FROM Deposito WHERE id = ?';
+            db.query(depositoQuery, [report.idDeposito], (err, depositoResults) => {
+                if (err) return reject(err);
+                report.deposito = depositoResults[0] || null;
+                resolve();
+            });
+        }));
 
-        if (report.idDeposito) {
-            additionalQueries.push(new Promise((resolve, reject) => {
-                const depositoQuery = 'SELECT * FROM Deposito WHERE id = ?';
-                db.query(depositoQuery, [report.idDeposito], (err, depositoResults) => {
-                    if (err) return reject(err);
-                    report.deposito = depositoResults[0] || null;
-                    resolve();
-                });
-            }));
+        additionalQueries.push(new Promise((resolve, reject) => {
+            const materialByDepositoQuery = 'SELECT nombre, cantidad, idEstado FROM Material WHERE idDeposito = ?';
+            db.query(materialByDepositoQuery, [report.idDeposito], (err, materialByDepositoResults) => {
+                if (err) return reject(err);
+                report.datos = materialByDepositoResults.length > 0 ? materialByDepositoResults : [];
+                resolve();
+            });
+        }));
+    }
 
-            additionalQueries.push(new Promise((resolve, reject) => {
-                const materialByDepositoQuery = 'SELECT nombre, cantidad, idEstado FROM Material WHERE idDeposito = ?';
-                db.query(materialByDepositoQuery, [report.idDeposito], (err, materialByDepositoResults) => {
-                    if (err) return reject(err);
-                    report.datos = materialByDepositoResults.length > 0 ? materialByDepositoResults : [];
-                    resolve();
-                });
-            }));
-        }
+    // Evitar ejecutar consultas innecesarias si el tipo no es el adecuado
+    if (report.tipo === 'Informe de inventario general') {
+        const generalQuery = 'SELECT nombre, cantidad, idEstado FROM Material';
+        db.query(generalQuery, (err, generalResults) => {
+            if (err) {
+                console.error('Error al obtener datos generales:', err);
+                return res.status(500).send('Error al obtener datos generales');
+            }
+            return res.json({ ...report, datos: generalResults.length > 0 ? generalResults : [] });
+        });
+        return;
+    }
 
-        // Agregar caso para "Informe de material por estado" incluyendo la opción "Todos"
-        if (report.tipo === 'Informe de material por estado') {
-            console.log('Procesando informe de material por estado...');
-            additionalQueries.push(new Promise((resolve, reject) => {
-                const estadoQuery = `
+    // Agregar caso para "Informe de material por estado" incluyendo la opción "Todos"
+    if (report.tipo === 'Informe de material por estado') {
+        additionalQueries.push(new Promise((resolve, reject) => {
+            let estadoQuery = `
                     SELECT 
                         m.id, 
                         m.nombre, 
@@ -3073,32 +3109,30 @@ app.get('/reports/:id', (req, res) => {
                         Estado e ON m.idEstado = e.id
                 `;
 
-                // Si `idEstado` es específico
-                if (report.idEstado && report.idEstado !== 'Todos') {
-                    estadoQuery += ` WHERE e.id = ?`;
-                    db.query(estadoQuery, [report.idEstado], (err, estadoResults) => {
-                        if (err) return reject(err);
-                        console.log('Resultados de la consulta para estado específico:', estadoResults); // Verifica los resultados aquí
-                        report.datos = estadoResults.length > 0 ? estadoResults : [];
-                        resolve();
-                    });
-                } else {
-                    // Si no hay un estado específico seleccionado, trae todos los materiales con sus estados
-                    db.query(estadoQuery, (err, estadoResults) => {
-                        if (err) return reject(err);
-                        console.log('Resultados de la consulta para todos los estados:', estadoResults); // Verifica los resultados aquí
-                        report.datos = estadoResults.length > 0 ? estadoResults : [];
-                        resolve();
-                    });
-                }
-            }));
-        }
+            // Si `idEstado` es específico
+            if (report.idEstado && report.idEstado !== 'Todos') {
+                estadoQuery += ` WHERE e.id = ?`;
+                db.query(estadoQuery, [report.idEstado], (err, estadoResults) => {
+                    if (err) return reject(err);
+                    report.datos = estadoResults.length > 0 ? estadoResults : [];
+                    resolve();
+                });
+            } else {
+                // Si no hay un estado específico seleccionado, trae todos los materiales con sus estados
+                db.query(estadoQuery, (err, estadoResults) => {
+                    if (err) return reject(err);
+                    report.datos = estadoResults.length > 0 ? estadoResults : [];
+                    resolve();
+                });
+            }
+        }));
+    }
 
-        // Manejar el caso para "Informe de material por movimiento entre depósito"
-        if (report.tipo === 'Informe de material por movimiento entre deposito') {
-            if (report.fechaInicio && report.fechaFin && report.idMovimiento) {
-                additionalQueries.push(new Promise((resolve, reject) => {
-                    const movimientoQuery = `
+    // Manejar el caso para "Informe de material por movimiento entre depósito"
+    if (report.tipo === 'Informe de material por movimiento entre deposito') {
+        if (report.fechaInicio && report.fechaFin && report.idMovimiento) {
+            additionalQueries.push(new Promise((resolve, reject) => {
+                const movimientoQuery = `
                         SELECT 
                             mo.id, 
                             DATE_FORMAT(mo.fechaMovimiento, '%d-%m-%Y') AS fechaMovimiento, 
@@ -3121,26 +3155,26 @@ app.get('/reports/:id', (req, res) => {
                             mo.fechaMovimiento BETWEEN ? AND ? AND mo.id = ?
                     `;
 
-                    // Formatear las fechas con el formato adecuado para MySQL
-                    const fechaInicioFormateada = format(new Date(report.fechaInicio), 'yyyy-MM-dd');
-                    const fechaFinFormateada = format(new Date(report.fechaFin), 'yyyy-MM-dd');
+                // Formatear las fechas con el formato adecuado para MySQL
+                const fechaInicioFormateada = format(new Date(report.fechaInicio), 'yyyy-MM-dd');
+                const fechaFinFormateada = format(new Date(report.fechaFin), 'yyyy-MM-dd');
 
-                    db.query(movimientoQuery, [fechaInicioFormateada, fechaFinFormateada, report.idMovimiento], (err, movimientoResults) => {
-                        if (err) return reject(err);
-                        report.datos = movimientoResults.length > 0 ? movimientoResults : [];
-                        resolve();
-                    });
-                }));
-            } else {
-                console.error('Error: rango de fechas no definido en el informe');
-                return res.status(400).send('Rango de fechas no definido');
-            }
+                db.query(movimientoQuery, [fechaInicioFormateada, fechaFinFormateada, report.idMovimiento], (err, movimientoResults) => {
+                    if (err) return reject(err);
+                    report.datos = movimientoResults.length > 0 ? movimientoResults : [];
+                    resolve();
+                });
+            }));
+        } else {
+            console.error('Error: rango de fechas no definido en el informe');
+            return res.status(400).send('Rango de fechas no definido');
         }
+    }
 
-        if (report.tipo === 'Informe de salida de material') {
-            if (report.fechaInicio && report.fechaFin) {
-                additionalQueries.push(new Promise((resolve, reject) => {
-                    const salidaMaterialQuery = `
+    if (report.tipo === 'Informe de salida de material') {
+        if (report.fechaInicio && report.fechaFin) {
+            additionalQueries.push(new Promise((resolve, reject) => {
+                const salidaMaterialQuery = `
                         SELECT 
                             ds.id AS detalleId,
                             DATE_FORMAT(sm.fecha, '%d-%m-%Y') AS fechaSalida,
@@ -3160,31 +3194,30 @@ app.get('/reports/:id', (req, res) => {
                             ds.id = ? AND sm.fecha BETWEEN ? AND ?;
                     `;
 
-                    const fechaInicioFormateada = format(new Date(report.fechaInicio), 'yyyy-MM-dd');
-                    const fechaFinFormateada = format(new Date(report.fechaFin), 'yyyy-MM-dd');
+                const fechaInicioFormateada = format(new Date(report.fechaInicio), 'yyyy-MM-dd');
+                const fechaFinFormateada = format(new Date(report.fechaFin), 'yyyy-MM-dd');
 
-                    db.query(salidaMaterialQuery, [report.idDetalleSalida, fechaInicioFormateada, fechaFinFormateada], (err, salidaResults) => {
-                        if (err) return reject(err);
-                        report.datos = salidaResults.length > 0 ? salidaResults : [];
-                        resolve();
-                    });
-                }));
-            } else {
-                console.error('Error: rango de fechas o ID de detalle de salida no definido en el informe');
-                return res.status(400).send('Rango de fechas o ID de detalle de salida no definido');
-            }
+                db.query(salidaMaterialQuery, [report.idDetalleSalida, fechaInicioFormateada, fechaFinFormateada], (err, salidaResults) => {
+                    if (err) return reject(err);
+                    report.datos = salidaResults.length > 0 ? salidaResults : [];
+                    resolve();
+                });
+            }));
+        } else {
+            console.error('Error: rango de fechas o ID de detalle de salida no definido en el informe');
+            return res.status(400).send('Rango de fechas o ID de detalle de salida no definido');
         }
+    }
 
-        Promise.all(additionalQueries)
-            .then(() => {
-                res.json(report)
-            })
-            .catch((err) => {
-                console.error('Error al realizar las consultas adicionales:', err);
-                res.status(500).send('Error al obtener información adicional del informe');
-            });
-    });
-});
+    Promise.all(additionalQueries)
+        .then(() => {
+            res.json(report)
+        })
+        .catch((err) => {
+            console.error('Error al realizar las consultas adicionales:', err);
+            res.status(500).send('Error al obtener información adicional del informe');
+        });
+}
 
 
 // Endpoint para eliminar informes seleccionados
@@ -3222,8 +3255,8 @@ app.get('/api/notifications/:userId', (req, res) => {
     db.query(
         `SELECT n.id, n.descripcion, n.fecha, un.visto
             FROM notificacion n
-            JOIN usuario_notificacion un ON n.id = un.notificacion_id
-            WHERE un.usuario_id = ?
+            JOIN usuario_notificacion un ON n.id = un.idNotificacion
+            WHERE un.idUsuario = ?
             ORDER BY n.fecha DESC`,
         [userId],
         (error, results) => {
@@ -3247,7 +3280,7 @@ app.post('/api/notifications/mark-as-viewed', (req, res) => {
     const query = `
         UPDATE usuario_notificacion
         SET visto = TRUE
-        WHERE usuario_id = ? AND notificacion_id IN (?)
+        WHERE idUsuario = ? AND idNotificacion IN (?)
     `;
 
     db.query(query, [userId, notificationIds], (error) => {

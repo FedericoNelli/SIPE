@@ -22,7 +22,7 @@ function ChangePassword() {
         try {
             await axios.post('http://localhost:8081/changePassword', { email, newPassword: password });
             setMessage('Contraseña actualizada');
-            setTimeout(() => navigate('/'), 2000);
+            setTimeout(() => navigate('/'), 1500);
         } catch (err) {
             setMessage('Error al actualizar la contraseña');
         }
