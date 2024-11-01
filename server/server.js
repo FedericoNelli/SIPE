@@ -2408,9 +2408,9 @@ app.post('/addMovements', (req, res) => {
                                 }
 
                                 const insertMovementQuery = `
-                                    INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
-                                    VALUES (?, ?, ?, ?, ?, NOW())
-                                `;
+                                        INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento, confirmado) 
+                                        VALUES (?, ?, ?, ?, ?, NOW(), TRUE)
+                                    `;
 
                                 db.query(insertMovementQuery, [idUsuario, idMaterialDestino, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err) => {
                                     if (err) {
@@ -2465,7 +2465,7 @@ app.post('/addMovements', (req, res) => {
 
                                     const insertMovementQuery = `
                                         INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento, confirmado) 
-                                        VALUES (?, ?, ?, ?, ?, NOW(), TRUE, ?)
+                                        VALUES (?, ?, ?, ?, ?, NOW(), TRUE)
                                     `;
 
                                     db.query(insertMovementQuery, [idUsuario, idMaterial, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err) => {

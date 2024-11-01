@@ -49,6 +49,16 @@ function LoginInput({ onLoginSuccess, onFirstLogin }) {
         }
     }
 
+    function handleUserChange(event) {
+        const newUser = event.target.value;
+        setUser(newUser);
+    
+        if (rememberMe) {
+            setRememberMe(false);
+            localStorage.removeItem('rememberedUser');
+        }
+    }
+
     function handleCheckboxChange(isChecked) {
         setRememberMe(isChecked);
         if (isChecked) {
@@ -74,7 +84,7 @@ function LoginInput({ onLoginSuccess, onFirstLogin }) {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="user">
-                            <Input className="border rounded-lg h-10 px-6 py-6" id="user" placeholder="Usuario" required type="text" value={user} onChange={u => setUser(u.target.value)} />
+                                <Input className="border rounded-lg h-10 px-6 py-6" id="user" placeholder="Usuario" required type="text" value={user} onChange={handleUserChange} />
                         </Label>
                     </div>
                     <div className="space-y-2">
