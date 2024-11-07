@@ -191,7 +191,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
             if (onClose) onClose();
         } else {
             // Lógica cuando estamos en el tutorial y debemos volver al paso anterior
-            if (currentStep === 5 && pasilloId) {
+            if (currentStep === 4 && pasilloId) {
                 try {
                     // Eliminar la categoría creado cuando se vuelve al paso anterior
                     await axios.delete(`http://localhost:8081/aisle/delete/${pasilloId}`);

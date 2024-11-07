@@ -6,11 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep, ubicacionId }) {
+function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep }) {
 
     const [formData, setFormData] = useState(() => JSON.parse(localStorage.getItem('depositFormData')) || {
         nombre: '',
-        idUbicacion: ubicacionId || '', 
+        idUbicacion: '', 
         idDeposito: ''
     });
     const [ubicaciones, setUbicaciones] = useState([]);
@@ -62,9 +62,7 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
             
             if (onClose) onClose();
             
-            const idUbicacion = ubicacionId;
-            
-            if (onSubmit) onSubmit(idUbicacion, response.data.id);
+            if (onSubmit) onSubmit(formData.idUbicacion, response.data.id);
     
             const isInTutorial = localStorage.getItem('inTutorial');
             if (!isInTutorial || isInTutorial === 'false') {
@@ -84,7 +82,7 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
             if (onClose) onClose();
         } else {
             
-            if (currentStep === 2 && ubicacionId) { 
+            if (currentStep === 1 && ubicacionId) { 
                 try {
                     
                     await axios.delete(`http://localhost:8081/locations/delete/${ubicacionId}`);
@@ -124,13 +122,6 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
                     <Label className="text-sm font-medium">
                         {isTutorial ? "" : "Ubicación"}
                     </Label>
-                    {isTutorial ? (
-                        // Si es tutorial, mostramos directamente el nombre de la ubicación en lugar del id
-                        <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
-                            {ubicaciones.find(u => u.id === formData.idUbicacion)?.nombre || "Sin ubicación seleccionada"}
-                        </span>
-                    ) : (
-                        // Si no es tutorial, mostramos el Select como siempre
                         <Select
                             value={formData.idUbicacion}
                             onValueChange={handleSelectChange}
@@ -147,7 +138,6 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
                                 ))}
                             </SelectContent>
                         </Select>
-                    )}
                 </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">

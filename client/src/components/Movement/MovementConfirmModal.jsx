@@ -41,12 +41,12 @@ function MovementConfirmModal({ movement, onClose, notify, onMovementConfirmed, 
     };
 
     return (
-        <Card className="bg-sipe-blue-dark text-sipe-white p-4">
+        <Card className="bg-sipe-blue-dark text-sipe-white p-4 shadow-2xl">
             <CardHeader>
                 <CardTitle className="text-3xl text-center font-bold mb-2">Confirmar Movimiento</CardTitle>
                 <hr className="text-sipe-gray" />
             </CardHeader>
-            <CardContent className="flex flex-col space-y-10">
+            <CardContent className="flex flex-col space-y-2">
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-2">
                         <Label htmlFor="cantidadRecibida" className="text-sm font-medium">Cantidad Recibida</Label>

@@ -324,7 +324,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
 
             setTimeout(() => {
                 window.location.reload();
-            }, 2500);
+            }, 2000);
 
         } catch (error) {
             toast.error(error.message || "Error al actualizar el material", {

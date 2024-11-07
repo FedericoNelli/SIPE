@@ -103,7 +103,7 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
             if (onClose) onClose();
         } else {
             // Lógica cuando estamos en el tutorial y debemos volver al paso anterior
-            if (currentStep === 3 && depositoId) {
+            if (currentStep === 2 && depositoId) {
                 try {
                     // Eliminar el depósito creado cuando se vuelve al paso anterior
                     await axios.delete(`http://localhost:8081/deposits/delete/${depositoId}`);

@@ -178,6 +178,7 @@ function Movement({ notify }) {
                     </div>
                 )}
                 {isConfirmModalOpen && selectedMovement && (
+                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                     <MovementConfirmModal
                         movement={selectedMovement}
                         onClose={closeConfirmModal}
@@ -189,6 +190,7 @@ function Movement({ notify }) {
                         }}
                         onRemovePendingMovement={removePendingMovement}
                     />
+                    </div>
                 )}
             </div>
         </div>

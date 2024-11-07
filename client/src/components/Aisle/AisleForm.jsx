@@ -145,7 +145,7 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
             if (onClose) onClose();
         } else {
             // Lógica cuando estamos en el tutorial y debemos volver al paso anterior
-            if (currentStep === 4 && categoriaId) {
+            if (currentStep === 3 && categoriaId) {
                 try {
                     // Eliminar la categoría creado cuando se vuelve al paso anterior
                     await axios.delete(`http://localhost:8081/category/delete/${categoriaId}`);

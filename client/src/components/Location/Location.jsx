@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import axios from 'axios';
-import LocationForm from '@/components/Location/LocationForm';
 import LocationList from './LocationList';
 import LocationEditModal from './LocationEditModal';
 
@@ -120,11 +119,6 @@ function Location({ notify }) {
                         </PaginationContent>
                     </Pagination>
                 </div>
-                {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <LocationForm onClose={closeFormModal} notify={notify} />
-                    </div>
-                )}
                 {isEditModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                     <LocationEditModal

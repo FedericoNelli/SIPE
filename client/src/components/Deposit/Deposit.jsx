@@ -64,6 +64,7 @@ function Deposit({ notify }) {
                 setSelectedDeposits([]);
                 setIsDeleteMode(false);
             })
+            
             .catch(error => {
                 console.error('Error eliminando depósitos:', error);
                 notify('error', 'Error al eliminar depósitos');

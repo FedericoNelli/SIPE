@@ -1088,8 +1088,7 @@ app.get('/check-tutorial-status/:id', (req, res) => {
         if (firstLogin === 1) {
             // Verificamos si ya existen datos en las tablas clave
             const queryCounts = `
-                SELECT
-                    (SELECT COUNT(*) FROM Ubicacion) AS ubicacionCount, 
+                SELECT 
                     (SELECT COUNT(*) FROM Deposito) AS depositoCount,
                     (SELECT COUNT(*) FROM Categoria) AS categoriaCount,
                     (SELECT COUNT(*) FROM Pasillo) AS pasilloCount,
@@ -1098,11 +1097,10 @@ app.get('/check-tutorial-status/:id', (req, res) => {
             db.query(queryCounts, (err, results) => {
                 if (err) return res.status(500).send('Error al consultar las tablas clave');
 
-                const { ubicacionCount, depositoCount, categoriaCount, pasilloCount, estanteriaCount } = results[0];
+                const { depositoCount, categoriaCount, pasilloCount, estanteriaCount } = results[0];
 
                 // Si alguna tabla está vacía, activamos el tutorial para esa parte
                 const needsTutorial = {
-                    ubicacion: ubicacionCount === 0,
                     deposito: depositoCount === 0,
                     categoria: categoriaCount === 0,
                     pasillo: pasilloCount === 0,
@@ -2459,8 +2457,8 @@ app.post('/addMovements', (req, res) => {
                                 }
 
                                 const insertMovementQuery = `
-                                    INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento) 
-                                    VALUES (?, ?, ?, ?, ?, NOW())
+                                    INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento, confirmado) 
+                                    VALUES (?, ?, ?, ?, ?, NOW(), TRUE)
                                 `;
 
                                 db.query(insertMovementQuery, [idUsuario, idMaterialDestino, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err) => {
@@ -2516,7 +2514,7 @@ app.post('/addMovements', (req, res) => {
 
                                     const insertMovementQuery = `
                                         INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento, confirmado) 
-                                        VALUES (?, ?, ?, ?, ?, NOW(), TRUE, ?)
+                                        VALUES (?, ?, ?, ?, ?, NOW(), TRUE)
                                     `;
 
                                     db.query(insertMovementQuery, [idUsuario, idMaterial, cantidadMovida, idDepositoOrigen, idDepositoDestino], (err) => {
