@@ -46,7 +46,6 @@ function Report({ notify }) {
 
     useEffect(() => {
         if (selectedReport) {
-            console.log('selectedReport actualizado:', selectedReport);
         }
     }, [selectedReport]);
 
@@ -127,7 +126,7 @@ function Report({ notify }) {
                         tipoGrafico={selectedReport.tipoGrafico}
                         selectedMaterial={selectedReport.nombreMaterial || 'Todos los materiales'}
                         dateRange={`${selectedReport.fechaInicio || 'N/A'} - ${selectedReport.fechaFin || 'N/A'}`}
-                        selectedOption={selectedReport.deposito?.nombre}
+                        selectedOption={selectedReport.depositoNombre || 'N/A'}
                         selectedOption1={selectedReport.estadoDescripcion || 'N/A'}
                     />
                 )}

@@ -59,7 +59,7 @@ function MovementForm({ onClose, onAddPendingMovement, notify }) {
 
     useEffect(() => {
         const now = new Date();
-        setMaxDatetime(now.toISOString().slice(0, 16));
+        setMaxDatetime(now.toISOString().split("T")[0]);
     }, []);
 
     const handleInputChange = (e) => {
@@ -116,7 +116,7 @@ function MovementForm({ onClose, onAddPendingMovement, notify }) {
                             className="border-b"
                             id="fechaMovimiento"
                             name="fechaMovimiento"
-                            type="datetime-local"
+                            type="date"
                             value={formData.fechaMovimiento}
                             onChange={handleInputChange}
                             max={maxDatetime}

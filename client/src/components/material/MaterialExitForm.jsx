@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { format } from 'date-fns';  // Importamos date-fns para formatear y parsear fechas
+import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import { X } from "lucide-react";
 
-function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la prop onExitCreated
+function MaterialExitForm({ onClose, notify, onExitCreated }) { 
     const [ubicaciones, setUbicaciones] = useState([]);
     const [depositos, setDepositos] = useState([]);
     const [materials, setMaterials] = useState([]);

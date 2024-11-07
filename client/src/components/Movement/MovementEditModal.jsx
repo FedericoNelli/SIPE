@@ -12,6 +12,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
     const [selectedMovementId, setSelectedMovementId] = useState('');
     const [movementData, setMovementData] = useState(null);
     const [cantidad, setCantidad] = useState('');
+    const [cantidadDisponible, setCantidadDisponible] = useState('');
     const [idMaterial, setIdMaterial] = useState('');
     const [fechaMovimiento, setFechaMovimiento] = useState('');
     const [depositos, setDepositos] = useState([]);
@@ -20,7 +21,12 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
     const [usuarios, setUsuarios] = useState([]);
     const [selectedUsuario, setSelectedUsuario] = useState('');
     const [materials, setMaterials] = useState([]);
+    const [maxDatetime, setMaxDatetime] = useState('');
 
+    useEffect(() => {
+        const now = new Date();
+        setMaxDatetime(now.toISOString().split("T")[0]); // Formato "YYYY-MM-DD" para el atributo max
+    }, []);
 
     // Cerrar modal al presionar la tecla Escape
     useEffect(() => {
@@ -86,6 +92,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
         fetchMaterials();
     }, []);
     
+    
 
     useEffect(() => {
         if (selectedMovementId) {
@@ -99,16 +106,34 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                     setFechaMovimiento(data.fechaMovimiento ? data.fechaMovimiento.slice(0, 10) : '');
                     setSelectedDepositoOrigen(data.idDepositoOrigen || '');
                     setSelectedDepositoDestino(data.idDepositoDestino || '');
-                    setSelectedUsuario(data.idUsuario || ''); // Cargar el ID del usuario
+                    setSelectedUsuario(data.idUsuario || '');
+
+                    // Encontrar y mostrar la cantidad disponible del material seleccionado
+                    const materialSeleccionado = materials.find(material => material.id === data.idMaterial);
+                    setCantidadDisponible(materialSeleccionado ? materialSeleccionado.cantidad : 0);
+
                 } catch (error) {
                     notify('error', 'Error al cargar los datos del movimiento');
                 }
             };
             fetchMovementData();
         }
-    }, [selectedMovementId]);
+    }, [selectedMovementId, materials]);
 
     const handleUpdateMovement = async () => {
+        const now = new Date();
+        const selectedDate = new Date(fechaMovimiento);
+        
+        if (selectedDate > now) {
+            notify('error', 'La fecha seleccionada no puede ser futura');
+            return;
+        }
+
+        if (cantidad > cantidadDisponible) {
+            notify('error', 'La cantidad a mover no puede ser mayor a la cantidad disponible');
+            return;
+        }
+
         try {
             await axios.put(`http://localhost:8081/edit-movements/${selectedMovementId}`, {
                 cantidad,
@@ -161,6 +186,16 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                 value={fechaMovimiento}
                                 onChange={(e) => setFechaMovimiento(e.target.value)}
                                 required
+                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
+                                max={maxDatetime}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="cantidadDisponible" className="text-sm font-medium">Cantidad Disponible</Label>
+                            <Input
+                                id="cantidadDisponible"
+                                value={cantidadDisponible}
+                                readOnly
                                 className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
                             />
                         </div>

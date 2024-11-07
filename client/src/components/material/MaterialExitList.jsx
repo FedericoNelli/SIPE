@@ -52,7 +52,6 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                                     />
                                 </TableHead>
                             )}
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">ID</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Fecha</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Motivo</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Material</TableHead>
@@ -73,7 +72,6 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                                         />
                                     </TableCell>
                                 )}
-                                <TableCell className="text-center font-light">{salida.salidaId}</TableCell>
                                 <TableCell className="text-center font-light">{salida.fechaSalida}</TableCell>
                                 <TableCell className="text-center font-light">{salida.motivo}</TableCell>
                                 <TableCell className="text-center font-light">

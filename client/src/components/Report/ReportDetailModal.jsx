@@ -16,7 +16,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
             if (reportType === "Informe de inventario general") {
                 // Mapeo de datos para el Informe de inventario general
                 formattedData = reportData.map((item) => ({
-                    name: item.nombre || "Sin nombre",
+                    name: `${item.nombre} Depósito ${item.depositoNombre}`,
                     value: item.cantidad || 0,
                     color: `#${Math.floor(Math.random() * 16777215).toString(16)}`, // Genera un color aleatorio
                 }));
@@ -29,7 +29,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
             } else if (reportType === "Informe de material por estado") {
                 // Agrupación de datos para "material por estado"
                 const groupedData = reportData.map((item) => ({
-                    name: item.nombre,
+                    name: `${item.nombre} Depósito ${item.depositoNombre}`,
                     value: item.cantidad || 0,
                     estado: item.estadoMaterial || "Sin estado",
                     color: `#${Math.floor(Math.random() * 16777215).toString(16)}`, // Color aleatorio
@@ -38,11 +38,14 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
             } else if (reportType === "Informe de material por movimiento entre deposito") {
                 // Mapeo de datos para Informe de movimiento entre depósitos
                 formattedData = reportData.map((item) => ({
-                    name: `${item.depositoOrigen} -> ${item.depositoDestino}`,
+                    name: `Origen:${item.depositoOrigen} -> Destino:${item.depositoDestino}`,
+                    name1: item.nombreMaterial || "Sin nombre",
                     value: item.cantidad || 0,
                     depositoOrigen: item.depositoOrigen,
                     depositoDestino: item.depositoDestino,
                     nombreMaterial: item.nombreMaterial || "Sin nombre",
+                    fechaMovimiento: item.fechaMovimiento || "N/A",
+                    usuario: item.usuario || "Desconocido",
                     color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
                 }));
                 setMaterialDetails(formattedData); // Guardar detalles de materiales para mostrar fuera del gráfico
@@ -53,6 +56,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                     value: item.cantidad || 0,
                     fecha: item.fechaSalida || "Sin fecha",
                     usuario: item.nombreUsuario || "Desconocido",
+                    motivo: item.motivo || "Sin motivo",
                     color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
                 }));
                 setMaterialDetails(formattedData); // Guardar detalles de salidas para mostrar fuera del gráfico
@@ -61,7 +65,6 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
         } else {
             setChartData([]);
         }
-        console.log('selectedOption:', selectedOption1);
     }, [reportData, reportType]);
 
     const [startDate, endDate] = dateRange.split(' - '); // Dividimos las dos fechas
@@ -75,10 +78,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
             }
         };
 
-        // Agregar el evento de tecla al montar el componente
         window.addEventListener("keydown", handleEscape);
-
-        // Limpiar el evento al desmontar el componente
         return () => {
             window.removeEventListener("keydown", handleEscape);
         };
@@ -194,10 +194,10 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                             ))}
                                             <LabelList
-                                                dataKey="name" // Mostrar el nombre del estado
+                                                dataKey="value"
                                                 position="top"
                                                 offset={10}
-                                                className="fill-foreground text-sipe-white"
+                                                className="fill-sipe-white"
                                                 fontSize={12}
                                                 fontWeight="bold"
                                             />
@@ -214,12 +214,27 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                         <Pie
                                             data={chartData}
                                             dataKey="value"
-                                            nameKey="name" // Utilizar "name" para mostrar el estado
+                                            nameKey="name"
                                             innerRadius={100}
                                             outerRadius={200}
                                             strokeWidth={5}
                                             isAnimationActive={true}
-                                            label={({ name, value }) => `${name}: ${value}`} // Mostrar el nombre del estado y la cantidad total
+                                            label={({ name, value, cx, cy, midAngle, outerRadius }) => {
+                                                const RADIAN = Math.PI / 180;
+                                                const x = cx + (outerRadius + 20) * Math.cos(-midAngle * RADIAN);
+                                                const y = cy + (outerRadius + 20) * Math.sin(-midAngle * RADIAN);
+                                                return (
+                                                    <text
+                                                        x={x}
+                                                        y={y}
+                                                        textAnchor={x > cx ? 'start' : 'end'}
+                                                        dominantBaseline="central"
+                                                        className="font-bold fill-sipe-white"
+                                                    >
+                                                        {`${name} Cantidad:${value}`}
+                                                    </text>
+                                                );
+                                            }}
                                         >
                                             {chartData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
@@ -238,16 +253,16 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                                                 <tspan
                                                                     x={viewBox.cx}
                                                                     y={viewBox.cy}
-                                                                    className="fill-foreground text-3xl font-bold"
+                                                                    className="fill-sipe-white text-3xl font-bold"
                                                                 >
                                                                     {totalMaterials} {/* Mostrar la cantidad total de materiales */}
                                                                 </tspan>
                                                                 <tspan
                                                                     x={viewBox.cx}
                                                                     y={(viewBox.cy || 0) + 24}
-                                                                    className="fill-muted-foreground"
+                                                                    className="fill-sipe-white font-bold"
                                                                 >
-                                                                    Materiales {/* Texto debajo del número */}
+                                                                    Materiales
                                                                 </tspan>
                                                             </text>
                                                         );
@@ -258,6 +273,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                         </Pie>
                                     </PieChart>
                                 )}
+
 
                                 {tipoGrafico === "Area" && (
                                     <AreaChart
@@ -307,7 +323,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                     <ul className="list-disc pl-5">
                                         {materialDetails.map((item, index) => (
                                             <li key={index} className="text-sipe-white">
-                                                Material: {item.name}, Cantidad: {item.value}, Fecha: {item.fecha}, Usuario: {item.usuario}
+                                                Material: {item.name}, Cantidad: {item.value}, Fecha: {item.fecha}, Usuario: {item.usuario}, Motivo: {item.motivo}
                                             </li>
                                         ))}
                                     </ul>
