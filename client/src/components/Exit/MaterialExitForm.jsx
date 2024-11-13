@@ -13,14 +13,14 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
     const [depositos, setDepositos] = useState([]);
     const [materials, setMaterials] = useState([]);
     const [users, setUsers] = useState([]);
-
     const [selectedUbicacion, setSelectedUbicacion] = useState(null);
     const [selectedDeposito, setSelectedDeposito] = useState(null);
     const [selectedMaterials, setSelectedMaterials] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [reason, setReason] = useState('');
-    const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd')); // Fecha actual como valor inicial
-    const [maxDate] = useState(format(new Date(), 'yyyy-MM-dd')); // Establecemos la fecha máxima como hoy
+    const [numero, setNumero] = useState('');
+    const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+    const [maxDate] = useState(format(new Date(), 'yyyy-MM-dd')); 
 
     useEffect(() => {
         axios.get('http://localhost:8081/deposit-locations')
@@ -80,6 +80,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
             idMaterial: material.id,
             cantidad: material.cantidadSalida,
             motivo: reason,
+            numero: numero,
             fecha: formattedDateForMySQL,
             idUsuario: selectedUser,
         }));
@@ -88,9 +89,9 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
             .then(response => {
                 notify('success', 'Salida registrada con éxito');
                 if (onExitCreated) {
-                    onExitCreated();  // Llamamos a la función para refrescar la lista de salidas
+                    onExitCreated();
                 }
-                onClose();  // Cerrar el modal
+                onClose();
             })
             .catch(error => {
                 console.error('Error registrando salida:', error);
@@ -113,7 +114,21 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
             </CardHeader>
             <CardContent className="grid gap-4">
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
+                <div className="grid gap-2 mt-4">
+                    <Label htmlFor="numero" className="text-sm font-medium">Número de salida</Label>
+                    <Input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Número de la salida" className="border-b bg-sipe-blue-dark text-white" />
+                </div>
+                <div className="grid gap-2 mt-4">
+                    <Label htmlFor="fecha" className="text-sm font-medium">Fecha de Salida</Label>
+                    <Input
+                        type="date"
+                        value={selectedDate}
+                        max={maxDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="border-b bg-sipe-blue-dark text-white"
+                    />
+                </div>
+                    <div className="grid gap-2 mt-4">
                         <Label htmlFor="ubicacion" className="text-sm font-medium">Ubicación</Label>
                         <Select onValueChange={handleUbicacionChange}>
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
@@ -126,7 +141,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 mt-4">
                         <Label htmlFor="deposito" className="text-sm font-medium">Depósito</Label>
                         <Select onValueChange={handleDepositoChange}>
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
@@ -181,25 +196,13 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
                         ))}
                     </div>
                 )}
-
-                <div className="grid gap-2 mt-4">
-                    <Label htmlFor="fecha" className="text-sm font-medium">Fecha de Salida</Label>
-                    <Input
-                        type="date"
-                        value={selectedDate}
-                        max={maxDate}  // Limitar la fecha máxima a hoy
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className="border-b bg-sipe-blue-dark text-white"
-                    />
-                </div>
-
                 <div className="grid gap-2 mt-4">
                     <Label htmlFor="reason" className="text-sm font-medium">Motivo</Label>
                     <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Motivo de la salida" className="border-b bg-sipe-blue-dark text-white" />
                 </div>
 
                 <div className="grid gap-2 mt-4">
-                    <Label htmlFor="usuario" className="text-sm font-medium">Usuario</Label>
+                    <Label htmlFor="usuario" className="text-sm font-medium">Usuario que sacó los materiales</Label>
                     <Select onValueChange={setSelectedUser}>
                         <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                             <SelectValue placeholder="Selecciona un usuario" />

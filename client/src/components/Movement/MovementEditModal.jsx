@@ -10,6 +10,7 @@ import { X } from 'lucide-react';
 const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
     const [movements, setMovements] = useState([]);
     const [selectedMovementId, setSelectedMovementId] = useState('');
+    const [movementNumber, setMovementNumber] = useState('');
     const [movementData, setMovementData] = useState(null);
     const [cantidad, setCantidad] = useState('');
     const [cantidadDisponible, setCantidadDisponible] = useState('');
@@ -25,21 +26,18 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
 
     useEffect(() => {
         const now = new Date();
-        setMaxDatetime(now.toISOString().split("T")[0]); // Formato "YYYY-MM-DD" para el atributo max
+        setMaxDatetime(now.toISOString().split("T")[0]);
     }, []);
 
     // Cerrar modal al presionar la tecla Escape
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.key === 'Escape') {
-                onClose(); // Llamar a la función onClose cuando se presiona Escape
+                onClose();
             }
         };
 
-        // Agregar el event listener
         window.addEventListener('keydown', handleKeyDown);
-
-        // Eliminar el event listener al desmontar el componente
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
@@ -102,6 +100,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                     const data = response.data;
                     setMovementData(data);
                     setCantidad(data.cantidad || '');
+                    setMovementNumber(data.numero) || '';
                     setIdMaterial(data.idMaterial || '');
                     setFechaMovimiento(data.fechaMovimiento ? data.fechaMovimiento.slice(0, 10) : '');
                     setSelectedDepositoOrigen(data.idDepositoOrigen || '');
@@ -136,6 +135,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
 
         try {
             await axios.put(`http://localhost:8081/edit-movements/${selectedMovementId}`, {
+                numero: movementNumber,
                 cantidad,
                 fechaMovimiento,
                 idMaterial,
@@ -148,6 +148,16 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
             onClose(); // Cerrar modal
         } catch (error) {
             notify('error', 'Error al actualizar el movimiento');
+        }
+    };
+
+    const handleMovementNumberChange = (e) => {
+        const value = e.target.value;
+        if (value === '' || /^[1-9]\d*$/.test(value)) { // Solo permitir valores positivos o vacío
+            setMovementNumber(value);
+        } else if (value === '0' || value.startsWith('-')) {
+            setMovementNumber(''); // Restablecer si es 0 o negativo
+            notify('error', 'El número de movimiento no puede ser 0 ni negativo');
         }
     };
 
@@ -172,11 +182,21 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                 <SelectContent>
                                     {movements.map((movement) => (
                                         <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={movement.id} value={movement.id}>
-                                            Movimiento {movement.id}
+                                            Movimiento {movement.numero}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="numero" className="text-sm font-medium">Nuevo número de movimiento</Label>
+                            <Input
+                                id="numero"
+                                value={movementNumber}
+                                onChange={handleMovementNumberChange}
+                                required
+                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
+                            />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha del movimiento</Label>

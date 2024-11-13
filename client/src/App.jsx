@@ -17,6 +17,8 @@ import Movements from "./pages/Movements/Movements"
 import Categories from "./pages/Categories/Categories"
 import Tutorials from "./pages/Tutorials/Tutorials"
 import Reports from "./pages/Reports/Reports"
+import Exits from "./pages/Exits/Exits"
+import Audits from "./pages/Audits/Audits"
 
 
 function App() {
@@ -36,11 +38,13 @@ function App() {
           <Route path="/deposit" element={<AdminRoute><Deposits /></AdminRoute>} />
           <Route path="/movement" element={<AdminRoute><Movements /></AdminRoute>} />
           <Route path="/locations" element={<AdminRoute><Locations /></AdminRoute>} />
+          <Route path="/audits" element={<AdminRoute><Audits /></AdminRoute>} />
           <Route path="/inf" element={<AdminRoute><Reports /></AdminRoute>} />
           <Route path="/dshb" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/user" element={<PrivateRoute><Users /></PrivateRoute>} />
           <Route path="/category" element={<PrivateRoute><Categories /></PrivateRoute>} />
-          <Route path="/mtls" element={<PrivateRoute><Materials /></PrivateRoute>} />
+          <Route path="/enters" element={<PrivateRoute><Materials /></PrivateRoute>} />
+          <Route path="/exits" element={<PrivateRoute><Exits /></PrivateRoute>} />
         </Routes>
       </BrowserRouter>
     </>

@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import toast from 'react-hot-toast';
 
 function MaterialEditModal({ isOpen, onClose, notify, material }) {
     const [isVisible, setIsVisible] = useState(isOpen);
@@ -35,6 +34,20 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
         imagen: null,
         imagenPreview: material?.imagen ? `http://localhost:8081${material.imagen}` : ''
     });
+
+    // Manejo del evento 'Escape' pero solo si el MaterialEditModal NO está abierto
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleEscape);
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [onClose]);
 
     useEffect(() => {
         if (material?.id) {
@@ -155,15 +168,25 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
             .catch(error => console.error('Error fetching statuses:', error));
     }, []);
 
-    // Manejar cambios en los selects
     const handleInputChange = (e) => {
         e.stopPropagation();
         const { id, value } = e.target;
-        setFormData((prevData) => ({
-            ...prevData,
-            [id]: value,
-        }));
+
+        // Verificar si el valor ingresado es un número y si es negativo
+        if ((id === 'cantidad' || id === 'bajoStock') && Number(value) < 0) {
+            setFormData((prevData) => ({
+                ...prevData,
+                [id]: 0,
+            }));
+            notify('error', 'El valor no puede ser negativo');
+        } else {
+            setFormData((prevData) => ({
+                ...prevData,
+                [id]: value,
+            }));
+        }
     };
+
 
     const handleSelectChange = (id, value) => {
         setFormData(prevState => ({
@@ -219,13 +242,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
         const file = e.target.files[0];
         if (file) {
             if (file.size > 10 * 1024 * 1024) {
-                toast.error('El archivo es demasiado grande. El tamaño máximo es 10 MB.', {
-                    duration: 2500,
-                    style: {
-                        background: '#2C3B4D',
-                        color: '#EEE9DF',
-                    },
-                });
+                notify('error', 'El archivo es demasiado grande. El tamaño máximo es 10 MB.');
                 return;
             }
             setFormData(prevData => ({
@@ -234,21 +251,9 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                 imagenPreview: URL.createObjectURL(file) // Muestra la imagen en el preview
             }));
             setIsImageToDelete(false); // Resetea el flag para indicar que no se debe eliminar la imagen
-            toast.success('Imagen lista para guardarse', {
-                duration: 2500,
-                style: {
-                    background: '#2C3B4D',
-                    color: '#EEE9DF',
-                },
-            });
+            notify('success', 'Imagen lista para guardarse');
         } else {
-            toast.error('Error al cargar imagen', {
-                duration: 2500,
-                style: {
-                    background: '#2C3B4D',
-                    color: '#EEE9DF',
-                },
-            });
+            notify('error', 'Error al cargar imagen');
         }
     };
 
@@ -263,13 +268,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
             }));
             setIsImageToDelete(false); // Marca que no se debe eliminar en el backend
             resetFileInput();
-            toast.success('Imagen del preview eliminada', {
-                duration: 2500,
-                style: {
-                    background: '#2C3B4D',
-                    color: '#EEE9DF',
-                },
-            });
+            notify('success', 'Imagen del preview eliminada')
         } else if (formData.imagenPreview) {
             setIsImageToDelete(true); // Marca que debe eliminarse en el backend
             setFormData(prevData => ({
@@ -277,13 +276,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                 imagenPreview: ''
             }));
             resetFileInput();
-            toast.success('Imagen del servidor marcada para eliminarse', {
-                duration: 2500,
-                style: {
-                    background: '#2C3B4D',
-                    color: '#EEE9DF',
-                },
-            });
+            notify('success', 'Imagen del servidor marcada para eliminarse')
         }
     };
 
@@ -302,9 +295,12 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
         if (isImageToDelete) formDataToSend.append('eliminarImagen', true); // Agrega esta línea
 
         try {
+            const token = localStorage.getItem('token'); // Asegúrate de que el token esté almacenado en localStorage o de otra manera accesible
+
             const response = await axios.put(`http://localhost:8081/materiales/${material.id}`, formDataToSend, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}` // Incluye el token aquí
                 }
             });
 
@@ -312,14 +308,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                 throw new Error(response.data.error || "Error al actualizar Material");
             }
 
-            toast.success("Material actualizado correctamente", {
-                duration: 2500,
-                style: {
-                    background: '#2C3B4D',
-                    color: '#EEE9DF',
-                },
-            });
-
+            notify('success', 'Material actualizado correctamente');
             setIsVisible(false);
 
             setTimeout(() => {
@@ -327,13 +316,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
             }, 2000);
 
         } catch (error) {
-            toast.error(error.message || "Error al actualizar el material", {
-                duration: 2500,
-                style: {
-                    background: '#2C3B4D',
-                    color: '#EEE9DF',
-                },
-            });
+            notify('error', "Error al actualizar el material");
         }
     };
 

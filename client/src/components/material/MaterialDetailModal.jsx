@@ -1,13 +1,12 @@
 import React, { useEffect, useCallback, useState } from "react";
 import Map from "@/components/Common/Map/Map";
 import MaterialEditModal from "@/components/Material/MaterialEditModal";
-import { toast } from "react-hot-toast";
 import axios from "axios";
 import { Button } from "@/components/Common/Button/Button";
 import { X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
-function MaterialDetailModal({ isOpen, onClose, selectedMaterial }) {
+function MaterialDetailModal({ isOpen, onClose, selectedMaterial, notify }) {
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isEditModalClosing, setIsEditModalClosing] = useState(false);
@@ -43,11 +42,15 @@ function MaterialDetailModal({ isOpen, onClose, selectedMaterial }) {
         try {
             const response = await axios.delete(`http://localhost:8081/materials/delete/${selectedMaterial.id}`);
             onClose();
-            toast.success("Material eliminado con éxito!");
-            window.location.reload();
+            notify('success', 'Material eliminado con éxito!');
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+
         } catch (error) {
             console.error('Error al eliminar el material:', error);
-            toast.error("Error al eliminar el material");
+            notify('error', 'Error al eliminar el material');
         }
     }, [selectedMaterial, onClose]);
 
@@ -202,7 +205,7 @@ function MaterialDetailModal({ isOpen, onClose, selectedMaterial }) {
                             <MaterialEditModal
                                 isOpen={!isEditModalClosing}
                                 onClose={handleEditModalClosed}
-                                notify={toast}
+                                notify={notify}
                                 material={selectedMaterial}
                             />
                         )}

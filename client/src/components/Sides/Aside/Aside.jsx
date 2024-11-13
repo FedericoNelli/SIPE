@@ -1,11 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Home, Box, FileText, Archive, ArrowUpRight, Users, Warehouse, Tags, ChevronDown, ChevronUp } from 'lucide-react';
+import path from 'path';
 
 
 const sections = [
     { name: 'Dashboard', label: 'Dashboard', icon: <Home />, path: '/dshb', roles: ['Administrador', 'Colaborador'] },
-    { name: 'Materiales', label: 'Materiales', icon: <Box />, path: '/mtls', roles: ['Administrador', 'Colaborador'] },
+    {
+        name: 'Materiales',
+        label: 'Materiales',
+        icon: <Box />,
+        roles: ['Administrador', 'Colaborador'],
+        subMenu: [
+            { name: 'Entradas', path: '/enters' },
+            { name: 'Salidas', path: '/exits' }
+        ]
+    },
     { name: 'Categorias', label: 'Categorías', icon: <Tags />, path: '/category', roles: ['Administrador'] },
     {
         name: 'Almacenamiento',
@@ -28,7 +38,17 @@ const sections = [
         ]
     },
     { name: 'Movimientos', label: 'Movimientos', icon: <ArrowUpRight />, path: '/movement', roles: ['Administrador'] },
-    { name: 'Informes', label: 'Informes', icon: <FileText />, path: '/inf', roles: ['Administrador'] },
+    {
+        name:
+            'Información',
+        label: 'Información',
+        icon: <FileText />,
+        roles: ['Administrador'],
+        subMenu: [
+            { name: 'Informes', path: '/inf' },
+            { name: 'Auditorias', path: '/audits' }
+        ]
+    },
     { name: 'Lista de usuarios', label: 'Lista de usuarios', icon: <Users />, path: '/user', roles: ['Administrador'] },
 ];
 
@@ -38,21 +58,31 @@ function Aside() {
     const location = useLocation();
 
     useEffect(() => {
-        const isInDeposits = sections[4].subMenu.some(subItem => subItem.path === location.pathname);
-        const isInShelves = sections[3].subMenu.some(subItem => subItem.path === location.pathname);
+        const sectionMap = {
+            'Depositos': sections.find(section => section.name === 'Depositos')?.subMenu,
+            'Almacenamiento': sections.find(section => section.name === 'Almacenamiento')?.subMenu,
+            'Materiales': sections.find(section => section.name === 'Materiales')?.subMenu,
+            'Información': sections.find(section => section.name === 'Información')?.subMenu,
+        };
 
-        if (isInDeposits) {
+        if (sectionMap['Depositos']?.some(subItem => subItem.path === location.pathname)) {
             setOpenSubMenu('Depositos');
-        } else if (isInShelves) {
-            setOpenSubMenu('Almacenamiento'); 
+        } else if (sectionMap['Almacenamiento']?.some(subItem => subItem.path === location.pathname)) {
+            setOpenSubMenu('Almacenamiento');
+        } else if (sectionMap['Materiales']?.some(subItem => subItem.path === location.pathname)) {
+            setOpenSubMenu('Materiales');
+        } else if (sectionMap['Información']?.some(subItem => subItem.path === location.pathname)) {
+            setOpenSubMenu('Información');
         }
     }, [location]);
 
+
+
     const toggleSubMenu = (menuName) => {
         if (openSubMenu === menuName) {
-            setOpenSubMenu(null); 
+            setOpenSubMenu(null);
         } else {
-            setOpenSubMenu(menuName); 
+            setOpenSubMenu(menuName);
         }
     };
 

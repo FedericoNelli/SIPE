@@ -9,14 +9,21 @@ function MovementConfirmModal({ movement, onClose, notify, onMovementConfirmed, 
     const [cantidadRecibida, setCantidadRecibida] = useState(movement.cantidad);
 
     const handleInputChange = (e) => {
-        setCantidadRecibida(e.target.value);
+        const value = e.target.value;
+
+        // Permitir solo números positivos o vacío
+        if (value === '' || /^\d+$/.test(value)) {
+            setCantidadRecibida(value);
+        } else {
+            notify('error', 'Por favor ingrese solo valores positivos');
+        }
     };
 
     const handleConfirmMovement = async () => {
         try {
             const response = await axios.post('http://localhost:8081/addMovements', {
                 ...movement,
-                cantidadMovida: cantidadRecibida,
+                cantidadMovida: cantidadRecibida || 0,
             });
 
             if (response.status !== 200) {
@@ -57,7 +64,6 @@ function MovementConfirmModal({ movement, onClose, notify, onMovementConfirmed, 
                             type="number"
                             value={cantidadRecibida}
                             onChange={handleInputChange}
-                            min="0"
                         />
                     </div>
                 </div>

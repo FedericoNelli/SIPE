@@ -49,7 +49,13 @@ function Movement({ notify }) {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentMovements = movements.slice(indexOfFirstItem, indexOfLastItem);
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    const totalPages = Math.ceil(movements.length / itemsPerPage);
+
+    const paginate = (pageNumber) => {
+        if (pageNumber >= 1 && pageNumber <= totalPages) {
+            setCurrentPage(pageNumber);
+        }
+    };
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
@@ -88,13 +94,6 @@ function Movement({ notify }) {
         setSelectedMovement(null);
     };
 
-    const handleAddPendingMovement = (newMovement) => {
-        const expiryTime = new Date().getTime() + 7 * 24 * 60 * 60 * 1000;
-        const movementWithExpiry = { ...newMovement, expiry: expiryTime };
-        setPendingMovements([...pendingMovements, movementWithExpiry]);
-        closeFormModal();
-    };
-
     const toggleDeleteMode = () => {
         setIsDeleteMode(!isDeleteMode);
         setSelectedMovements([]);
@@ -118,6 +117,13 @@ function Movement({ notify }) {
                 notify('error', 'Error al eliminar movimientos');
             });
     };
+
+    const addPendingMovement = (newMovement) => {
+        const updatedPendingMovements = [...pendingMovements, newMovement];
+        setPendingMovements(updatedPendingMovements);
+        localStorage.setItem('pendingMovements', JSON.stringify(updatedPendingMovements));
+    };
+    
 
     return (
         <div className="relative">
@@ -149,7 +155,7 @@ function Movement({ notify }) {
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
-                            {[...Array(Math.ceil(movements.length / itemsPerPage)).keys()].map(page => (
+                            {[...Array(totalPages).keys()].map(page => (
                                 <PaginationItem key={page + 1}>
                                     <PaginationLink href="#" onClick={() => paginate(page + 1)} isActive={currentPage === page + 1}>
                                         {page + 1}
@@ -163,7 +169,7 @@ function Movement({ notify }) {
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <MovementForm
                             onClose={closeFormModal}
-                            onAddPendingMovement={handleAddPendingMovement}
+                            addPendingMovement={addPendingMovement}
                             notify={notify}
                         />
                     </div>

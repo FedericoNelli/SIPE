@@ -3,27 +3,10 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Button } from "@/components/Common/Button/Button";
 import axios from "axios";
 
-function ReportList({ isDeleteMode, notify, fetchReportDetails }) {
-    const [reports, setReports] = useState([]);
-    const [loading, setLoading] = useState(true);
+function ReportList({ reports, isDeleteMode, notify, fetchReportDetails }) {
     const [selectedReports, setSelectedReports] = useState([]); // Para la eliminación múltiple
     const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false); // Estado de confirmación
 
-    // Cargar los informes
-    useEffect(() => {
-        const loadReports = async () => {
-            try {
-                const response = await axios.get('http://localhost:8081/reports');
-                setReports(response.data);
-            } catch (error) {
-                console.error('Error fetching reports:', error);
-                notify('error', 'Error al cargar los informes');
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadReports();
-    }, [notify]);
 
     // Manejo de la selección de informes
     const handleRowClick = (report) => {
@@ -73,9 +56,6 @@ function ReportList({ isDeleteMode, notify, fetchReportDetails }) {
         }
     };
 
-    if (loading) {
-        return <p className="text-center text-white">Cargando informes...</p>;
-    }
 
     return (
         <>

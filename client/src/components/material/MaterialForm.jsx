@@ -111,11 +111,12 @@ function MaterialForm({ onClose, notify }) {
 
     const handleInputChange = (e) => {
         const { id, value } = e.target;
-        if (id === 'cantidad' && value < 0) {
+        if ((id === 'cantidad' || id === 'bajoStock') && value < 0) {
             setFormData((prevData) => ({
                 ...prevData,
                 [id]: 0,
             }));
+            notify('error', 'El valor no puede ser negativo');
         } else {
             setFormData((prevData) => ({
                 ...prevData,
@@ -123,6 +124,7 @@ function MaterialForm({ onClose, notify }) {
             }));
         }
     };
+
 
     const handleSelectChange = (id, value) => {
         setFormData(prevState => ({
@@ -297,7 +299,7 @@ function MaterialForm({ onClose, notify }) {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="matricula" className="text-sm font-medium">Matrícula</Label>
-                            <Input className="border-b text-sm" id="matricula" placeholder="Ingresa la matrícula" value={formData.matricula} onChange={handleInputChange} />
+                            <Input className="border-b text-sm" id="matricula" type="text" placeholder="Ingresa la matrícula" value={formData.matricula} onChange={handleInputChange} />
                         </div>
                     </div>
                     <div className="grid gap-4">

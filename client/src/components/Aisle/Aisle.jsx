@@ -27,9 +27,15 @@ function Aisle({ notify }) {
 
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentaisles = aisles.slice(indexOfFirstItem, indexOfLastItem);
+    const currentAisles = aisles.slice(indexOfFirstItem, indexOfLastItem);
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    const totalPages = Math.ceil(aisles.length / itemsPerPage);
+
+    const paginate = (pageNumber) => {
+        if (pageNumber >= 1 && pageNumber <= totalPages) {
+            setCurrentPage(pageNumber);
+        }
+    };
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
@@ -101,7 +107,7 @@ function Aisle({ notify }) {
                     </div>
                 </div>
                 <AisleList
-                    aisles={currentaisles}
+                    aisles={currentAisles}
                     isDeleteMode={isDeleteMode}
                     selectedAisles={selectedAisles}
                     setSelectedAisles={setSelectedAisles}
@@ -111,7 +117,7 @@ function Aisle({ notify }) {
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
-                            {[...Array(Math.ceil(aisles.length / itemsPerPage)).keys()].map(page => (
+                            {[...Array(totalPages).keys()].map(page => (
                                 <PaginationItem key={page + 1}>
                                     <PaginationLink href="#" onClick={() => paginate(page + 1)} isActive={currentPage === page + 1}>
                                         {page + 1}

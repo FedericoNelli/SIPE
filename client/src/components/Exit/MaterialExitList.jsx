@@ -52,6 +52,7 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                                     />
                                 </TableHead>
                             )}
+                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Número de Salida</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Fecha</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Motivo</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Material</TableHead>
@@ -72,11 +73,12 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                                         />
                                     </TableCell>
                                 )}
+                                <TableCell className="text-center font-light">{salida.numero}</TableCell>
                                 <TableCell className="text-center font-light">{salida.fechaSalida}</TableCell>
                                 <TableCell className="text-center font-light">{salida.motivo}</TableCell>
                                 <TableCell className="text-center font-light">
                                     <div className="flex flex-col items-center">
-                                        {salida.nombresMateriales.split(', ').map((material, index, array) => (
+                                        {(salida.nombresMateriales || 'Sin Material').split(', ').map((material, index, array) => (
                                             <span key={index}>
                                                 {material}{index < array.length - 1 && ','}
                                             </span>

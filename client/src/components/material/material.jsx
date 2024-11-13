@@ -9,8 +9,6 @@ import MaterialForm from '@/components/Material/MaterialForm';
 import MaterialList from '@/components/Material/MaterialList';
 import MaterialDetailModal from '@/components/Material/MaterialDetailModal';
 import FilterModal from '@/components/Common/Filter/FilterModal';
-import MaterialExitList from '@/components/Material/MaterialExitList';
-import MaterialExitForm from '@/components/Material/MaterialExitForm';
 
 function Material({ notify }) {
     const [materials, setMaterials] = useState([]);
@@ -22,9 +20,6 @@ function Material({ notify }) {
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [materialDetail, setMaterialDetail] = useState(null);
-    const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para el modo de eliminación
-    const [selectedExits, setSelectedExits] = useState([]); // Estado para las salidas seleccionadas
-    const [materialExits, setMaterialExits] = useState([]);
     const [filters, setFilters] = useState({
         estado: '',
         categoria: '',
@@ -39,7 +34,6 @@ function Material({ notify }) {
     const userRole = localStorage.getItem('rol');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
-    const [viewingMaterialExits, setViewingMaterialExits] = useState(false);
 
     useEffect(() => {
         axios.get('http://localhost:8081/materials')
@@ -66,26 +60,7 @@ function Material({ notify }) {
         axios.get('http://localhost:8081/statuses')
             .then(response => setAvailableStatuses(response.data))
             .catch(error => console.error('Error fetching statuses:', error));
-
-        // Cargar salidas de materiales
-        loadMaterialExits();
     }, []);
-
-    // Función para cargar las salidas de materiales
-    const loadMaterialExits = () => {
-        axios.get('http://localhost:8081/exits')
-            .then(response => {
-                setMaterialExits(response.data);
-            })
-            .catch(error => {
-                console.error('Error fetching material exits:', error);
-            });
-    };
-
-    // Función para refrescar la lista de salidas
-    const refreshMaterialExits = () => {
-        loadMaterialExits();
-    };
 
     // Manejar la búsqueda
     const handleSearch = (e) => {
@@ -196,44 +171,6 @@ function Material({ notify }) {
 
     const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-    // Manejar la visualización de salidas de materiales
-    const viewMaterialExits = () => {
-        setViewingMaterialExits(true);
-    };
-
-    const backToMaterialList = () => {
-        setViewingMaterialExits(false);
-        window.location.reload();
-    };
-
-    const handleDeleteExits = () => {
-        if (selectedExits.length === 0) {
-            notify('error', 'No hay salidas seleccionadas para eliminar');
-            return;
-        }
-
-        axios.delete('http://localhost:8081/delete-exits', { data: { exitIds: selectedExits } })
-            .then(() => {
-                notify('success', 'Salidas eliminadas correctamente');
-                // Elimina las salidas eliminadas del estado actual
-                setSelectedExits([]);
-                setIsDeleteMode(false);
-            })
-
-            .catch(error => {
-                console.error('Error eliminando salidas:', error);
-                notify('error', 'Error al eliminar salidas');
-            });
-            window.location.reload();
-        
-    };
-
-    const toggleDeleteMode = () => {
-        setIsDeleteMode(!isDeleteMode);
-        setSelectedExits([]); // Limpiar la selección al salir del modo de eliminación
-    };
-
-
     return (
         <div className="relative">
             <div className="absolute inset-0 bg-sipe-white opacity-5 z-10 rounded-2xl" />
@@ -241,26 +178,15 @@ function Material({ notify }) {
                 <div className="flex justify-between w-full text-sipe-white font-bold pt-7 px-10">
                     <div className="flex flex-col mb-5">
                         <h1 className="text-3xl font-bold">Materiales</h1>
-                        <h3 className="text-md font-thin">{viewingMaterialExits ? "Salidas de Materiales" : "Listado completo de materiales"}</h3>
+                        <h3 className="text-md font-thin">Listado completo de materiales</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
                         {userRole === 'Administrador' && (
-                            <Button onClick={viewingMaterialExits ? openFormModal : openFormModal} variant="sipemodal">
-                                {viewingMaterialExits ? "REGISTRAR NUEVA SALIDA" : "NUEVO MATERIAL"}
+                            <Button onClick={openFormModal} variant="sipemodal">
+                                NUEVO MATERIAL
                             </Button>
                         )}
-                        {viewingMaterialExits ? (
-                            <> 
-                        <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
-                                    {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR SALIDAS'}
-                                </Button>
-                                <Button onClick={backToMaterialList} variant="sipemodalalt">SALIR</Button>
-                            </>
-                        ) : (
                             <>
-                                <Button onClick={viewMaterialExits} variant="secondary" className="bg-transparent text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2">
-                                    <ArrowBigRight />SALIDAS DE MATERIALES
-                                </Button>
                                 <Button onClick={openFilterModal} variant="secondary" className="bg-transparent text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
                                     <Filter /> FILTRAR
                                 </Button>
@@ -268,19 +194,13 @@ function Material({ notify }) {
                                     <Search /> BUSCAR
                                 </Button>
                             </>
-                        )}
                     </div>
                 </div>
-                {viewingMaterialExits ? (
-                    <MaterialExitList
-                        materialExits={materialExits}
-                        isDeleteMode={isDeleteMode}
-                        selectedExits={selectedExits}
-                        setSelectedExits={setSelectedExits}
-                        handleDeleteExits={handleDeleteExits} />
-                ) : (
-                    <MaterialList materials={currentMaterials} />
-                )}
+                <MaterialList 
+                    materials={currentMaterials}
+                    notify={notify}
+                />
+
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
@@ -357,13 +277,7 @@ function Material({ notify }) {
                                 exit={{ scale: 0.95, opacity: 0 }}
                                 transition={{ duration: 0.3 }}
                             >
-                                {viewingMaterialExits ? (
-                                    <MaterialExitForm onClose={closeFormModal}
-                                        notify={notify}
-                                        onExitCreated={refreshMaterialExits} />
-                                ) : (
-                                    <MaterialForm onClose={closeFormModal} notify={notify} />
-                                )}
+                                <MaterialForm onClose={closeFormModal} notify={notify} />
                             </motion.div>
                         </motion.div>
                     )}
@@ -375,6 +289,7 @@ function Material({ notify }) {
                             isOpen={isDetailModalOpen}
                             onClose={closeDetailModal}
                             selectedMaterial={materialDetail}
+                            notify={notify}
                         />
                     )}
                 </AnimatePresence>

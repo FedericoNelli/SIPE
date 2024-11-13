@@ -4,7 +4,7 @@ import { Badge } from "@/components/Common/Badge/Badge";
 import axios from "axios";
 import MaterialDetailModal from "@/components/Material/MaterialDetailModal";
 
-function MaterialList({ materials }) {
+function MaterialList({ materials, notify }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMaterial, setSelectedMaterial] = useState(null);
     const [shelves, setShelves] = useState([]);
@@ -93,6 +93,7 @@ function MaterialList({ materials }) {
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 selectedMaterial={selectedMaterial}
+                notify={notify}
             />
         </>
     );
