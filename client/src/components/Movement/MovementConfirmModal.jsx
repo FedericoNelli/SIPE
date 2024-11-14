@@ -8,6 +8,20 @@ import axios from 'axios';
 function MovementConfirmModal({ movement, onClose, notify, onMovementConfirmed, onRemovePendingMovement }) {
     const [cantidadRecibida, setCantidadRecibida] = useState(movement.cantidad);
 
+    // Cerrar modal al presionar la tecla Escape
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [onClose]);
+
     const handleInputChange = (e) => {
         const value = e.target.value;
 

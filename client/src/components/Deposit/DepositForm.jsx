@@ -16,6 +16,21 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
     const [ubicaciones, setUbicaciones] = useState([]);
 
     useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                onClose(); // Cierra el modal cuando se presiona Escape
+            }
+        };
+
+        document.addEventListener('keydown', handleEscape);
+
+        // Limpia el evento cuando el componente se desmonta
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [onClose]);
+
+    useEffect(() => {
         
         axios.get('http://localhost:8081/deposit-locations')
             .then(response => {

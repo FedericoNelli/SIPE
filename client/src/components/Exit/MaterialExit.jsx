@@ -24,11 +24,11 @@ function MaterialExit({ notify }) {
     const loadMaterialExits = () => {
         axios.get('http://localhost:8081/exits')
             .then(response => {
-                setMaterialExits(Array.isArray(response.data) ? response.data : []);
+                setMaterialExits(Array.isArray(response.data.data) ? response.data.data : []);
             })
             .catch(error => {
                 console.error('Error fetching material exits:', error);
-                setMaterialExits([]); // Asegura que materialExits sea un array vacío en caso de error
+                setMaterialExits([]);
                 notify('error', 'Error al obtener las salidas de materiales');
             });
     };
@@ -40,6 +40,7 @@ function MaterialExit({ notify }) {
 
     const openEditModal = () => {
         setIsEditModalOpen(true);
+        setIsDeleteMode(false);
     }
 
     const closeEditModal = () => {
@@ -77,6 +78,7 @@ function MaterialExit({ notify }) {
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
+        setIsDeleteMode(false);
     };
 
     const closeFormModal = () => {

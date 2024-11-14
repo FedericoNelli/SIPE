@@ -42,6 +42,7 @@ function Category({ notify }) {
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
+        setIsDeleteMode(false);
     };
 
     const closeFormModal = () => {
@@ -55,7 +56,8 @@ function Category({ notify }) {
 
     // Función para abrir el modal de edición
     const openEditModal = () => {
-        setIsEditModalOpen(true);  // Solo abrir el modal
+        setIsEditModalOpen(true);
+        setIsDeleteMode(false); 
     };
 
     // Función para cerrar el modal de edición

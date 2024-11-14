@@ -27,6 +27,21 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
     const [categorias, setCategorias] = useState([]);
 
     useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                onClose(); // Cierra el modal cuando se presiona Escape
+            }
+        };
+
+        document.addEventListener('keydown', handleEscape);
+
+        // Limpia el evento cuando el componente se desmonta
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [onClose]);
+
+    useEffect(() => {
         axios.get('http://localhost:8081/deposit-locations')
             .then(response => {
                 setLocations(response.data);
@@ -83,10 +98,19 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prevData) => ({
-            ...prevData,
-            [name]: value
-        }));
+        if (value === '' || /^[1-9]\d*$/.test(value)) {
+            setFormData((prevData) => ({
+                ...prevData,
+                [name]: value
+            }));
+        } else {
+            if (parseInt(value, 10) < 0) {
+                const errorMessage = {
+                    numero: "El número de estante debe ser mayor a 0"
+                };
+                notify('error', errorMessage[name] || "El valor debe ser mayor a 0");
+            }
+        }
     };
 
     const handleSelectChange = (name, value) => {
@@ -98,10 +122,6 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
 
     const handleSubmit = async () => {
         try {
-            if (formData.numero <= 0) {
-                notify('error', "El número de pasillo debe ser mayor que 0");
-                return;
-            }
             // Asegurar que `idLado2` sea `null` si no se selecciona
             const dataToSend = {
                 ...formData,

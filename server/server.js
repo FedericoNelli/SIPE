@@ -627,7 +627,7 @@ app.get('/exits', (req, res) => {
             COALESCE(GROUP_CONCAT(DISTINCT u.nombre ORDER BY u.nombre ASC SEPARATOR ', '), 'Sin Ubicación') AS ubicacionNombre
         FROM 
             salida_material s
-        JOIN 
+        LEFT JOIN 
             detalle_salida_material ds ON s.id = ds.idSalida
         LEFT JOIN 
             Material m ON ds.idMaterial = m.id
@@ -645,14 +645,11 @@ app.get('/exits', (req, res) => {
             console.error('Error fetching material exits:', error);
             return res.status(500).json({ error: 'Error al obtener las salidas de materiales' });
         }
-
-        if (results.length === 0) {
-            return res.status(200).json({ message: 'No hay registros de salidas de materiales', data: [] });
-        }
-
-        res.status(200).json(results);
+        // Siempre devuelve un objeto con la propiedad 'data', que es un array
+        res.status(200).json({ data: results });
     });
 });
+
 
 //Este endpoint se usa para el informe de salida de material y para el editar salida de materiales
 app.get('/exits-details', (req, res) => {
@@ -1422,7 +1419,7 @@ app.post('/login', (req, res) => {
         }
 
         // Generar y devolver el token JWT
-        const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '5h' });
+        const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '24h' });
 
         // Verificar si es el primer login
         const firstLogin = user.firstLogin;
@@ -2802,27 +2799,6 @@ app.post('/addMovements', (req, res) => {
 
 
 
-// Endpoint para eliminar múltiples movimientos
-app.delete('/delete-movements', (req, res) => {
-    const { movementIds } = req.body; // Recibe los IDs de los movimientos a eliminar
-
-    if (!movementIds || movementIds.length === 0) {
-        return res.status(400).json({ message: 'No se proporcionaron movimientos para eliminar' });
-    }
-
-    const placeholders = movementIds.map(() => '?').join(',');
-    const query = `DELETE FROM movimiento WHERE id IN (${placeholders})`;
-
-    db.query(query, movementIds, (err, result) => {
-        if (err) {
-            console.error('Error eliminando movimientos:', err);
-            return res.status(500).json({ message: 'Error eliminando movimientos' });
-        }
-
-        res.status(200).json({ message: 'Movimientos eliminados correctamente' });
-    });
-});
-
 app.get('/movements/:id', async (req, res) => {
     const movementId = req.params.id;
     const query = `
@@ -2987,6 +2963,26 @@ app.put('/edit-movements/:id', async (req, res) => {
     }
 });
 
+// Endpoint para eliminar múltiples movimientos
+app.delete('/delete-movements', (req, res) => {
+    const { movementIds } = req.body; // Recibe los IDs de los movimientos a eliminar
+
+    if (!movementIds || movementIds.length === 0) {
+        return res.status(400).json({ message: 'No se proporcionaron movimientos para eliminar' });
+    }
+
+    const placeholders = movementIds.map(() => '?').join(',');
+    const query = `DELETE FROM movimiento WHERE id IN (${placeholders})`;
+
+    db.query(query, movementIds, (err, result) => {
+        if (err) {
+            console.error('Error eliminando movimientos:', err);
+            return res.status(500).json({ message: 'Error eliminando movimientos' });
+        }
+
+        res.status(200).json({ message: 'Movimientos eliminados correctamente' });
+    });
+});
 
 app.get('/materials-with-movements', (req, res) => {
     const query = `
@@ -3084,8 +3080,9 @@ app.post('/addReport', (req, res) => {
     }
 
     const insertQuery = `
-    INSERT INTO Informe (tipo, tipoGrafico, fechaGeneracion, idUsuario, idMaterial, idDeposito, idEstado, idMovimiento, idSalida, idDetalleSalida, fechaInicio, fechaFin) 
-    VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        INSERT INTO Informe (tipo, tipoGrafico, fechaGeneracion, idUsuario, idMaterial, idDeposito, idEstado, idMovimiento, idSalida, idDetalleSalida, fechaInicio, fechaFin) 
+        VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
     const formatDateForDB = (date) => {
         if (!date) return null;
@@ -3123,16 +3120,16 @@ app.post('/addReport', (req, res) => {
         let reportQuery = '';
         let reportParams = [];
 
+        // Generar la consulta y parámetros según el tipo de informe
         switch (tipo) {
             case 'Informe de inventario general':
                 reportQuery = `
                     SELECT 
-                        m.id, 
-                        m.nombre, 
-                        m.cantidad, 
-                        c.descripcion AS categoria, 
-                        d.nombre AS depositoNombre,
-                        es.descripcion AS estadoMaterial
+                        GROUP_CONCAT(m.nombre SEPARATOR ', ') AS nombre_material, 
+                        GROUP_CONCAT(m.cantidad SEPARATOR ', ') AS cantidad, 
+                        GROUP_CONCAT(c.descripcion SEPARATOR ', ') AS categoria, 
+                        GROUP_CONCAT(d.nombre SEPARATOR ', ') AS nombre_deposito,
+                        GROUP_CONCAT(es.descripcion SEPARATOR ', ') AS estado_material
                     FROM 
                         Material m
                     LEFT JOIN 
@@ -3147,12 +3144,11 @@ app.post('/addReport', (req, res) => {
             case 'Informe de material por estado':
                 reportQuery = `
                     SELECT 
-                        m.id, 
-                        m.nombre, 
-                        m.cantidad, 
-                        c.descripcion AS categoria, 
-                        d.nombre AS depositoNombre,
-                        es.descripcion AS estadoMaterial
+                        GROUP_CONCAT(m.nombre SEPARATOR ', ') AS nombre_material, 
+                        GROUP_CONCAT(m.cantidad SEPARATOR ', ') AS cantidad, 
+                        GROUP_CONCAT(c.descripcion SEPARATOR ', ') AS categoria, 
+                        GROUP_CONCAT(d.nombre SEPARATOR ', ') AS nombre_deposito,
+                        GROUP_CONCAT(es.descripcion SEPARATOR ', ') AS estado_material
                     FROM 
                         Material m
                     LEFT JOIN 
@@ -3173,12 +3169,11 @@ app.post('/addReport', (req, res) => {
                 }
                 reportQuery = `
                     SELECT 
-                        m.id, 
-                        m.nombre, 
-                        m.cantidad, 
-                        c.descripcion AS categoria, 
-                        d.nombre AS depositoNombre,
-                        es.descripcion AS estadoMaterial
+                        GROUP_CONCAT(m.nombre SEPARATOR ', ') AS nombre_material, 
+                        GROUP_CONCAT(m.cantidad SEPARATOR ', ') AS cantidad, 
+                        GROUP_CONCAT(c.descripcion SEPARATOR ', ') AS categoria, 
+                        GROUP_CONCAT(d.nombre SEPARATOR ', ') AS nombre_deposito,
+                        GROUP_CONCAT(es.descripcion SEPARATOR ', ') AS estado_material
                     FROM 
                         Material m
                     LEFT JOIN 
@@ -3199,13 +3194,11 @@ app.post('/addReport', (req, res) => {
                 }
                 reportQuery = `
                     SELECT 
-                        mo.id, 
-                        mo.fechaMovimiento, 
-                        mo.cantidad, 
-                        m.nombre AS nombreMaterial,  
-                        d1.nombre AS depositoOrigen, 
-                        d2.nombre AS depositoDestino,
-                        u.nombre AS usuario
+                        GROUP_CONCAT(mo.fechaMovimiento SEPARATOR ', ') AS fecha_movimiento, 
+                        GROUP_CONCAT(mo.cantidad SEPARATOR ', ') AS cantidad_movimiento, 
+                        GROUP_CONCAT(m.nombre SEPARATOR ', ') AS nombre_material,  
+                        GROUP_CONCAT(d1.nombre SEPARATOR ', ') AS deposito_origen, 
+                        GROUP_CONCAT(d2.nombre SEPARATOR ', ') AS deposito_destino
                     FROM 
                         Movimiento mo
                     LEFT JOIN 
@@ -3214,13 +3207,11 @@ app.post('/addReport', (req, res) => {
                         Deposito d1 ON mo.idDepositoOrigen = d1.id
                     LEFT JOIN 
                         Deposito d2 ON mo.idDepositoDestino = d2.id
-                    LEFT JOIN 
-                        Usuario u ON mo.idUsuario = u.id
                     WHERE 
                         mo.fechaMovimiento BETWEEN ? AND ?
                         AND mo.idMaterial = ?
                 `;
-                reportParams.push(fechaInicio, fechaFin, idMaterial);
+                reportParams.push(formattedFechaInicio, formattedFechaFin, idMaterial);
                 break;
 
             case 'Informe de salida de material':
@@ -3229,73 +3220,70 @@ app.post('/addReport', (req, res) => {
                 }
                 reportQuery = `
                     SELECT 
-                        sm.id AS salidaId, 
-                        sm.fecha, 
-                        sm.motivo, 
-                        dsm.cantidad, 
-                        m.nombre AS nombreMaterial, 
-                        u.nombre AS nombreUsuario
+                        GROUP_CONCAT(sm.fecha SEPARATOR ', ') AS fecha_salida, 
+                        GROUP_CONCAT(sm.motivo SEPARATOR ', ') AS motivo_salida, 
+                        GROUP_CONCAT(dsm.cantidad SEPARATOR ', ') AS cantidad, 
+                        GROUP_CONCAT(m.nombre SEPARATOR ', ') AS nombre_material
                     FROM 
                         salida_material sm
                     JOIN 
                         detalle_salida_material dsm ON sm.id = dsm.idSalida
                     JOIN 
                         Material m ON dsm.idMaterial = m.id
-                    JOIN 
-                        Usuario u ON sm.idUsuario = u.id
                     WHERE 
                         sm.fecha BETWEEN ? AND ?
                         AND dsm.idMaterial = ?
                 `;
-                reportParams.push(fechaInicio, fechaFin, idMaterial);
-
-                // Ejecutar la consulta y agrupar las salidas por material específicamente para el informe de salida
-                db.query(reportQuery, reportParams, (err, reportResult) => {
-                    if (err) {
-                        console.error('Error al generar el informe:', err);
-                        return res.status(500).json({ mensaje: 'Error al generar el informe' });
-                    }
-
-                    const groupedResults = reportResult.reduce((acc, row) => {
-                        const { nombreMaterial, ...rest } = row;
-                        if (!acc[nombreMaterial]) {
-                            acc[nombreMaterial] = {
-                                nombreMaterial,
-                                salidas: []
-                            };
-                        }
-                        acc[nombreMaterial].salidas.push(rest);
-                        return acc;
-                    }, {});
-
-                    const finalResult = Object.values(groupedResults);
-
-                    return res.status(200).json({
-                        mensaje: 'Informe generado con éxito',
-                        informeId: informeId,
-                        datos: finalResult,
-                    });
-                });
-                return;
+                reportParams.push(formattedFechaInicio, formattedFechaFin, idMaterial);
+                break;
 
             default:
                 return res.status(400).json({ mensaje: 'Tipo de informe no válido' });
         }
 
-        // Ejecutar la consulta para los otros tipos de informe fuera del caso específico de salida de material
-        if (tipo !== 'Informe de salida de material') {
-            db.query(reportQuery, reportParams, (err, reportResult) => {
+        // Ejecutar la consulta de detalles para el tipo de informe y almacenarlos en detalle_informe
+        db.query(reportQuery, reportParams, (err, reportResult) => {
+            if (err) {
+                console.error('Error al generar el informe:', err);
+                return res.status(500).json({ mensaje: 'Error al generar el informe' });
+            }
+
+            const detail = reportResult[0];
+            const detailInsertValues = [
+                informeId,
+                detail.nombre_material || null,
+                detail.cantidad || detail.cantidad_movimiento || null,
+                detail.categoria || null,
+                detail.estado_material || null,
+                detail.nombre_deposito || null,
+                detail.deposito_origen || null,
+                detail.deposito_destino || null,
+                detail.fecha_movimiento || null,
+                detail.cantidad_movimiento || null,
+                detail.fecha_salida || null,
+                detail.motivo_salida || null
+            ];
+
+            const detailInsertQuery = `
+                INSERT INTO detalle_informe 
+                (informe_id, nombre_material, cantidad, categoria, estado_material, nombre_deposito, 
+                 deposito_origen, deposito_destino, fecha_movimiento, cantidad_movimiento, fecha_salida, motivo_salida) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+
+            // Insertar los detalles en detalle_informe
+            db.query(detailInsertQuery, detailInsertValues, (err) => {
                 if (err) {
-                    console.error('Error al generar el informe:', err);
-                    return res.status(500).json({ mensaje: 'Error al generar el informe' });
+                    console.error('Error al insertar detalles del informe:', err);
+                    return res.status(500).json({ mensaje: 'Error al insertar detalles del informe' });
                 }
+
                 res.status(200).json({
-                    mensaje: 'Informe generado con éxito',
+                    mensaje: 'Informe y detalles generados con éxito',
                     informeId: informeId,
-                    datos: reportResult,
                 });
             });
-        }
+        });
     });
 });
 
@@ -3304,8 +3292,8 @@ app.post('/addReport', (req, res) => {
 app.get('/reports/:id', (req, res) => {
     const reportId = req.params.id;
 
-    // Consulta principal para obtener los datos del informe
-    const query = `
+    // Consulta principal para obtener los datos del informe desde la tabla Informe
+    const reportQuery = `
         SELECT 
             id, tipo, fechaGeneracion, idUsuario, idMaterial, idDeposito, 
             tipoGrafico, fechaInicio, fechaFin, idEstado, idMovimiento, idSalida, idDetalleSalida 
@@ -3313,147 +3301,67 @@ app.get('/reports/:id', (req, res) => {
         WHERE id = ?;
     `;
 
-    db.query(query, [reportId], (err, results) => {
+    db.query(reportQuery, [reportId], (err, reportResults) => {
         if (err) {
             console.error('Error al consultar la base de datos:', err);
             return res.status(500).send('Error al consultar la base de datos');
         }
-        if (results.length === 0) {
+        if (reportResults.length === 0) {
             return res.status(404).send('Informe no encontrado');
         }
 
-        const report = results[0];
-        report.datos = []; // Inicializar los datos en el reporte
+        // Asignar los datos principales del informe
+        const report = reportResults[0];
 
-        const queries = {
-            'Informe de inventario general': `
-                SELECT 
-                    m.nombre, 
-                    m.cantidad, 
-                    m.idEstado, 
-                    d.nombre AS depositoNombre 
-                FROM 
-                    Material m
-                LEFT JOIN 
-                    Deposito d ON m.idDeposito = d.id;
-            `,
+        // Consulta para obtener los detalles del informe desde detalle_informe
+        const detailQuery = `
+            SELECT 
+                nombre_material, 
+                cantidad, 
+                categoria, 
+                estado_material, 
+                nombre_deposito, 
+                deposito_origen, 
+                deposito_destino, 
+                fecha_movimiento, 
+                cantidad_movimiento, 
+                fecha_salida, 
+                motivo_salida
+            FROM detalle_informe 
+            WHERE informe_id = ?;
+        `;
 
-            'Informe de material por estado': `
-                SELECT 
-                    m.id, 
-                    m.nombre, 
-                    m.cantidad, 
-                    m.idEstado, 
-                    e.descripcion AS estadoDescripcion, 
-                    d.nombre AS depositoNombre
-                FROM 
-                    Material m
-                LEFT JOIN 
-                    Estado e ON m.idEstado = e.id
-                LEFT JOIN 
-                    Deposito d ON m.idDeposito = d.id
-                WHERE 
-                    e.id = ?;
-            `,
-
-            'Informe de material por deposito': `
-                SELECT 
-                    m.id, m.nombre, m.cantidad, m.idEstado, 
-                    d.nombre AS depositoNombre 
-                FROM Material m 
-                LEFT JOIN Deposito d ON m.idDeposito = d.id 
-                WHERE d.id = ?;
-            `,
-
-            'Informe de material por movimiento entre deposito': `
-                SELECT 
-                    mo.id, DATE_FORMAT(mo.fechaMovimiento, '%d-%m-%Y') AS fechaMovimiento, 
-                    mo.cantidad, m.nombre AS nombreMaterial, 
-                    d1.nombre AS depositoOrigen, d2.nombre AS depositoDestino, 
-                    u.nombre AS usuario 
-                FROM Movimiento mo 
-                LEFT JOIN Material m ON mo.idMaterial = m.id 
-                LEFT JOIN Deposito d1 ON mo.idDepositoOrigen = d1.id 
-                LEFT JOIN Deposito d2 ON mo.idDepositoDestino = d2.id 
-                LEFT JOIN Usuario u ON mo.idUsuario = u.id 
-                WHERE mo.fechaMovimiento BETWEEN ? AND ? AND mo.idMaterial = ?;
-            `,
-
-            'Informe de salida de material': `
-                SELECT 
-                    sm.id AS salidaId, 
-                    DATE_FORMAT(sm.fecha, '%d-%m-%Y') AS fechaSalida, 
-                    sm.motivo, 
-                    dsm.cantidad, 
-                    m.nombre AS nombreMaterial, 
-                    u.nombre AS nombreUsuario 
-                FROM salida_material sm 
-                JOIN detalle_salida_material dsm ON sm.id = dsm.idSalida 
-                JOIN Material m ON dsm.idMaterial = m.id 
-                JOIN Usuario u ON sm.idUsuario = u.id 
-                WHERE sm.fecha BETWEEN ? AND ? AND dsm.idMaterial = ?;
-            `
-        };
-
-        let query;
-        let params = [];
-
-        // Seleccionar la consulta y los parámetros adecuados
-        switch (report.tipo) {
-            case 'Informe de inventario general':
-                query = queries['Informe de inventario general'];
-                break;
-            case 'Informe de material por estado':
-                query = queries['Informe de material por estado'];
-                params = [report.idEstado];
-                break;
-            case 'Informe de material por deposito':
-                query = queries['Informe de material por deposito'];
-                params = [report.idDeposito];
-                break;
-            case 'Informe de material por movimiento entre deposito':
-                if (!report.fechaInicio || !report.fechaFin || !report.idMaterial) {
-                    return res.status(400).send('Rango de fechas o material no definido');
-                }
-                query = queries['Informe de material por movimiento entre deposito'];
-                params = [
-                    format(new Date(report.fechaInicio), 'yyyy-MM-dd'),
-                    format(new Date(report.fechaFin), 'yyyy-MM-dd'),
-                    report.idMaterial
-                ];
-                break;
-            case 'Informe de salida de material':
-                if (!report.fechaInicio || !report.fechaFin || !report.idMaterial) {
-                    return res.status(400).send('Rango de fechas o material no definido');
-                }
-                query = queries['Informe de salida de material'];
-                params = [
-                    format(new Date(report.fechaInicio), 'yyyy-MM-dd'),
-                    format(new Date(report.fechaFin), 'yyyy-MM-dd'),
-                    report.idMaterial
-                ];
-                break;
-            default:
-                return res.status(400).send('Tipo de informe no válido');
-        }
-
-        db.query(query, params, (err, queryResults) => {
+        db.query(detailQuery, [reportId], (err, detailResults) => {
             if (err) {
-                console.error(`Error al obtener el ${report.tipo}:`, err);
-                return res.status(500).send(`Error al obtener el ${report.tipo}`);
+                console.error('Error al obtener los detalles del informe:', err);
+                return res.status(500).send('Error al obtener los detalles del informe');
             }
 
-            report.datos = Array.isArray(queryResults) ? queryResults : [queryResults];
-
-            // Extraer y asignar los nombres específicos para selectedMaterial, selectedOption y selectedOption1
-            report.nombreMaterial = queryResults[0]?.nombreMaterial || 'Todos los materiales';
-            report.depositoNombre = queryResults[0]?.depositoNombre || 'N/A';
-            report.estadoDescripcion = queryResults[0]?.estadoDescripcion || 'N/A';
+            // Si se encuentran detalles, asignarlos al informe
+            if (detailResults.length > 0) {
+                const detail = detailResults[0]; // Debe ser un único registro con valores concatenados
+                report.detalles = {
+                    nombre_material: detail.nombre_material || 'N/A',
+                    cantidad: detail.cantidad || 'N/A',
+                    categoria: detail.categoria || 'N/A',
+                    estado_material: detail.estado_material || 'N/A',
+                    nombre_deposito: detail.nombre_deposito || 'N/A',
+                    deposito_origen: detail.deposito_origen || 'N/A',
+                    deposito_destino: detail.deposito_destino || 'N/A',
+                    fecha_movimiento: detail.fecha_movimiento || 'N/A',
+                    cantidad_movimiento: detail.cantidad_movimiento || 'N/A',
+                    fecha_salida: detail.fecha_salida || 'N/A',
+                    motivo_salida: detail.motivo_salida || 'N/A'
+                };
+            } else {
+                report.detalles = {}; // Si no hay detalles, asignar un objeto vacío
+            }
 
             return res.json(report);
         });
     });
 });
+
 
 
 // Endpoint para eliminar informes seleccionados
@@ -3474,6 +3382,7 @@ app.delete('/delete-reports', (req, res) => {
         res.status(200).json({ message: "Informes eliminados correctamente" });
     });
 });
+
 
 
 // Endpoint para obtener la cantidad total de informes

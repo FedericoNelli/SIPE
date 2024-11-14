@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import { X } from "lucide-react";
 
-function MaterialExitForm({ onClose, notify, onExitCreated }) { 
+function MaterialExitForm({ onClose, notify, onExitCreated }) {
     const [ubicaciones, setUbicaciones] = useState([]);
     const [depositos, setDepositos] = useState([]);
     const [materials, setMaterials] = useState([]);
@@ -20,7 +20,22 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
     const [reason, setReason] = useState('');
     const [numero, setNumero] = useState('');
     const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-    const [maxDate] = useState(format(new Date(), 'yyyy-MM-dd')); 
+    const [maxDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                onClose(); // Cierra el modal cuando se presiona Escape
+            }
+        };
+
+        document.addEventListener('keydown', handleEscape);
+
+        // Limpia el evento cuando el componente se desmonta
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [onClose]);
 
     useEffect(() => {
         axios.get('http://localhost:8081/deposit-locations')
@@ -88,15 +103,19 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
         axios.post('http://localhost:8081/materials/exits', salidas)
             .then(response => {
                 notify('success', 'Salida registrada con éxito');
-                if (onExitCreated) {
-                    onExitCreated();
-                }
-                onClose();
+
+                setTimeout(() => {
+                    if (onExitCreated) {
+                        onExitCreated();
+                    }
+                    onClose();
+                }, 1500);
             })
             .catch(error => {
                 console.error('Error registrando salida:', error);
                 notify('error', 'Error al registrar la salida');
             });
+
     };
 
     const handleRemoveMaterial = (id) => {
@@ -114,20 +133,20 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
             </CardHeader>
             <CardContent className="grid gap-4">
                 <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2 mt-4">
-                    <Label htmlFor="numero" className="text-sm font-medium">Número de salida</Label>
-                    <Input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Número de la salida" className="border-b bg-sipe-blue-dark text-white" />
-                </div>
-                <div className="grid gap-2 mt-4">
-                    <Label htmlFor="fecha" className="text-sm font-medium">Fecha de Salida</Label>
-                    <Input
-                        type="date"
-                        value={selectedDate}
-                        max={maxDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className="border-b bg-sipe-blue-dark text-white"
-                    />
-                </div>
+                    <div className="grid gap-2 mt-4">
+                        <Label htmlFor="numero" className="text-sm font-medium">Número de salida</Label>
+                        <Input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Número de la salida" className="border-b bg-sipe-blue-dark text-white" />
+                    </div>
+                    <div className="grid gap-2 mt-4">
+                        <Label htmlFor="fecha" className="text-sm font-medium">Fecha de Salida</Label>
+                        <Input
+                            type="date"
+                            value={selectedDate}
+                            max={maxDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="border-b bg-sipe-blue-dark text-white"
+                        />
+                    </div>
                     <div className="grid gap-2 mt-4">
                         <Label htmlFor="ubicacion" className="text-sm font-medium">Ubicación</Label>
                         <Select onValueChange={handleUbicacionChange}>

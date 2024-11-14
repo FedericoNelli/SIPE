@@ -58,6 +58,7 @@ function Report({ notify }) {
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
+        setIsDeleteMode(false);
     };
 
     const closeFormModal = () => {
@@ -97,6 +98,7 @@ function Report({ notify }) {
                     isDeleteMode={isDeleteMode}
                     notify={notify}
                     fetchReportDetails={fetchReportDetails}
+                    setReports={setReports}
                     reports={currentReports} // Pasamos solo los informes de la página actual
                 />
 
@@ -127,13 +129,13 @@ function Report({ notify }) {
                     <ReportDetailModal
                         isOpen={isDetailModalOpen}
                         onClose={closeDetailModal}
-                        reportData={selectedReport.datos}
+                        reportData={selectedReport.detalles}
                         reportType={selectedReport.tipo}
                         tipoGrafico={selectedReport.tipoGrafico}
-                        selectedMaterial={selectedReport.nombreMaterial || 'Todos los materiales'}
+                        selectedMaterial={selectedReport.detalles.nombre_material || 'Todos los materiales'}
                         dateRange={`${selectedReport.fechaInicio || 'N/A'} - ${selectedReport.fechaFin || 'N/A'}`}
-                        selectedOption={selectedReport.depositoNombre || 'N/A'}
-                        selectedOption1={selectedReport.estadoDescripcion || 'N/A'}
+                        selectedOption={selectedReport.detalles.nombre_deposito || 'N/A'}
+                        selectedOption1={selectedReport.detalles.estado_material || 'N/A'}
                     />
                 )}
             </div>

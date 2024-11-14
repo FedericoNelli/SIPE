@@ -30,6 +30,20 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
     const [categorias, setCategorias] = useState([]);
     const [pasillos, setPasillos] = useState([]);
 
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                onClose(); // Cierra el modal cuando se presiona Escape
+            }
+        };
+
+        document.addEventListener('keydown', handleEscape);
+
+        // Limpia el evento cuando el componente se desmonta
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [onClose]);
 
     useEffect(() => {
         // Cargar ubicaciones
@@ -118,11 +132,23 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prevData) => ({
-            ...prevData,
-            [name]: value
-        }));
+        if (value === '' || /^[1-9]\d*$/.test(value)) {
+            setFormData((prevData) => ({
+                ...prevData,
+                [name]: value
+            }));
+        } else {
+            if (parseInt(value, 10) < 0) {
+                const errorMessage = {
+                    cantidad_estante: "La cantidad de estantes debe ser mayor que 0",
+                    cantidad_division: "La cantidad de divisiones debe ser mayor que 0",
+                    numero: "El número de estante debe ser mayor a 0"
+                };
+                notify('error', errorMessage[name] || "El valor debe ser mayor a 0");
+            }
+        }
     };
+
 
     const handleSelectChange = (name, value) => {
         setFormData((prevData) => ({
@@ -133,21 +159,6 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
 
     const handleSubmit = async () => {
         try {
-            // Validación para asegurarse de que las cantidades sean mayores que 0
-            if (formData.cantidad_estante <= 0) {
-                notify('error', "La cantidad de estantes debe ser mayor que 0");
-                return;
-            }
-
-            if (formData.cantidad_division <= 0) {
-                notify('error', "La cantidad de divisiones debe ser mayor que 0");
-                return;
-            }
-
-            if (formData.numero <= 0) {
-                notify('error', "El número de estante debe ser mayor a 0");
-                return;
-            }
 
             const response = await axios.post('http://localhost:8081/addShelf', formData);
 
@@ -212,7 +223,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
             <Card className="bg-sipe-blue-dark text-sipe-white p-4">
                 <CardHeader>
                     <CardTitle className="text-3xl text-center font-bold mb-2">
-                        {isTutorial ? "Por favor, creá la primer estantería" : "Agregar nuevo Estantería"}
+                        {isTutorial ? "Por favor, creá la primer estantería" : "Agregar nueva Estantería"}
                     </CardTitle>
                     {isTutorial ? "" : <hr className="text-sipe-gray" />}
                 </CardHeader>
@@ -331,7 +342,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                             {pasillos.map((aisle) => (
                                                 <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>{aisle.numero}</SelectItem>
                                             ))}
-                                        </SelectContent> 
+                                        </SelectContent>
                                         :
                                         <SelectContent>
                                             {aisles.map((aisle) => (

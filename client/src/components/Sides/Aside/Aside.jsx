@@ -46,7 +46,7 @@ const sections = [
         roles: ['Administrador'],
         subMenu: [
             { name: 'Informes', path: '/inf' },
-            { name: 'Auditorias', path: '/audits' }
+            { name: 'Auditorías', path: '/audits' }
         ]
     },
     { name: 'Lista de usuarios', label: 'Lista de usuarios', icon: <Users />, path: '/user', roles: ['Administrador'] },

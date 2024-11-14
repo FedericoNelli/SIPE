@@ -18,17 +18,20 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
     const [ubicaciones, setUbicaciones] = useState([]);
     const [depositos, setDepositos] = useState([]);
 
-    // useEffect(() => {
-    //     const handleKeyDown = (event) => {
-    //         if (event.key === 'Enter') {
-    //             event.preventDefault();
-    //             handleSubmit();
-    //         }
-    //     };
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                onClose(); // Cierra el modal cuando se presiona Escape
+            }
+        };
 
-    //     window.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keydown', handleEscape);
 
-    // }, [handleSubmit]);
+        // Limpia el evento cuando el componente se desmonta
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [onClose]);
 
     useEffect(() => {
         // Cargar ubicaciones cuando el componente se monte

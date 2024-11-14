@@ -46,6 +46,8 @@ function Shelf({ notify }) {
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
+        setIsEmptyMode(false);
+        setIsDeleteMode(false);
     };
 
     const closeFormModal = () => {
@@ -55,12 +57,14 @@ function Shelf({ notify }) {
     // Función para activar el modo de eliminación
     const toggleDeleteMode = () => {
         setIsDeleteMode(!isDeleteMode);
-        setSelectedShelves([]); // Limpiar selección al salir del modo de eliminación
+        setSelectedShelves([]);
+        setIsEmptyMode(false);
     };
 
     const toggleEmptyMode = () => { // Activar el modo vaciar estanterías
         setIsEmptyMode(!isEmptyMode);
         setSelectedShelves([]);
+        setIsDeleteMode(false);
     };
 
     // Función para manejar la eliminación de estanterías
@@ -109,6 +113,8 @@ function Shelf({ notify }) {
 
     const openEditModal = () => {
         setIsEditModalOpen(true);
+        setIsDeleteMode(false);
+        setIsEmptyMode(false);
     };
 
     const closeEditModal = () => {

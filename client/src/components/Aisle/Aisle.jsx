@@ -39,6 +39,7 @@ function Aisle({ notify }) {
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
+        setIsDeleteMode(false);
     };
 
     const closeFormModal = () => {
@@ -52,6 +53,7 @@ function Aisle({ notify }) {
 
     const openEditModal = () => {
         setIsEditModalOpen(true);
+        setIsDeleteMode(false);
     };
 
     const closeEditModal = () => {

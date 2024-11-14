@@ -76,7 +76,25 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
         }
     }, [selectedAisleId]);
 
-
+    const handleChange = (e) => {
+        const { id, value } = e.target;
+    
+        // Permite que el campo esté vacío o solo acepte valores mayores a 0
+        if (value === '' || /^[1-9]\d*$/.test(value)) {
+            if (id === 'aisleNumber') {
+                setAisleNumber(value);
+            }
+        } else {
+            // Si el valor es 0 o negativo, muestra el mensaje de error
+            if (parseInt(value, 10) <= 0) {
+                const errorMessage = {
+                    aisleNumber: "El número de pasillo debe ser mayor a 0"
+                };
+                notify('error', errorMessage[id] || "El valor debe ser mayor a 0");
+            }
+        }
+    };
+    
 
     // Cargar ubicaciones
     useEffect(() => {
@@ -177,8 +195,9 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                             <Label htmlFor="aisleNumber" className="text-sm font-medium">Número de Pasillo</Label>
                             <Input
                                 id="aisleNumber"
+                                type="number"
                                 value={aisleNumber}
-                                onChange={(e) => setAisleNumber(e.target.value)}
+                                onChange={handleChange}
                                 required
                                 className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
                             />

@@ -27,11 +27,27 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
   const [maxDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        onClose(); // Cierra el modal cuando se presiona Escape
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+
+    // Limpia el evento cuando el componente se desmonta
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [onClose]);
+
+  useEffect(() => {
     axios.get('http://localhost:8081/exits')
-      .then(response => setSalidas(response.data))
+      .then(response => setSalidas(response.data.data || [])) // Extrae 'data' del objeto de respuesta
       .catch(error => {
         console.error('Error fetching exits:', error);
         notify('error', 'Error al cargar las salidas. Verifique el servidor.');
+        setSalidas([]); // Asegura que 'salidas' sea un array en caso de error
       });
 
     axios.get('http://localhost:8081/users')
@@ -212,18 +228,24 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
       <CardContent className="grid gap-4">
         <div className="grid gap-2 mt-4">
           <Label htmlFor="numeroSalida" className="text-sm font-medium">Número de Salida</Label>
-          <Select onValueChange={handleExitSelection}>
-            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-              <SelectValue placeholder="Selecciona un número de salida" />
-            </SelectTrigger>
-            <SelectContent>
-              {salidas.map(salida => (
-                <SelectItem className="bg-sipe-blue-light text-sipe-white" key={salida.salidaId} value={salida.salidaId}>
-                  {salida.numero}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+          {salidas.length > 0 ? (
+            <Select onValueChange={handleExitSelection}>
+              <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                <SelectValue placeholder="Selecciona un número de salida" />
+              </SelectTrigger>
+              <SelectContent>
+                {salidas.map(salida => (
+                  <SelectItem className="bg-sipe-blue-light text-sipe-white" key={salida.salidaId} value={salida.salidaId}>
+                    {salida.numero}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            // Mensaje que se muestra cuando no hay salidas
+            <p className="text-gray-500">No hay salidas registradas.</p>
+          )}
         </div>
 
         {salidaData && (
