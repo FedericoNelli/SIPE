@@ -708,7 +708,7 @@ app.post('/materials/exits', async (req, res) => {
             db.query('INSERT INTO salida_material (fecha, numero, motivo, idUsuario) VALUES (?, ?, ?, ?)',
                 [formattedFecha, numero, motivo, idUsuario], (err, result) => {
                     if (err) return reject(err);
-                    resolve(result.insertId); // Obtener el id de la nueva salida
+                    resolve(result.insertId);
                 });
         });
 
@@ -2621,7 +2621,7 @@ app.get('/movements', (req, res) => {
 
 
 app.post('/addMovements', (req, res) => {
-    let { idMaterial, idUsuario, idDepositoDestino, cantidadMovida, numero, fechaMovimiento, nombreUsuarioConfirmacion } = req.body;
+    let { idMaterial, idUsuario, idDepositoDestino, cantidadMovida, numero, fechaMovimiento } = req.body;
 
     // Convertir `fechaMovimiento` en UTC para evitar desfase de un día
     fechaMovimiento = new Date(fechaMovimiento);

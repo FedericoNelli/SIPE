@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
@@ -69,6 +69,12 @@ function MovementConfirmModal({ movement, onClose, notify, onMovementConfirmed, 
             </CardHeader>
             <CardContent className="flex flex-col space-y-2">
                 <div className="flex flex-col gap-4">
+                    {/* Mostrar nombre del material y cantidad original */}
+                    <div className="text-center">
+                        <p className="text-lg font-semibold">{movement.materialNombre}</p>
+                        <p className="text-lg text-sipe-gray">Cantidad movida al inicio: {movement.cantidadMovida}</p>
+                    </div>
+                    
                     <div className="flex items-center gap-2">
                         <Label htmlFor="cantidadRecibida" className="text-sm font-medium">Cantidad Recibida</Label>
                         <Input

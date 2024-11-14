@@ -6,7 +6,7 @@ import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Common/Select/Select";
 import { Button } from "@/components/Common/Button/Button";
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
 
 function MaterialExitForm({ onClose, notify, onExitCreated }) {
     const [ubicaciones, setUbicaciones] = useState([]);
@@ -20,18 +20,18 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
     const [reason, setReason] = useState('');
     const [numero, setNumero] = useState('');
     const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+    const [showMaterialSelect, setShowMaterialSelect] = useState(true);
     const [maxDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
     useEffect(() => {
         const handleEscape = (event) => {
             if (event.key === 'Escape') {
-                onClose(); // Cierra el modal cuando se presiona Escape
+                onClose();
             }
         };
 
         document.addEventListener('keydown', handleEscape);
 
-        // Limpia el evento cuando el componente se desmonta
         return () => {
             document.removeEventListener('keydown', handleEscape);
         };
@@ -74,6 +74,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
 
         if (material && !selectedMaterials.find(m => m.id === material.id)) {
             setSelectedMaterials([...selectedMaterials, { ...material, cantidadSalida: '' }]);
+            setShowMaterialSelect(false);
         }
     };
 
@@ -81,11 +82,12 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
         setSelectedMaterials(
             selectedMaterials.map(material =>
                 material.id === id
-                    ? { ...material, cantidadSalida: value > 0 ? value : 0 }
+                    ? { ...material, cantidadSalida: value === '' ? '' : Math.max(0, value) }
                     : material
             )
         );
     };
+    
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -103,17 +105,16 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
         axios.post('http://localhost:8081/materials/exits', salidas)
             .then(response => {
                 notify('success', 'Salida registrada con éxito');
-
                 setTimeout(() => {
                     if (onExitCreated) {
                         onExitCreated();
+                        onClose();
                     }
-                    onClose();
-                }, 1500);
+                }, 1000);
             })
             .catch(error => {
                 console.error('Error registrando salida:', error);
-                notify('error', 'Error al registrar la salida');
+                notify('error', 'Error al registrar la salida, el número no puede ser igual a otra salida');
             });
 
     };
@@ -121,6 +122,13 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
     const handleRemoveMaterial = (id) => {
         setSelectedMaterials(selectedMaterials.filter(material => material.id !== id));
     };
+
+    const handleShowMaterialSelect = () => {
+        setShowMaterialSelect(true);
+    };
+
+    // Calcular si quedan materiales disponibles para agregar
+    const availableMaterials = materials.filter(material => !selectedMaterials.some(m => m.id === material.id));
 
     return (
         <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl relative">
@@ -177,18 +185,34 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
 
                 <div className="grid gap-2">
                     <Label htmlFor="material" className="text-sm font-medium">Material</Label>
-                    <Select onValueChange={handleMaterialChange}>
-                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                            <SelectValue placeholder="Selecciona un material" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {materials.map(material => (
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id} disabled={selectedMaterials.find(m => m.id === material.id)}>
-                                    {material.nombre}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    
+                    {showMaterialSelect && (
+                        <Select onValueChange={handleMaterialChange}>
+                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                <SelectValue placeholder="Selecciona un material" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableMaterials.map(material => (
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id}>
+                                        {material.nombre} (Disponible: {material.cantidad})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+
+                    {!showMaterialSelect && availableMaterials.length > 0 && (
+                        <button
+                            className="text-green-500 hover:text-green-700 text-sm flex items-center mt-2"
+                            onClick={handleShowMaterialSelect}
+                        >
+                            <Plus size={16} className="mr-1" /> Agregar Material
+                        </button>
+                    )}
+
+                    {!showMaterialSelect && availableMaterials.length === 0 && (
+                        <p className="text-gray-500 mt-2">No existen más materiales en el depósito</p>
+                    )}
                 </div>
 
                 {selectedMaterials.length > 0 && (
