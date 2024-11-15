@@ -232,7 +232,7 @@ function MaterialForm({ onClose, notify }) {
         <>
             <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl relative">
                 <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
-                    <X size={14} strokeWidth={4} onClick={onClose} /> {/* Icono de cierre */}
+                    <X size={14} strokeWidth={4} onClick={onClose} />
                 </div>
                 <CardHeader>
                     <CardTitle className="text-3xl font-bold mb-2 text-center">Agregar nuevo material</CardTitle>

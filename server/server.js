@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql');
@@ -8,7 +9,7 @@ const multer = require('multer');
 const path = require('path');
 const app = express();
 const fs = require('fs');
-const SECRET_KEY = 'SIPE';
+const SECRET_KEY = process.env.SECRET_KEY;
 const { format, addDays } = require('date-fns');
 
 app.use(cors());
@@ -17,14 +18,23 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'sipe'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 db.connect((err) => {
     if (err) throw err;
     console.log('Conectado a la base de datos');
+});
+
+// Enpoint para configurar el transporte de nodemailer
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
 });
 
 // Configuración de multer para almacenar archivos en public/uploads
@@ -344,7 +354,7 @@ app.get('/materials/:id', (req, res) => {
 
 
 // Endpoint para editar un material
-app.put('/materiales/:id',authenticateToken, upload.single('imagen'), (req, res) => {
+app.put('/materiales/:id', authenticateToken, upload.single('imagen'), (req, res) => {
     const id = req.params.id;
     const { nombre, cantidad, matricula, fechaUltimoEstado, bajoStock, idCategoria, idDeposito, idEspacio, eliminarImagen } = req.body;
     const nuevaImagen = req.file ? '/uploads/' + req.file.filename : null;
@@ -1334,44 +1344,55 @@ function assignStatus(cantidad, bajoStock) {
 
 // Endpoint para verificar si es necesario mostrar el tutorial
 app.get('/check-tutorial-status/:id', (req, res) => {
-    const userId = req.params.id; // Obtén el userId del parámetro de la URL
-    // Verificamos si es el primer login del usuario
+    const userId = req.params.id;
+
     const queryUser = 'SELECT firstLogin FROM usuario WHERE id = ?';
     db.query(queryUser, [userId], (err, results) => {
         if (err) return res.status(500).send('Error al consultar la base de datos');
-        if (results.length === 0) return res.status(404).send('Usuario no encontrado'); // Maneja el caso donde no se encuentra el usuario
+        if (results.length === 0) return res.status(404).send('Usuario no encontrado');
 
         const firstLogin = results[0].firstLogin;
 
-        if (firstLogin === 1) {
-            // Verificamos si ya existen datos en las tablas clave
-            const queryCounts = `
-                SELECT 
-                    (SELECT COUNT(*) FROM Deposito) AS depositoCount,
-                    (SELECT COUNT(*) FROM Categoria) AS categoriaCount,
-                    (SELECT COUNT(*) FROM Pasillo) AS pasilloCount,
-                    (SELECT COUNT(*) FROM Estanteria) AS estanteriaCount
-            `;
-            db.query(queryCounts, (err, results) => {
-                if (err) return res.status(500).send('Error al consultar las tablas clave');
+        const queryCounts = `
+            SELECT 
+                (SELECT COUNT(*) FROM Deposito) AS depositoCount,
+                (SELECT COUNT(*) FROM Categoria) AS categoriaCount,
+                (SELECT COUNT(*) FROM Pasillo) AS pasilloCount,
+                (SELECT COUNT(*) FROM Estanteria) AS estanteriaCount
+        `;
 
-                const { depositoCount, categoriaCount, pasilloCount, estanteriaCount } = results[0];
+        db.query(queryCounts, (err, countsResults) => {
+            if (err) return res.status(500).send('Error al consultar las tablas clave');
 
-                // Si alguna tabla está vacía, activamos el tutorial para esa parte
-                const needsTutorial = {
-                    deposito: depositoCount === 0,
-                    categoria: categoriaCount === 0,
-                    pasillo: pasilloCount === 0,
-                    estanteria: estanteriaCount === 0
-                };
+            const { depositoCount, categoriaCount, pasilloCount, estanteriaCount } = countsResults[0];
+            const tutorialComplete = depositoCount > 0 && categoriaCount > 0 && pasilloCount > 0 && estanteriaCount > 0;
 
-                res.json({ showTutorial: true, steps: needsTutorial });
-            });
-        } else {
+            if (firstLogin === 1 && tutorialComplete) {
+                return res.json({
+                    redirectToChangePassword: true,
+                    showTutorial: true,
+                    steps: { confirmStep: true } // Aseguramos que muestre el paso de confirmación
+                });
+            }
+
+            if (firstLogin === 1) {
+                return res.json({
+                    showTutorial: true,
+                    steps: {
+                        deposito: depositoCount === 0,
+                        categoria: categoriaCount === 0,
+                        pasillo: pasilloCount === 0,
+                        estanteria: estanteriaCount === 0,
+                        confirmStep: true
+                    }
+                });
+            }
+
             res.json({ showTutorial: false });
-        }
+        });
     });
 });
+
 
 
 // Cambiar de POST a PATCH, ya que estamos realizando una actualización
@@ -1431,7 +1452,7 @@ app.post('/login', (req, res) => {
             nombre: user.nombre,
             rol: user.rol,
             id: user.id,
-            firstLogin // Indicar si es el primer login
+            firstLogin
         });
     });
 });
@@ -1466,14 +1487,21 @@ app.post('/addUser', upload.single('imagen'), (req, res) => {
     }
 
     // Verificar si el tutorial ya está completo
-    const tutorialQuery = 'SELECT firstLogin FROM usuario WHERE rol = "Administrador" LIMIT 1';
+    const tutorialQuery = `
+        SELECT 
+            (SELECT COUNT(*) FROM Deposito) AS depositoCount,
+            (SELECT COUNT(*) FROM Categoria) AS categoriaCount,
+            (SELECT COUNT(*) FROM Pasillo) AS pasilloCount,
+            (SELECT COUNT(*) FROM Estanteria) AS estanteriaCount
+    `;
+
     db.query(tutorialQuery, (err, result) => {
         if (err) {
             return res.status(500).send("Error al verificar el estado del tutorial");
         }
 
-        // Si el tutorial ya está completo, se establecerá `firstLogin` en 0
-        const isTutorialComplete = result[0]?.firstLogin === 0;
+        const { depositoCount, categoriaCount, pasilloCount, estanteriaCount } = result[0];
+        const isTutorialComplete = depositoCount > 0 && categoriaCount > 0 && pasilloCount > 0 && estanteriaCount > 0;
 
         const salt = bcrypt.genSaltSync(10);
         const passwordHash = bcrypt.hashSync(contrasenia, salt);
@@ -1486,7 +1514,7 @@ app.post('/addUser', upload.single('imagen'), (req, res) => {
             contrasenia: passwordHash,
             email,
             rol,
-            firstLogin: isTutorialComplete ? 0 : 1
+            firstLogin: isTutorialComplete ? 1 : 0 // Si el tutorial está completo, mantener firstLogin como 1
         };
 
         const query = 'INSERT INTO usuario SET ?';
@@ -1521,6 +1549,7 @@ app.post('/addUser', upload.single('imagen'), (req, res) => {
         });
     });
 });
+
 
 
 app.get('/users', (req, res) => {
@@ -1655,16 +1684,6 @@ app.put('/editUser/:id', upload.single('imagen'), (req, res) => {
 });
 
 
-
-// Enpoint para configurar el transporte de nodemailer
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: 'sipe.supp@gmail.com',
-        pass: 'ektg hzdy ndzm dtcp'
-    }
-});
-
 app.post('/sendRecoveryCode', (req, res) => {
     const { email } = req.body;
 
@@ -1756,7 +1775,7 @@ app.post('/changePassword', (req, res) => {
     const salt = bcrypt.genSaltSync(10);
     const passwordHash = bcrypt.hashSync(newPassword, salt);
 
-    const query = 'UPDATE usuario SET contrasenia = ?, recovery_code = NULL WHERE email = ?';
+    const query = 'UPDATE usuario SET contrasenia = ?, recovery_code = NULL, firstLogin = 0 WHERE email = ?';
     db.query(query, [passwordHash, email], (err, result) => {
         if (err) {
             console.error('Error al actualizar la contraseña:', err);
@@ -2710,16 +2729,16 @@ app.post('/addMovements', (req, res) => {
 
                             // Registrar la confirmación del movimiento en la tabla de auditoría
                             const comentario = `Movimiento confirmado con número: ${numero}`;
-                            db.query('INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)', 
+                            db.query('INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)',
                                 [idUsuario, 'Confirmación de Movimiento', comentario], (err) => {
-                                if (err) {
-                                    console.error('Error al registrar en auditoría:', err);
-                                    res.status(500).json({ error: 'Error al registrar en auditoría' });
-                                    return;
-                                }
+                                    if (err) {
+                                        console.error('Error al registrar en auditoría:', err);
+                                        res.status(500).json({ error: 'Error al registrar en auditoría' });
+                                        return;
+                                    }
 
-                                res.status(200).json({ message: 'Movimiento registrado y material actualizado correctamente, auditoría registrada' });
-                            });
+                                    res.status(200).json({ message: 'Movimiento registrado y material actualizado correctamente, auditoría registrada' });
+                                });
                         });
                     };
 
@@ -3431,7 +3450,7 @@ app.delete('/delete-audits', (req, res) => {
 
     // Convertir los IDs en una lista de placeholders para la consulta
     const placeholders = auditIds.map(() => '?').join(',');
-    
+
     // Consulta para eliminar múltiples registros de auditoría
     const deleteQuery = `DELETE FROM Auditoria WHERE id IN (${placeholders})`;
 
