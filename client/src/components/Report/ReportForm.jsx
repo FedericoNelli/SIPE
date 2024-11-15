@@ -43,7 +43,6 @@ const ReportForm = ({ onClose, notify }) => {
         if (formData.tipo === 'Informe de salida de material') {
             axios.get('http://localhost:8081/materials-with-exits')
                 .then(response => {
-                    console.log('Materiales con movimientos:', response.data.materiales);
                     setMaterialesConSalidas(response.data.materiales)
                 })
                 .catch(error => console.error('Error fetching materials with exits:', error));
@@ -53,7 +52,6 @@ const ReportForm = ({ onClose, notify }) => {
         if (formData.tipo === 'Informe de material por movimiento entre deposito') {
             axios.get('http://localhost:8081/materials-with-movements')
                 .then(response => {
-                    console.log('Materiales con movimientos:', response.data.materiales);
                     setMaterialesConMovimientos(response.data.materiales);
                 })
                 .catch(error => console.error('Error fetching materials with movements:', error));
@@ -263,7 +261,7 @@ const ReportForm = ({ onClose, notify }) => {
                                             className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
                                             key={`${material.idMaterial}-${index}`}
                                             value={material.idMaterial}>
-                                            {material.nombreMaterial}
+                                            {material.nombreMaterial} - {material.depositoNombre} - {material.ubicacionNombre}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -284,7 +282,7 @@ const ReportForm = ({ onClose, notify }) => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {materialesConMovimientos.map(material => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.idMaterial} value={material.idMaterial}>{material.nombre} </SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.idMaterial} value={material.idMaterial}>{material.nombreMaterial} - {material.depositoNombre} - {material.ubicacionNombre} </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Filter } from 'lucide-react';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import MaterialExitList from '@/components/Exit/MaterialExitList';
 import MaterialExitForm from '@/components/Exit/MaterialExitForm';
 import MaterialExitEditModal from './MaterialExitEditModal';
+import FilterModal from '../Common/Filter/FilterModal';
 
 function MaterialExit({ notify }) {
     const [materialExits, setMaterialExits] = useState([]);
@@ -15,22 +17,104 @@ function MaterialExit({ notify }) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
+    const [filteredExits, setFilteredExits] = useState([]);
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const [filters, setFilters] = useState({
+        material: '',
+        startDate: '',
+        endDate: '',
+    });
+    const [availableMaterials, setAvailableMaterials] = useState([]);
 
-    // Cargar salidas de materiales al montar el componente
+
     useEffect(() => {
         loadMaterialExits();
+        loadAvailableMaterialsWithExits();
     }, []);
 
     const loadMaterialExits = () => {
         axios.get('http://localhost:8081/exits')
             .then(response => {
-                setMaterialExits(Array.isArray(response.data.data) ? response.data.data : []);
+                const exits = Array.isArray(response.data.data) ? response.data.data : [];
+                setMaterialExits(exits);
+                setFilteredExits(exits);
             })
             .catch(error => {
                 console.error('Error fetching material exits:', error);
                 setMaterialExits([]);
+                setFilteredExits([]);
                 notify('error', 'Error al obtener las salidas de materiales');
             });
+    };
+
+    const loadAvailableMaterialsWithExits = () => {
+        axios.get('http://localhost:8081/materials-with-exits')
+            .then(response => {
+                setAvailableMaterials(response.data.materiales);
+            })
+            .catch(error => {
+                console.error('Error fetching materials with exits:', error);
+            });
+    };
+
+    const applyFilters = () => {
+        let filtered = [...materialExits];
+
+        if (filters.material) {
+            // Descomponemos el valor de filters.material para obtener material, deposito y ubicación
+            const [materialNombre, depositoNombre, ubicacionNombre] = filters.material.split(' - ');
+
+            filtered = filtered.filter(exit => {
+                if (!exit.nombresMateriales) return false;
+
+                // Buscamos coincidencias exactas para nombre del material, depósito y ubicación
+                return exit.nombresMateriales.includes(materialNombre.trim()) &&
+                    exit.depositoNombre === depositoNombre.trim() &&
+                    exit.ubicacionNombre === ubicacionNombre.trim();
+            });
+        }
+        const convertDateToYMD = (dateString) => {
+            const [day, month, year] = dateString.split('-');
+            return `${year}-${month}-${day}`;
+        };
+        
+        if (filters.startDate) {
+            filtered = filtered.filter(exit => {
+                const exitDateYMD = convertDateToYMD(exit.fechaSalida);
+                return exitDateYMD >= filters.startDate;
+            });
+        }
+        if (filters.endDate) {
+            filtered = filtered.filter(exit => {
+                const exitDateYMD = convertDateToYMD(exit.fechaSalida);
+                return exitDateYMD <= filters.endDate;
+            });
+        }
+
+        setFilteredExits(filtered);
+        closeFilterModal();
+    };
+
+
+
+
+
+
+    const resetFilters = () => {
+        setFilteredExits(materialExits);
+        setFilters({
+            material: '',
+            startDate: '',
+            endDate: '',
+        });
+    };
+
+    const openFilterModal = () => {
+        setIsFilterModalOpen(true);
+    };
+
+    const closeFilterModal = () => {
+        setIsFilterModalOpen(false);
     };
 
 
@@ -88,11 +172,12 @@ function MaterialExit({ notify }) {
     // Configuración de paginación
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentExits = (Array.isArray(materialExits) ? materialExits : [])
+    /* const currentExits = filteredExits.slice(indexOfFirstItem, indexOfLastItem) */
+    const currentExits = (Array.isArray(filteredExits) ? filteredExits : [])
         .filter(exit => exit.nombresMateriales && exit.nombresMateriales !== 'Sin Material')
         .slice(indexOfFirstItem, indexOfLastItem);
 
-    const totalPages = Math.ceil(materialExits.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredExits.length / itemsPerPage);
 
     const paginate = (pageNumber) => {
         if (pageNumber >= 1 && pageNumber <= totalPages) {
@@ -114,6 +199,9 @@ function MaterialExit({ notify }) {
                             REGISTRAR NUEVA SALIDA
                         </Button>
                         <Button onClick={openEditModal} variant="sipemodalalt">EDITAR SALIDA</Button>
+                        <Button onClick={openFilterModal} variant="secondary" className="bg-transparent text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
+                            <Filter /> FILTRAR
+                        </Button>
                         <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
                             {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR SALIDAS'}
                         </Button>
@@ -121,7 +209,7 @@ function MaterialExit({ notify }) {
                 </div>
 
                 <MaterialExitList
-                    materialExits={materialExits}
+                    materialExits={currentExits}
                     isDeleteMode={isDeleteMode}
                     selectedExits={selectedExits}
                     setSelectedExits={setSelectedExits}
@@ -170,7 +258,6 @@ function MaterialExit({ notify }) {
                         </motion.div>
                     )}
                 </AnimatePresence>
-
                 <AnimatePresence>
                     {isEditModalOpen && (
                         <motion.div
@@ -195,6 +282,20 @@ function MaterialExit({ notify }) {
                                 />
                             </motion.div>
                         </motion.div>
+                    )}
+                </AnimatePresence>
+                <AnimatePresence>
+                    {isFilterModalOpen && (
+                        <FilterModal
+                            isOpen={isFilterModalOpen}
+                            onClose={closeFilterModal}
+                            onApply={applyFilters}
+                            onReset={resetFilters}
+                            filters={filters}
+                            mode="MaterialExit"
+                            onFilterChange={(e) => setFilters({ ...filters, [e.target.name]: e.target.value })}
+                            availableMaterials={availableMaterials}
+                        />
                     )}
                 </AnimatePresence>
             </div >

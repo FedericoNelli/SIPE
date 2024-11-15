@@ -983,9 +983,11 @@ app.put('/materials/exits/:id', async (req, res) => {
 
 app.get('/materials-with-exits', (req, res) => {
     const query = `
-        SELECT DISTINCT dm.idMaterial, m.nombre AS nombreMaterial
+        SELECT DISTINCT dm.idMaterial, m.nombre AS nombreMaterial, d.nombre AS depositoNombre, u.nombre AS ubicacionNombre
         FROM detalle_salida_material dm
         JOIN Material m ON dm.idMaterial = m.id
+        JOIN Deposito d ON m.idDeposito = d.id
+        JOIN Ubicacion u ON d.idUbicacion = u.id
     `;
 
     db.query(query, (err, results) => {
@@ -1419,7 +1421,7 @@ app.post('/login', (req, res) => {
         }
 
         // Generar y devolver el token JWT
-        const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '24h' });
+        const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '5h' });
 
         // Verificar si es el primer login
         const firstLogin = user.firstLogin;
@@ -2594,7 +2596,8 @@ app.get('/movements', (req, res) => {
             mat.nombre AS nombreMaterial,
             m.cantidad, 
             d1.nombre AS depositoOrigen, 
-            d2.nombre AS depositoDestino
+            d2.nombre AS depositoDestino,
+            ub.nombre AS ubicacionNombre
         FROM 
             movimiento m
         LEFT JOIN 
@@ -2603,6 +2606,8 @@ app.get('/movements', (req, res) => {
             deposito d1 ON m.idDepositoOrigen = d1.id
         LEFT JOIN 
             deposito d2 ON m.idDepositoDestino = d2.id
+            LEFT JOIN 
+            Ubicacion ub ON d2.idUbicacion = ub.id
         LEFT JOIN 
             Material mat ON m.idMaterial = mat.id
         ORDER BY
@@ -2984,11 +2989,14 @@ app.delete('/delete-movements', (req, res) => {
     });
 });
 
+
 app.get('/materials-with-movements', (req, res) => {
     const query = `
-        SELECT DISTINCT m.id AS idMaterial, m.nombre
+        SELECT DISTINCT m.id AS idMaterial, m.nombre AS nombreMaterial, d2.nombre AS depositoNombre, u.nombre AS ubicacionNombre
         FROM Movimiento mo
         JOIN Material m ON mo.idMaterial = m.id
+        JOIN Deposito d2 ON m.idDeposito = d2.id
+        JOIN Ubicacion u ON d2.idUbicacion = u.id
     `;
 
     db.query(query, (err, results) => {

@@ -190,7 +190,7 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
                             <SelectContent>
                                 {materiales.map((material) => (
                                     <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id}>
-                                        {material.nombre}
+                                        {material.nombre} - {material.depositoNombre} - {material.ubicacionNombre}
                                     </SelectItem>
                                 ))}
                             </SelectContent>

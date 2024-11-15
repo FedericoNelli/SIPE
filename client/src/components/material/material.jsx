@@ -110,7 +110,6 @@ function Material({ notify }) {
         setIsFormModalOpen(false);
     };
 
-    // Abrir el modal de detalles al hacer clic en un material
     const openMaterialDetailModal = (materialId) => {
         axios.get(`http://localhost:8081/materials/details/${materialId}`)
             .then(response => {
@@ -251,6 +250,7 @@ function Material({ notify }) {
                             onApply={applyFilters}
                             onReset={resetFilters}
                             filters={filters}
+                            mode="Material"
                             onFilterChange={handleFilterChange}
                             availableLocations={availableLocations}
                             availableDeposits={availableDeposits}
