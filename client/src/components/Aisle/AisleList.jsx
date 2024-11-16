@@ -75,8 +75,8 @@ function AisleList({ aisles, isDeleteMode, selectedAisles, setSelectedAisles, ha
                                 </TableCell>
                             )}
                             <TableCell className="text-center font-light">{aisle.numero}</TableCell>
-                            <TableCell className="text-center font-light">{aisle.nombreDeposito}</TableCell>
-                            <TableCell className="text-center font-light">{aisle.ubicacionDeposito}</TableCell>
+                            <TableCell className="text-center font-light">{aisle.nombreDeposito || "Sin Depósito"}</TableCell>
+                            <TableCell className="text-center font-light">{aisle.ubicacionDeposito || "Sin Ubicación"}</TableCell>
                             <TableCell className="text-center font-light">{aisle.ladosDescripcion}</TableCell>
                             <TableCell className="text-center font-light">{aisle.totalEstanterias}</TableCell>
                         </TableRow>

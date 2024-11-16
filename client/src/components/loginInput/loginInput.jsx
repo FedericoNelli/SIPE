@@ -26,26 +26,36 @@ function LoginInput({ onLoginSuccess, onFirstLogin }) {
         event.preventDefault();
         try {
             const res = await axios.post('http://localhost:8081/login', { user, password });
-            if (res.data.token) {
+            if (res.data?.token) {
                 // Guardar los valores necesarios en localStorage
                 localStorage.setItem('token', res.data.token);
                 localStorage.setItem('id', res.data.id);
                 localStorage.setItem('userName', res.data.nombre);
                 localStorage.setItem('rol', res.data.rol);
                 localStorage.setItem('firstLogin', res.data.firstLogin ? '1' : '0');
-
-                // Dependiendo de si es el primer login o no, llama la función adecuada
+                setIsLoginSuccessful(true);
+                // Dependiendo de si es el primer login o no, llama a la función adecuada
                 if (res.data.firstLogin) {
-                    onFirstLogin(); // Llama a la función para el primer login
+                    onFirstLogin(); 
                 } else {
-                    onLoginSuccess(); // Llama a la función de éxito del login normal
+                    onLoginSuccess(); 
                 }
             } else {
                 setErrorMessage('Usuario y/o contraseña incorrectos.');
             }
         } catch (err) {
-            console.error('Error durante el inicio de sesión:', err);
+            console.error('Error durante el inicio de sesión:', err.response?.data || err.message);
             setErrorMessage('Usuario y/o contraseña incorrectos.');
+        }
+    }
+
+    function handleUserChange(event) {
+        const newUser = event.target.value;
+        setUser(newUser);
+    
+        if (rememberMe) {
+            setRememberMe(false);
+            localStorage.removeItem('rememberedUser');
         }
     }
 
@@ -74,7 +84,7 @@ function LoginInput({ onLoginSuccess, onFirstLogin }) {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="user">
-                            <Input className="border rounded-lg h-10 px-6 py-6" id="user" placeholder="Usuario" required type="text" value={user} onChange={u => setUser(u.target.value)} />
+                            <Input className="border rounded-lg h-10 px-6 py-6" id="user" placeholder="Usuario" required type="text" value={user} onChange={handleUserChange} />
                         </Label>
                     </div>
                     <div className="space-y-2">

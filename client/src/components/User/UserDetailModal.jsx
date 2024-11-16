@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 
-function UserDetailModal({ isOpen, onClose, selectedUser }) {
+function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isEditModalClosing, setIsEditModalClosing] = useState(false);
@@ -42,11 +42,11 @@ function UserDetailModal({ isOpen, onClose, selectedUser }) {
         try {
             const response = await axios.delete(`http://localhost:8081/users/delete/${selectedUser.id}`);
             onClose();
-            toast.success("Usuario eliminado con éxito!");
+            notify('success', "Usuario eliminado con éxito!");
             window.location.reload();
         } catch (error) {
             console.error('Error al eliminar el usuario:', error);
-            toast.error("Error al eliminar el usuario");
+            notify('error', "Error al eliminar el usuario");
         }
     }, [selectedUser, onClose]);
 
@@ -164,6 +164,7 @@ function UserDetailModal({ isOpen, onClose, selectedUser }) {
                                 isOpen={!isEditModalClosing}
                                 onClose={handleEditModalClosed}
                                 user={selectedUser}
+                                notify={notify}
                             />
                         )}
                     </AnimatePresence>

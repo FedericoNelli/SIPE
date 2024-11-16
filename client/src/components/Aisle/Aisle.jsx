@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import { Plus, Trash2, PenLine } from 'lucide-react';
 import AisleForm from '@/components/Aisle/AisleForm';
 import AisleList from './AisleList';
 import AisleEditModal from '@/components/Aisle/AisleEditModal'; // Importar el modal de edición
@@ -27,12 +28,19 @@ function Aisle({ notify }) {
 
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentaisles = aisles.slice(indexOfFirstItem, indexOfLastItem);
+    const currentAisles = aisles.slice(indexOfFirstItem, indexOfLastItem);
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    const totalPages = Math.ceil(aisles.length / itemsPerPage);
+
+    const paginate = (pageNumber) => {
+        if (pageNumber >= 1 && pageNumber <= totalPages) {
+            setCurrentPage(pageNumber);
+        }
+    };
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
+        setIsDeleteMode(false);
     };
 
     const closeFormModal = () => {
@@ -46,6 +54,7 @@ function Aisle({ notify }) {
 
     const openEditModal = () => {
         setIsEditModalOpen(true);
+        setIsDeleteMode(false);
     };
 
     const closeEditModal = () => {
@@ -91,17 +100,17 @@ function Aisle({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de pasillos</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} variant="sipemodal">NUEVO PASILLO</Button>
+                        <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR</Button>
                         <Button onClick={openEditModal} variant="sipemodalalt">
-                            EDITAR PASILLO
+                            <PenLine /> EDITAR
                         </Button>
                         <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
-                            {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR PASILLOS'}
+                            <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR'}
                         </Button>
                     </div>
                 </div>
                 <AisleList
-                    aisles={currentaisles}
+                    aisles={currentAisles}
                     isDeleteMode={isDeleteMode}
                     selectedAisles={selectedAisles}
                     setSelectedAisles={setSelectedAisles}
@@ -111,7 +120,7 @@ function Aisle({ notify }) {
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
-                            {[...Array(Math.ceil(aisles.length / itemsPerPage)).keys()].map(page => (
+                            {[...Array(totalPages).keys()].map(page => (
                                 <PaginationItem key={page + 1}>
                                     <PaginationLink href="#" onClick={() => paginate(page + 1)} isActive={currentPage === page + 1}>
                                         {page + 1}

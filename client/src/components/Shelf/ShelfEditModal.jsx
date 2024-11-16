@@ -24,14 +24,10 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.key === 'Escape') {
-                onClose(); // Llamar a la función onClose cuando se presiona Escape
+                onClose();
             }
         };
-
-        // Agregar el event listener
         window.addEventListener('keydown', handleKeyDown);
-
-        // Eliminar el event listener al desmontar el componente
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
@@ -122,11 +118,31 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
             }
         } catch (error) {
             console.error('Error actualizando la estantería:', error);
-            notify('error', 'Error al actualizar la estantería');
+            notify('error', 'Para modificar este campo debe vaciar la estantería');
         } finally {
             setLoading(false); // Detener estado de carga
         }
     };
+
+    const handleChange = (e) => {
+        const { id, value } = e.target;
+        // Permite que el campo esté vacío o solo valores mayores a 0
+        if (value === '' || /^[1-9]\d*$/.test(value)) {
+            // Actualiza el estado correspondiente basado en el id del input
+            if (id === 'shelfNumber') setShelfNumber(value);
+            if (id === 'shelfQuantity') setShelfQuantity(value);
+            if (id === 'divisionQuantity') setDivisionQuantity(value);
+        } else {
+            // Si el valor es 0 o negativo, muestra el mensaje de error
+            const errorMessage = {
+                shelfNumber: "El número de estantería debe ser mayor a 0",
+                shelfQuantity: "La cantidad de estantes debe ser mayor que 0",
+                divisionQuantity: "La cantidad de divisiones debe ser mayor que 0"
+            };
+            notify('error', errorMessage[id] || "El valor debe ser mayor a 0");
+        }
+    };
+    
 
 
     return (
@@ -162,8 +178,9 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                             <Label htmlFor="shelfNumber" className="text-sm font-medium">Número de estantería</Label>
                             <Input
                                 id="shelfNumber"
+                                type="number"
                                 value={shelfNumber}
-                                onChange={(e) => setShelfNumber(e.target.value)}
+                                onChange={handleChange}
                                 required
                                 className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
                             />
@@ -173,8 +190,9 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                             <Label htmlFor="shelfQuantity" className="text-sm font-medium">Cantidad de estantes</Label>
                             <Input
                                 id="shelfQuantity"
+                                type="number"
                                 value={shelfQuantity}
-                                onChange={(e) => setShelfQuantity(e.target.value)}
+                                onChange={handleChange}
                                 required
                                 className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
                             />
@@ -183,8 +201,9 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                             <Label htmlFor="divisionQuantity" className="text-sm font-medium">Cantidad de divisiones</Label>
                             <Input
                                 id="divisionQuantity"
+                                type="number"
                                 value={divisionQuantity}
-                                onChange={(e) => setDivisionQuantity(e.target.value)}
+                                onChange={handleChange}
                                 required
                                 className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
                             />

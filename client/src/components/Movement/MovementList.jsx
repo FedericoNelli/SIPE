@@ -3,7 +3,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Button } from "@/components/Common/Button/Button";
 
 function MovementList({ movements, pendingMovements, isDeleteMode, selectedMovements, setSelectedMovements, handleDeleteMovements, onConfirmMovement, notify }) {
-    const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false); // Estado para la confirmación de eliminación
+    const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false);
 
 
     // Función para alternar la selección de un movimiento
@@ -40,16 +40,16 @@ function MovementList({ movements, pendingMovements, isDeleteMode, selectedMovem
     };
 
     const formatDate = (isoDateString) => {
-        const date = new Date(isoDateString);
-        return date.toLocaleString('es-ES', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-        }).replace(',', '');
+        if (!isoDateString) return "Fecha Inválida";
+        
+        // Extraer solo la fecha (ignorar la parte de tiempo si está presente)
+        const [datePart] = isoDateString.split("T");
+        const [year, month, day] = datePart.split('-');
+        return `${day}/${month}/${year}`; // Formato 'DD/MM/YYYY'
     };
+    
+
+
 
     return (
         <>
@@ -68,13 +68,16 @@ function MovementList({ movements, pendingMovements, isDeleteMode, selectedMovem
                                     />
                                 </TableHead>
                             )}
+                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Número de movimiento</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Fecha</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Usuario</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Material</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad Movida</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito Origen</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito Destino</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Acciones</TableHead>
+                            {pendingMovements.length > 0 && (
+                                <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tr-lg">Acciones</TableHead>
+                            )}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -89,23 +92,25 @@ function MovementList({ movements, pendingMovements, isDeleteMode, selectedMovem
                                         />
                                     </TableCell>
                                 )}
+                                <TableCell className="text-center font-light">{movement.numero}</TableCell>
                                 <TableCell className="text-center font-light">{formatDate(movement.fechaMovimiento)}</TableCell>
-                                <TableCell className="text-center font-light">{movement.Usuario}</TableCell>
-                                <TableCell className="text-center font-light">{movement.nombreMaterial}</TableCell>
+                                <TableCell className="text-center font-light">{movement.Usuario || "Sin Usuario"}</TableCell>
+                                <TableCell className="text-center font-light">{movement.nombreMaterial || "Sin Material"}</TableCell>
                                 <TableCell className="text-center font-light">{movement.cantidad}</TableCell>
-                                <TableCell className="text-center font-light">{movement.depositoOrigen}</TableCell>
-                                <TableCell className="text-center font-light">{movement.depositoDestino}</TableCell>
-                                <TableCell className="text-center" />
+                                <TableCell className="text-center font-light">{movement.depositoOrigen || "Sin Depósito"}</TableCell>
+                                <TableCell className="text-center font-light">{movement.depositoDestino || "Sin Depósito"}</TableCell>
+                                {pendingMovements.length > 0 && <TableCell className="text-center" />}
                             </TableRow>
                         ))}
                         {pendingMovements.map((movement, index) => (
                             <TableRow key={`pending-${index}`} className="bg-gray-600">
+                                <TableCell className="text-center font-light">{movement.numero}</TableCell>
                                 <TableCell className="text-center font-light">{formatDate(movement.fechaMovimiento)}</TableCell>
-                                <TableCell className="text-center font-light">{movement.idUsuario}</TableCell>
-                                <TableCell className="text-center font-light">{movement.idMaterial}</TableCell>
+                                <TableCell className="text-center font-light">{movement.usuarioNombre}</TableCell>
+                                <TableCell className="text-center font-light">{movement.materialNombre}</TableCell>
                                 <TableCell className="text-center font-light">{movement.cantidadMovida}</TableCell>
-                                <TableCell className="text-center font-light">{movement.idDepositoOrigen}</TableCell>
-                                <TableCell className="text-center font-light">{movement.idDepositoDestino}</TableCell>
+                                <TableCell className="text-center font-light">{movement.depositoOrigenNombre}</TableCell>
+                                <TableCell className="text-center font-light">{movement.depositoDestinoNombre}</TableCell>
                                 <TableCell className="text-center">
                                     <Button
                                         onClick={() => onConfirmMovement(movement)}

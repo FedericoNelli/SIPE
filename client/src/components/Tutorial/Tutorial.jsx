@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import LocationForm from '@/components/Location/LocationForm';
 import DepositForm from '@/components/Deposit/DepositForm';
 import CategoryForm from '@/components/Category/CategoryForm';
 import AisleForm from '@/components/Aisle/AisleForm';
@@ -12,6 +11,7 @@ import { Button } from '../Common/Button/Button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 
 const Tutorial = ({ notify }) => {
+    const navigate = useNavigate();
     const [showTutorial, setShowTutorial] = useState(false);
     const [currentStep, setCurrentStep] = useState(1); // Iniciar en el paso 1 (número)
     const [ubicacionId, setUbicacionId] = useState(null); // Guardamos el idUbicacion
@@ -19,9 +19,7 @@ const Tutorial = ({ notify }) => {
     const [categoriaId, setCategoriaId] = useState(null);
     const [pasilloId, setPasilloId] = useState(null);
     const [estanteriaId, setEstanteriaId] = useState(null);
-    const navigate = useNavigate();
-    const totalSteps = 6;
-
+    const totalSteps = 5;
     const [sides, setSides] = useState([]);
     const [aisles, setAisles] = useState([]);
     const [ubicaciones, setUbicaciones] = useState([]);
@@ -33,14 +31,12 @@ const Tutorial = ({ notify }) => {
     useEffect(() => {
         // Recuperamos los valores desde localStorage si existen
         const savedCurrentStep = JSON.parse(localStorage.getItem('currentStep'));
-        const savedUbicacionId = JSON.parse(localStorage.getItem('ubicacionId'));
         const savedDepositoId = JSON.parse(localStorage.getItem('depositoId'));
         const savedCategoriaId = JSON.parse(localStorage.getItem('categoriaId'));
         const savedPasilloId = JSON.parse(localStorage.getItem('pasilloId'));
         const savedEstanteriaId = JSON.parse(localStorage.getItem('estanteriaId'));
 
         if (savedCurrentStep) setCurrentStep(savedCurrentStep);
-        if (savedUbicacionId) setUbicacionId(savedUbicacionId);
         if (savedDepositoId) setDepositoId(savedDepositoId);
         if (savedCategoriaId) setCategoriaId(savedCategoriaId);
         if (savedPasilloId) setPasilloId(savedPasilloId);
@@ -60,8 +56,10 @@ const Tutorial = ({ notify }) => {
     }, [currentStep]);
 
     useEffect(() => {
-        localStorage.setItem('ubicacionId', JSON.stringify(ubicacionId));
-    }, [ubicacionId]);
+        const savedUbicacionId = JSON.parse(localStorage.getItem('ubicacionId'));
+        if (savedUbicacionId) setUbicacionId(savedUbicacionId);
+    }, []);
+
 
     useEffect(() => {
         localStorage.setItem('depositoId', JSON.stringify(depositoId));
@@ -89,8 +87,8 @@ const Tutorial = ({ notify }) => {
     }, []);
 
     useEffect(() => {
-        // Chequeamos si estamos en el paso 6 y si ya recargamos la página
-        if (currentStep === 6 && !localStorage.getItem('reloaded')) {
+        // Chequeamos si estamos en el paso 5 y si ya recargamos la página
+        if (currentStep === 5 && !localStorage.getItem('reloaded')) {
             localStorage.setItem('reloaded', 'true'); // Marcamos que ya recargamos
             window.location.reload(); // Forzamos la recarga
         }
@@ -169,31 +167,35 @@ const Tutorial = ({ notify }) => {
     }, [notify]);
 
     const determineFirstStep = (steps) => {
-        if (steps.ubicacion) setCurrentStep(1);
-        else if (steps.deposito) setCurrentStep(2);
-        else if (steps.categoria) setCurrentStep(3);
-        else if (steps.pasillo) setCurrentStep(4);
-        else if (steps.estanteria) setCurrentStep(5);
-        else setCurrentStep(6);
+        if (steps.deposito) setCurrentStep(1);
+        else if (steps.categoria) setCurrentStep(2);
+        else if (steps.pasillo) setCurrentStep(3);
+        else if (steps.estanteria) setCurrentStep(4);
+        else if (steps.confirmStep) setCurrentStep(5);
     };
 
     const handleNextStep = (newUbicacionId, newDepositoId, newCategoriaId, newPasilloId, newEstanteriaId) => {
-
         if (newUbicacionId) {
-            setUbicacionId(newUbicacionId); // Guardamos el idUbicacion cuando se crea
+            setUbicacionId(newUbicacionId);
+            localStorage.setItem('ubicacionId', JSON.stringify(newUbicacionId));
         }
         if (newDepositoId) {
-            setDepositoId(newDepositoId); // Guardamos el idDeposito cuando se crea
+            setDepositoId(newDepositoId);
+            localStorage.setItem('depositoId', JSON.stringify(newDepositoId));
         }
         if (newCategoriaId) {
-            setCategoriaId(newCategoriaId); // Guardamos el idCategoria cuando se crea
+            setCategoriaId(newCategoriaId);
+            localStorage.setItem('categoriaId', JSON.stringify(newCategoriaId));
         }
         if (newPasilloId) {
             setPasilloId(newPasilloId);
+            localStorage.setItem('pasilloId', JSON.stringify(newPasilloId));
         }
         if (newEstanteriaId) {
             setEstanteriaId(newEstanteriaId);
+            localStorage.setItem('estanteriaId', JSON.stringify(newEstanteriaId));
         }
+
         if (currentStep < totalSteps) {
             setCurrentStep(currentStep + 1);
         } else {
@@ -204,8 +206,6 @@ const Tutorial = ({ notify }) => {
     const handleCancel = async () => {
         if (estanteriaId) {
             try {
-                console.log("Eliminando estantería con ID:", estanteriaId); // Verificar que el ID esté presente
-
                 // Primero verificar si hay espacios ocupados en la estantería
                 const { data: espacios } = await axios.get(`http://localhost:8081/spaces/${estanteriaId}`);
                 const espaciosOcupados = espacios.filter(espacio => espacio.ocupado);
@@ -239,9 +239,15 @@ const Tutorial = ({ notify }) => {
     const handlePreviousStep = () => {
         if (currentStep > 1) {
             setCurrentStep(currentStep - 1);
+            localStorage.removeItem('ubicacionId');
+            localStorage.removeItem('depositoId');
+            localStorage.removeItem('pasilloId');
+            localStorage.removeItem('estanteriaId');
+            localStorage.removeItem('categoriaId');
             localStorage.removeItem('reloaded');
         }
     };
+
 
     const completeTutorial = () => {
         const userId = localStorage.getItem('id');
@@ -249,8 +255,6 @@ const Tutorial = ({ notify }) => {
             .then(() => {
                 setShowTutorial(false);
                 localStorage.setItem('firstLogin', '0');
-
-                // Limpiar el localStorage cuando se complete el tutorial
                 localStorage.removeItem('ubicacionId');
                 localStorage.removeItem('depositoId');
                 localStorage.removeItem('categoriaId');
@@ -310,8 +314,7 @@ const Tutorial = ({ notify }) => {
                         transition={pageTransition}
                     >
                         {/* Renderizado de los formularios según currentStep numérico */}
-                        {currentStep === 1 && <LocationForm onSubmit={handleNextStep} notify={notify} isTutorial={true} />}
-                        {currentStep === 2 && (
+                        {currentStep === 1 && (
                             <DepositForm
                                 onSubmit={handleNextStep}
                                 notify={notify}
@@ -321,7 +324,7 @@ const Tutorial = ({ notify }) => {
                                 ubicacionId={ubicacionId} // PASAMOS idUbicacion
                             />
                         )}
-                        {currentStep === 3 && (
+                        {currentStep === 2 && (
                             <CategoryForm
                                 onSubmit={handleNextStep}
                                 notify={notify}
@@ -332,7 +335,7 @@ const Tutorial = ({ notify }) => {
                                 depositoId={depositoId}    // PASAMOS idDeposito
                             />
                         )}
-                        {currentStep === 4 && (
+                        {currentStep === 3 && (
                             <AisleForm
                                 onSubmit={handleNextStep}
                                 notify={notify}
@@ -344,7 +347,7 @@ const Tutorial = ({ notify }) => {
                                 categoriaId={categoriaId} // PASAMOS idCategoria
                             />
                         )}
-                        {currentStep === 5 && (
+                        {currentStep === 4 && (
                             <ShelfForm
                                 onSubmit={handleNextStep}
                                 notify={notify}
@@ -357,7 +360,7 @@ const Tutorial = ({ notify }) => {
                                 pasilloId={pasilloId}
                             />
                         )}
-                        {currentStep === 6 && (
+                        {currentStep === 5 && (
                             <div className='bg-sipe-blue-dark rounded-lg'>
                                 <div className="bg-sipe-blue-dark text-white rounded-lg pt-8 px-12">
                                     <h2 className="text-3xl font-bold mb-4 text-center">Confirmación de datos</h2>
@@ -422,7 +425,6 @@ const Tutorial = ({ notify }) => {
                                                 </span>
                                             </CardContent>
                                         </Card>
-
                                     </div>
                                 </div>
 

@@ -111,11 +111,12 @@ function MaterialForm({ onClose, notify }) {
 
     const handleInputChange = (e) => {
         const { id, value } = e.target;
-        if (id === 'cantidad' && value < 0) {
+        if ((id === 'cantidad' || id === 'bajoStock') && value < 0) {
             setFormData((prevData) => ({
                 ...prevData,
                 [id]: 0,
             }));
+            notify('error', 'El valor no puede ser negativo');
         } else {
             setFormData((prevData) => ({
                 ...prevData,
@@ -123,6 +124,7 @@ function MaterialForm({ onClose, notify }) {
             }));
         }
     };
+
 
     const handleSelectChange = (id, value) => {
         setFormData(prevState => ({
@@ -160,27 +162,21 @@ function MaterialForm({ onClose, notify }) {
 
     const handleSave = async () => {
         const { nombre, cantidad, matricula, bajoStock, espacio, categoria, deposito, imagen, ocupado } = formData;
-
         if (!nombre || !cantidad || !matricula || !bajoStock || !espacio || !categoria || !deposito) {
             notify('error', 'Por favor completa todos los campos');
             return;
         }
-
         const fechaAlta = new Date();
         fechaAlta.setHours(fechaAlta.getHours() - 3);
         const fechaAltaFormatoISO = fechaAlta.toISOString().slice(0, 19).replace('T', ' ');
-
         const fechaUltimoEstado = new Date();
         fechaUltimoEstado.setHours(fechaUltimoEstado.getHours() - 3);
         const fechaFormatoISO = fechaUltimoEstado.toISOString().slice(0, 19).replace('T', ' ');
-
         const ultimoUsuarioId = localStorage.getItem('id');
-
         if (!ultimoUsuarioId) {
             notify('error', 'Usuario no encontrado en localStorage');
             return;
         }
-
         const formDataToSend = new FormData();
         formDataToSend.append('nombre', nombre);
         formDataToSend.append('cantidad', cantidad);
@@ -196,7 +192,6 @@ function MaterialForm({ onClose, notify }) {
         if (imagen) {
             formDataToSend.append('imagen', imagen);
         }
-
         try {
             const response = await axios.post('http://localhost:8081/addMaterial', formDataToSend, {
                 headers: {
@@ -204,24 +199,28 @@ function MaterialForm({ onClose, notify }) {
                 }
             });
             const data = response.data;
-
             if (response.status !== 200) {
                 throw new Error(data.error || "Error al agregar Material");
             }
-
             notify('success', "Material agregado correctamente!");
-
             if (onClose) onClose();
             setTimeout(() => {
                 window.location.reload();
-            }, 2000);
+            }, 1000);
 
         } catch (error) {
             console.error('Error al agregar el material:', error);
-            notify('error', error.message || "Error al agregar el material");
-        }
-    };
-
+            // Verificar si el error tiene una respuesta del servidor con un mensaje de error específico
+            if (error.response && error.response.data && error.response.data.mensaje) {
+                // Mostrar el mensaje de error específico del servidor
+                notify('error', error.response.data.mensaje);
+            } else {
+                // Mostrar un mensaje de error genérico si no existe un mensaje específico
+                notify('error', error.message || "Error al agregar el material");
+            }
+        };
+    }
+    
     const handleCancel = () => {
         if (onClose) onClose();
     };
@@ -230,7 +229,7 @@ function MaterialForm({ onClose, notify }) {
         <>
             <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl relative">
                 <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
-                    <X size={14} strokeWidth={4} onClick={onClose} /> {/* Icono de cierre */}
+                    <X size={14} strokeWidth={4} onClick={onClose} />
                 </div>
                 <CardHeader>
                     <CardTitle className="text-3xl font-bold mb-2 text-center">Agregar nuevo material</CardTitle>
@@ -297,7 +296,7 @@ function MaterialForm({ onClose, notify }) {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="matricula" className="text-sm font-medium">Matrícula</Label>
-                            <Input className="border-b text-sm" id="matricula" placeholder="Ingresa la matrícula" value={formData.matricula} onChange={handleInputChange} />
+                            <Input className="border-b text-sm" id="matricula" type="text" placeholder="Ingresa la matrícula" value={formData.matricula} onChange={handleInputChange} />
                         </div>
                     </div>
                     <div className="grid gap-4">
