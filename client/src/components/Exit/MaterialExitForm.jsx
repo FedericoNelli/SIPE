@@ -114,7 +114,12 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
             })
             .catch(error => {
                 console.error('Error registrando salida:', error);
-                notify('error', 'Error al registrar la salida, el número no puede ser igual a otra salida');
+                if (error.response && error.response.data && error.response.data.error) {
+                    notify('error', error.response.data.error);
+                } else {
+                    notify('error', 'Error al registrar la salida');
+                }
+                
             });
 
     };

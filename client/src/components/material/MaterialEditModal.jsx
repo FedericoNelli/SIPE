@@ -42,7 +42,6 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                 onClose();
             }
         };
-
         document.addEventListener('keydown', handleEscape);
         return () => {
             document.removeEventListener('keydown', handleEscape);
@@ -126,7 +125,6 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                     setShelves(response.data);
                     // Pre-carga la estantería solo si ya está definida en el material
                     if (material?.estanteria) {
-                        console.log(`Pre-cargando estantería: ${material.estanteria}`);
                         setSelectedShelf(material.estanteria);
                     }
                 })
@@ -193,19 +191,12 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
             ...prevState,
             [id]: value
         }));
-
         if (id === 'depositLocation') {
             setLocationId(value);  // Asegúrate de actualizar locationId
             setFormData(prevState => ({
                 ...prevState,
                 ubicacion: value // Actualiza también el formData para reflejar la nueva ubicación
             }));
-        }
-
-        if (id === 'deposito') {
-            setLocationId(value);
-            setSelectedAisle('');
-            setSelectedShelf('');
         }
     };
 
@@ -296,25 +287,20 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
 
         try {
             const token = localStorage.getItem('token'); // Asegúrate de que el token esté almacenado en localStorage o de otra manera accesible
-
             const response = await axios.put(`http://localhost:8081/materiales/${material.id}`, formDataToSend, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     'Authorization': `Bearer ${token}` // Incluye el token aquí
                 }
             });
-
             if (response.status !== 200) {
                 throw new Error(response.data.error || "Error al actualizar Material");
             }
-
             notify('success', 'Material actualizado correctamente');
             setIsVisible(false);
-
             setTimeout(() => {
                 window.location.reload();
-            }, 2000);
-
+            }, 1000);
         } catch (error) {
             notify('error', "Error al actualizar el material");
         }

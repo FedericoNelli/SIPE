@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import { Plus, Trash2, PenLine, Eraser } from 'lucide-react';
 import ShelfForm from '@/components/Shelf/ShelfForm';
 import ShelfList from './ShelfList';
 import ShelfEditModal from './ShelfEditModal';
@@ -131,13 +132,13 @@ function Shelf({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de estanterías</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} variant="sipemodal">NUEVA ESTANTERÍA</Button>
-                        <Button onClick={openEditModal} variant="sipemodalalt">EDITAR ESTANTERÍA</Button>
+                        <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR</Button>
+                        <Button onClick={openEditModal} variant="sipemodalalt"> <PenLine /> EDITAR</Button>
                         <Button onClick={toggleEmptyMode} variant="sipemodalalt3">
-                            {isEmptyMode ? 'CANCELAR VACIAR' : 'VACIAR ESTANTERÍAS'}
+                            <Eraser /> {isEmptyMode ? 'CANCELAR VACIAR' : 'VACIAR'}
                         </Button>
                         <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
-                            {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR ESTANTERÍAS'}
+                            <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR'}
                         </Button>
                     </div>
                 </div>

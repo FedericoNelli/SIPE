@@ -96,7 +96,7 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                                 </TableCell>
                                 <TableCell className="text-center font-light">
                                     <div className="flex flex-col items-center">
-                                        {salida.depositoNombre.split(', ').map((deposito, index, array) => (
+                                        {(salida.depositoNombre || 'Sin Depósito').split(', ').map((deposito, index, array) => (
                                             <span key={index}>
                                                 {deposito}{index < array.length - 1 && ','}
                                             </span>
@@ -105,7 +105,7 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                                 </TableCell>
                                 <TableCell className="text-center font-light">
                                     <div className="flex flex-col items-center">
-                                        {salida.ubicacionNombre.split(', ').map((ubicacion, index, array) => (
+                                        {(salida.ubicacionNombre || 'Sin Ubicación').split(', ').map((ubicacion, index, array) => (
                                             <span key={index}>
                                                 {ubicacion}{index < array.length - 1 && ','}
                                             </span>

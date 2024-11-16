@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import { Plus, Trash2 } from 'lucide-react';
 import ReportList from './ReportList';
 import ReportForm from './ReportForm';
 import ReportDetailModal from './ReportDetailModal';
-import axios from 'axios';
 
 function Report({ notify }) {
     const [reports, setReports] = useState([]); // Lista de informes
@@ -88,8 +89,8 @@ function Report({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de informes</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} variant="sipemodal">GENERAR INFORME</Button>
-                        <Button onClick={() => setIsDeleteMode(!isDeleteMode)} variant="sipemodalalt">{isDeleteMode ? "CANCELAR ELIMINACIÓN" : "ELIMINAR INFORMES"}</Button>
+                        <Button onClick={openFormModal} variant="sipemodal"> <Plus /> GENERAR </Button>
+                        <Button onClick={() => setIsDeleteMode(!isDeleteMode)} variant="sipemodalalt"> <Trash2 /> {isDeleteMode ? "CANCELAR ELIMINACIÓN" : "ELIMINAR"}</Button>
                     </div>
                 </div>
 

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/Common/Button/Button";
-import { Filter } from 'lucide-react';
+import { Filter, Plus, Trash2, PenLine } from 'lucide-react';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import MovementForm from '@/components/Movement/MovementForm';
 import MovementList from '@/components/Movement/MovementList';
@@ -209,13 +209,13 @@ function Movement({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de movimientos</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} variant="sipemodal">NUEVO MOVIMIENTO</Button>
-                        <Button onClick={openEditModal} variant="sipemodalalt">EDITAR MOVIMIENTO</Button>
-                        <Button onClick={openFilterModal} variant="secondary" className="bg-transparent text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
+                        <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR </Button>
+                        <Button onClick={openEditModal} variant="sipemodalalt"> <PenLine /> EDITAR</Button>
+                        <Button onClick={openFilterModal} variant="secondary" className="bg-sipe-gray bg-opacity-50 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
                             <Filter /> FILTRAR
                         </Button>
                         <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
-                            {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR MOVIMIENTOS'}
+                            <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR'}
                         </Button>
                     </div>
                 </div>

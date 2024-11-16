@@ -122,41 +122,36 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
 
     const handleSubmit = async () => {
         try {
-            // Asegurar que `idLado2` sea `null` si no se selecciona
             const dataToSend = {
                 ...formData,
                 idLado2: formData.idLado2 || null
             };
-
             const response = await axios.post('http://localhost:8081/addAisle', dataToSend);
-
             if (response.status !== 200) {
                 throw new Error(response.data.error || "Error al agregar pasillo");
             }
-
             if (!isTutorial) {
                 notify('success', "¡Pasillo creado con éxito!");
             }
-
             if (onClose) onClose();
-
             const idUbicacion = ubicacionId;
             const idDeposito = depositoId;
             const idCategoria = categoriaId;
-
             if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria, response.data.id); // Ejecutar onSubmit después del delay
-
             // Verificar si no estamos en el tutorial y recargar la página
             const isInTutorial = localStorage.getItem('inTutorial');
             if (!isInTutorial || isInTutorial === 'false') {
                 window.location.reload(); // Recargar la página si no estamos en el tutorial
             }
-
-
         } catch (error) {
             console.error('Error al agregar el pasillo:', error);
-            notify('error', error.message || "Error al agregar pasillo");
+            if (error.response && error.response.data && error.response.data.error) {
+                notify('error', error.response.data.error);
+            } else {
+                notify('error', "Error al agregar pasillo");
+            }
         }
+
     };
 
     const handleCancel = async () => {

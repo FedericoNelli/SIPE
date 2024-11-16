@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import { Plus, Trash2, PenLine } from 'lucide-react';
 import CategoryForm from '@/components/Category/CategoryForm';
 import CategoryList from './CategoryList';
-import axios from 'axios';
 import CategoryEditModal from '@/components/Category/CategoryEditModal'; // Importar el modal de edición
 
 function Category({ notify }) {
@@ -57,7 +58,7 @@ function Category({ notify }) {
     // Función para abrir el modal de edición
     const openEditModal = () => {
         setIsEditModalOpen(true);
-        setIsDeleteMode(false); 
+        setIsDeleteMode(false);
     };
 
     // Función para cerrar el modal de edición
@@ -100,12 +101,12 @@ function Category({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de categorías</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} variant="sipemodal">NUEVA CATEGORÍA</Button>
+                        <Button onClick={openFormModal} variant="sipemodal"><Plus /> AÑADIR</Button>
                         <Button onClick={openEditModal} variant="sipemodalalt2">
-                            EDITAR CATEGORÍA
+                            <PenLine /> EDITAR
                         </Button>
                         <Button onClick={toggleDeleteMode} variant="sipemodalalt">
-                            {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR CATEGORÍAS'}
+                            <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR'}
                         </Button>
                     </div>
                 </div>

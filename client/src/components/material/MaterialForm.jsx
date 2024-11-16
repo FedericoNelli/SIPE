@@ -162,27 +162,21 @@ function MaterialForm({ onClose, notify }) {
 
     const handleSave = async () => {
         const { nombre, cantidad, matricula, bajoStock, espacio, categoria, deposito, imagen, ocupado } = formData;
-
         if (!nombre || !cantidad || !matricula || !bajoStock || !espacio || !categoria || !deposito) {
             notify('error', 'Por favor completa todos los campos');
             return;
         }
-
         const fechaAlta = new Date();
         fechaAlta.setHours(fechaAlta.getHours() - 3);
         const fechaAltaFormatoISO = fechaAlta.toISOString().slice(0, 19).replace('T', ' ');
-
         const fechaUltimoEstado = new Date();
         fechaUltimoEstado.setHours(fechaUltimoEstado.getHours() - 3);
         const fechaFormatoISO = fechaUltimoEstado.toISOString().slice(0, 19).replace('T', ' ');
-
         const ultimoUsuarioId = localStorage.getItem('id');
-
         if (!ultimoUsuarioId) {
             notify('error', 'Usuario no encontrado en localStorage');
             return;
         }
-
         const formDataToSend = new FormData();
         formDataToSend.append('nombre', nombre);
         formDataToSend.append('cantidad', cantidad);
@@ -198,7 +192,6 @@ function MaterialForm({ onClose, notify }) {
         if (imagen) {
             formDataToSend.append('imagen', imagen);
         }
-
         try {
             const response = await axios.post('http://localhost:8081/addMaterial', formDataToSend, {
                 headers: {
@@ -206,24 +199,28 @@ function MaterialForm({ onClose, notify }) {
                 }
             });
             const data = response.data;
-
             if (response.status !== 200) {
                 throw new Error(data.error || "Error al agregar Material");
             }
-
             notify('success', "Material agregado correctamente!");
-
             if (onClose) onClose();
             setTimeout(() => {
                 window.location.reload();
-            }, 2000);
+            }, 1000);
 
         } catch (error) {
             console.error('Error al agregar el material:', error);
-            notify('error', error.message || "Error al agregar el material");
-        }
-    };
-
+            // Verificar si el error tiene una respuesta del servidor con un mensaje de error específico
+            if (error.response && error.response.data && error.response.data.mensaje) {
+                // Mostrar el mensaje de error específico del servidor
+                notify('error', error.response.data.mensaje);
+            } else {
+                // Mostrar un mensaje de error genérico si no existe un mensaje específico
+                notify('error', error.message || "Error al agregar el material");
+            }
+        };
+    }
+    
     const handleCancel = () => {
         if (onClose) onClose();
     };

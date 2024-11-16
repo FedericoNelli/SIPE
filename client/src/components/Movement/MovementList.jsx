@@ -94,11 +94,11 @@ function MovementList({ movements, pendingMovements, isDeleteMode, selectedMovem
                                 )}
                                 <TableCell className="text-center font-light">{movement.numero}</TableCell>
                                 <TableCell className="text-center font-light">{formatDate(movement.fechaMovimiento)}</TableCell>
-                                <TableCell className="text-center font-light">{movement.Usuario}</TableCell>
-                                <TableCell className="text-center font-light">{movement.nombreMaterial}</TableCell>
+                                <TableCell className="text-center font-light">{movement.Usuario || "Sin Usuario"}</TableCell>
+                                <TableCell className="text-center font-light">{movement.nombreMaterial || "Sin Material"}</TableCell>
                                 <TableCell className="text-center font-light">{movement.cantidad}</TableCell>
-                                <TableCell className="text-center font-light">{movement.depositoOrigen}</TableCell>
-                                <TableCell className="text-center font-light">{movement.depositoDestino}</TableCell>
+                                <TableCell className="text-center font-light">{movement.depositoOrigen || "Sin Depósito"}</TableCell>
+                                <TableCell className="text-center font-light">{movement.depositoDestino || "Sin Depósito"}</TableCell>
                                 {pendingMovements.length > 0 && <TableCell className="text-center" />}
                             </TableRow>
                         ))}

@@ -59,15 +59,13 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                 try {
                     const response = await axios.get(`http://localhost:8081/aisle/${selectedAisleId}`);
                     const data = response.data;
-
-                    // Asigna los valores si existen o usa valores predeterminados si están undefined o null
+                    // Asignar valores con valores predeterminados si están en null o undefined
                     setAisleData(data);
-                    setAisleNumber(data.numero || ''); // Si 'numero' es undefined, establece un string vacío
-                    setSelectedLocation(data.idUbicacion || ''); // Establece un valor predeterminado si no existe idUbicacion
-                    setSelectedDeposit(data.idDeposito || ''); // Establece un valor predeterminado si no existe idDeposito
-                    setSelectedSide1(data.idLado1 || ''); // Establece un valor predeterminado si no existe idLado1
-                    setSelectedSide2(data.idLado2 !== undefined && data.idLado2 !== null ? data.idLado2 : null); // Asigna "null" si no hay lado 2
-
+                    setAisleNumber(data.numero || 'Sin número'); // Si 'numero' es undefined o null, establece 'Sin número'
+                    setSelectedLocation(data.idUbicacion !== undefined && data.idUbicacion !== null ? data.idUbicacion : 'Sin ubicación'); // Si no existe idUbicacion, usa 'Sin ubicación'
+                    setSelectedDeposit(data.idDeposito !== undefined && data.idDeposito !== null ? data.idDeposito : 'Sin depósito'); // Si no existe idDeposito, usa 'Sin depósito'
+                    setSelectedSide1(data.idLado1 !== undefined && data.idLado1 !== null ? data.idLado1 : 'Sin lado 1'); // Si no existe idLado1, usa 'Sin lado 1'
+                    setSelectedSide2(data.idLado2 !== undefined && data.idLado2 !== null ? data.idLado2 : 'Sin lado 2'); // Si no existe idLado2, usa 'Sin lado 2'
                 } catch (error) {
                     notify('error', 'Error al cargar los datos del pasillo');
                 }
@@ -76,9 +74,9 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
         }
     }, [selectedAisleId]);
 
+
     const handleChange = (e) => {
         const { id, value } = e.target;
-    
         // Permite que el campo esté vacío o solo acepte valores mayores a 0
         if (value === '' || /^[1-9]\d*$/.test(value)) {
             if (id === 'aisleNumber') {
@@ -94,7 +92,7 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
             }
         }
     };
-    
+
 
     // Cargar ubicaciones
     useEffect(() => {
@@ -256,7 +254,7 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                 <SelectContent>
                                     <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key="null" value="null">Sin Lado</SelectItem>
                                     {sides
-                                        .filter((side) => side.id !== selectedSide1) // Filtrar para que no se seleccione el mismo lado
+                                        .filter((side) => side.id !== selectedSide1)
                                         .map((side) => (
                                             <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>
                                                 {side.descripcion}

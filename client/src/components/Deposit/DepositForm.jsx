@@ -10,7 +10,7 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
 
     const [formData, setFormData] = useState(() => JSON.parse(localStorage.getItem('depositFormData')) || {
         nombre: '',
-        idUbicacion: '', 
+        idUbicacion: '',
         idDeposito: ''
     });
     const [ubicaciones, setUbicaciones] = useState([]);
@@ -31,7 +31,7 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
     }, [onClose]);
 
     useEffect(() => {
-        
+
         axios.get('http://localhost:8081/deposit-locations')
             .then(response => {
                 setUbicaciones(response.data);
@@ -58,85 +58,82 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
     };
 
     const handleSubmit = async () => {
-        
+
         if (isTutorial && formData.nombre.trim() === '') {
-            notify('error', 'Debes ingresar un nombre'); 
-            return; 
+            notify('error', 'Debes ingresar un nombre');
+            return;
         }
-    
         try {
             const response = await axios.post('http://localhost:8081/addDeposit', formData);
-    
             if (response.status !== 200) {
                 throw new Error(response.data.error || "Error al agregar depósito");
             }
-    
             if (!isTutorial) {
                 notify('success', "¡Depósito agregado correctamente!");
             }
-            
             if (onClose) onClose();
-            
             if (onSubmit) onSubmit(formData.idUbicacion, response.data.id);
-    
             const isInTutorial = localStorage.getItem('inTutorial');
             if (!isInTutorial || isInTutorial === 'false') {
-                window.location.reload(); 
+                window.location.reload();
             }
-    
         } catch (error) {
             console.error('Error al agregar el depósito:', error);
-            notify('error', error.message || "Error al agregar depósito");
-        }
-    };
-
-
-    const handleCancel = async () => {
-        if (!isTutorial) {
-            
-            if (onClose) onClose();
-        } else {
-            
-            if (currentStep === 1 && ubicacionId) { 
-                try {
-                    
-                    await axios.delete(`http://localhost:8081/locations/delete/${ubicacionId}`);
-                    notify('info', "Ubicación eliminada. Volviendo al paso anterior...");
-                } catch (error) {
-                    console.error('Error al eliminar la ubicación:', error);
-                    notify('error', "No se pudo eliminar la ubicación. Intenta nuevamente.");
-                }
+            // Verificar si el error tiene una respuesta del servidor con un mensaje de error específico
+            if (error.response && error.response.data && error.response.data.error) {
+                notify('error', error.response.data.error);
+            } else {
+                notify('error', error.message || "Error al agregar depósito");
             }
+        };
+    }
 
-            handlePreviousStep();
-        }
-    };
+        const handleCancel = async () => {
+            if (!isTutorial) {
 
-    return (
-        <Card className="bg-sipe-blue-dark text-sipe-white p-4 shadow-2xl">
-            <CardHeader>
-                <CardTitle className="text-3xl text-center font-bold mb-2">
-                    {isTutorial ? "Por favor, creá el primer depósito" : "Agregar nuevo Depósito"}
-                </CardTitle>
-                {isTutorial ? "" : <hr className="text-sipe-gray" />}
-            </CardHeader>
-            <CardContent className="flex flex-col space-y-6">
-                <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-2">
-                        <Input
-                            className="border-b text-center"
-                            id="nombre"
-                            name="nombre"
-                            placeholder="Ingresá el nombre"
-                            value={formData.nombre}
-                            onChange={handleInputChange}
-                        />
+                if (onClose) onClose();
+            } else {
+
+                if (currentStep === 1 && ubicacionId) {
+                    try {
+
+                        await axios.delete(`http://localhost:8081/locations/delete/${ubicacionId}`);
+                        notify('info', "Ubicación eliminada. Volviendo al paso anterior...");
+                    } catch (error) {
+                        console.error('Error al eliminar la ubicación:', error);
+                        notify('error', "No se pudo eliminar la ubicación. Intenta nuevamente.");
+                    }
+                }
+
+                handlePreviousStep();
+            }
+        };
+
+        return (
+            <Card className="bg-sipe-blue-dark text-sipe-white p-4 shadow-2xl">
+                <CardHeader>
+                    <CardTitle className="text-3xl text-center font-bold mb-2">
+                        {isTutorial ? "Por favor, creá el primer depósito" : "Agregar nuevo Depósito"}
+                    </CardTitle>
+                    {isTutorial ? "" : <hr className="text-sipe-gray" />}
+                </CardHeader>
+                <CardContent className="flex flex-col space-y-6">
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center gap-2">
+                            <Input
+                                className="border-b text-center"
+                                id="nombre"
+                                name="nombre"
+                                placeholder="Ingresá el nombre"
+                                value={formData.nombre}
+                                onChange={handleInputChange}
+                            />
+                        </div>
                     </div>
-                </div>
-                <div className="flex items-center justify-center">
-                    <Label className="text-sm font-medium">
-                        {isTutorial ? "" : "Ubicación"}
-                    </Label>
+                    <div className="flex items-center justify-center">
+                        <Label className="text-sm font-medium">
+                            {isTutorial ? "" : "Ubicación"}
+                        </Label>
                         <Select
                             value={formData.idUbicacion}
                             onValueChange={handleSelectChange}
@@ -153,18 +150,18 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
                                 ))}
                             </SelectContent>
                         </Select>
-                </div>
-            </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-                <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
-                    {isTutorial ? "VOLVER" : "CANCELAR"}
-                </Button>
-                <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>
-                    AGREGAR
-                </Button>
-            </CardFooter>
-        </Card>
-    );
-}
+                    </div>
+                </CardContent>
+                <CardFooter className="flex justify-end gap-2">
+                    <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
+                        {isTutorial ? "VOLVER" : "CANCELAR"}
+                    </Button>
+                    <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>
+                        AGREGAR
+                    </Button>
+                </CardFooter>
+            </Card>
+        );
+    }
 
-export default DepositForm;
+    export default DepositForm;

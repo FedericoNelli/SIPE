@@ -1,14 +1,13 @@
+import axios from 'axios';
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
 import { Button } from "@/components/Common/Button/Button";
-import axios from 'axios';
 
 function MovementConfirmModal({ movement, onClose, notify, onMovementConfirmed, onRemovePendingMovement }) {
     const [cantidadRecibida, setCantidadRecibida] = useState(movement.cantidad);
 
-    // Cerrar modal al presionar la tecla Escape
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.key === 'Escape') {
@@ -39,18 +38,21 @@ function MovementConfirmModal({ movement, onClose, notify, onMovementConfirmed, 
                 ...movement,
                 cantidadMovida: cantidadRecibida || 0,
             });
-
             if (response.status !== 200) {
                 throw new Error(response.data.error || 'Error al confirmar el movimiento');
             }
-
             notify('success', '¡Movimiento confirmado exitosamente!');
             if (onClose) onClose();
             if (onMovementConfirmed) onMovementConfirmed();
 
         } catch (error) {
             console.error('Error al confirmar el movimiento:', error);
-            notify('error', error.message || 'Error al confirmar el movimiento');
+            if (error.response && error.response.data && error.response.data.error) {
+                notify('error', error.response.data.error);
+            } else {
+                notify('error', error.message || 'Error al confirmar el movimiento');
+            }
+            
         }
     };
 

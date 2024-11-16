@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import { Plus, Trash2, PenLine } from 'lucide-react';
 import AisleForm from '@/components/Aisle/AisleForm';
 import AisleList from './AisleList';
 import AisleEditModal from '@/components/Aisle/AisleEditModal'; // Importar el modal de edición
@@ -99,12 +100,12 @@ function Aisle({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de pasillos</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} variant="sipemodal">NUEVO PASILLO</Button>
+                        <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR</Button>
                         <Button onClick={openEditModal} variant="sipemodalalt">
-                            EDITAR PASILLO
+                            <PenLine /> EDITAR
                         </Button>
                         <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
-                            {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR PASILLOS'}
+                            <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR'}
                         </Button>
                     </div>
                 </div>

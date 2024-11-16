@@ -65,7 +65,7 @@ function MaterialList({ materials, notify }) {
                         {materials.map(material => (
                             <TableRow key={material.id} onClick={() => handleCellClick(material)}>
                                 <TableCell className="text-center font-light">{material.nombre}</TableCell>
-                                <TableCell className="text-center font-light">{material.depositoNombre}</TableCell>
+                                <TableCell className="text-center font-light">{material.depositoNombre || "Sin Depósito"}</TableCell>
                                 <TableCell className="text-center font-light">
                                     <Badge
                                         variant="default"
@@ -78,9 +78,9 @@ function MaterialList({ materials, notify }) {
                                 <TableCell className="text-center font-light">
                                     {material.cantidad} {material.cantidad === 1 ? "unidad" : "unidades"}
                                 </TableCell>
-                                <TableCell className="text-center font-light">{material.ubicacionNombre}</TableCell>
+                                <TableCell className="text-center font-light">{material.ubicacionNombre || "Sin Ubicación"}</TableCell>
                                 <TableCell className="text-center font-light">{material.matricula}</TableCell>
-                                <TableCell className="text-center font-light">{material.categoriaNombre}</TableCell>
+                                <TableCell className="text-center font-light">{material.categoriaNombre || "Sin Categoría"}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

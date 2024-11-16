@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Filter } from 'lucide-react';
+import { Filter, Plus, Trash2, PenLine } from 'lucide-react';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import MaterialExitList from '@/components/Exit/MaterialExitList';
@@ -197,12 +197,12 @@ function MaterialExit({ notify }) {
                     <div className="flex flex-row gap-4 text-sipe-white">
                     {userRole === 'Administrador' && (
                         <>
-                            <Button onClick={openFormModal} variant="sipemodal">REGISTRAR NUEVA SALIDA</Button>
-                            <Button onClick={openEditModal} variant="sipemodalalt">EDITAR SALIDA</Button>
-                            <Button onClick={toggleDeleteMode} variant="sipemodalalt2">{isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR SALIDAS'}</Button>
+                            <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR</Button>
+                            <Button onClick={openEditModal} variant="sipemodalalt"> <PenLine /> EDITAR</Button>
+                            <Button onClick={toggleDeleteMode} variant="sipemodalalt2"> <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : ' ELIMINAR '}</Button>
                             </>
                         )}
-                        <Button onClick={openFilterModal} variant="secondary" className="bg-transparent text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
+                        <Button onClick={openFilterModal} variant="secondary" className="bg-sipe-gray bg-opacity-50 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
                             <Filter /> FILTRAR
                         </Button>
                         
