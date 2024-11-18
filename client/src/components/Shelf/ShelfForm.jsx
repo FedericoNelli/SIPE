@@ -177,7 +177,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
             const idCategoria = categoriaId;
             const idPasillo = pasilloId;
 
-            if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria, idPasillo, response.data.result.insertId); // Ejecutar onSubmit después del delay
+            if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria, idPasillo, response.data.id); // Ejecutar onSubmit después del delay
 
             // Verificar si no estamos en el tutorial y recargar la página
             const isInTutorial = localStorage.getItem('inTutorial');

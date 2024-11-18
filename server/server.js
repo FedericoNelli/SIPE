@@ -1695,7 +1695,7 @@ app.put('/editUser/:id', upload.single('imagen'), (req, res) => {
 });
 
 
-app.post('/sendRecoveryCode', (req, res) => {
+app.post('/sendcod_recuperacion', (req, res) => {
     const { email } = req.body;
 
     // Verificar si el email existe en la base de datos
@@ -1715,11 +1715,11 @@ app.post('/sendRecoveryCode', (req, res) => {
         // Obtener el año actual
         const currentYear = new Date().getFullYear();
         // Generar un código de verificación de 5 dígitos
-        const recoveryCode = Math.floor(10000 + Math.random() * 90000).toString();
+        const cod_recuperacion = Math.floor(10000 + Math.random() * 90000).toString();
 
         // Guardar el código de recuperación en la base de datos
-        const query = 'UPDATE usuario SET recovery_code = ? WHERE email = ?';
-        db.query(query, [recoveryCode, email], (err, result) => {
+        const query = 'UPDATE usuario SET cod_recuperacion = ? WHERE email = ?';
+        db.query(query, [cod_recuperacion, email], (err, result) => {
             if (err) {
                 console.error('Error al actualizar el código de recuperación:', err);
                 return res.status(500).send('Error al actualizar el código de recuperación');
@@ -1734,7 +1734,7 @@ app.post('/sendRecoveryCode', (req, res) => {
                 }
 
                 // Reemplazar el código de recuperación en la plantilla HTML
-                let customizedTemplate = data.replace('ABCDE', recoveryCode);
+                let customizedTemplate = data.replace('ABCDE', cod_recuperacion);
                 customizedTemplate = customizedTemplate.replace('Usuario', userName);
                 customizedTemplate = customizedTemplate.replace('2024', currentYear);
 
@@ -1760,11 +1760,11 @@ app.post('/sendRecoveryCode', (req, res) => {
 });
 
 // Endpoint para verificar el código de recuperación
-app.post('/verifyRecoveryCode', (req, res) => {
-    const { email, recoveryCode } = req.body;
+app.post('/verifycod_recuperacion', (req, res) => {
+    const { email, cod_recuperacion } = req.body;
 
-    const query = 'SELECT * FROM usuario WHERE email = ? AND recovery_code = ?';
-    db.query(query, [email, recoveryCode], (err, results) => {
+    const query = 'SELECT * FROM usuario WHERE email = ? AND cod_recuperacion = ?';
+    db.query(query, [email, cod_recuperacion], (err, results) => {
         if (err) {
             console.error('Error al consultar la base de datos:', err);
             return res.status(500).send('Error al consultar la base de datos');
@@ -1786,7 +1786,7 @@ app.post('/changePassword', (req, res) => {
     const salt = bcrypt.genSaltSync(10);
     const passwordHash = bcrypt.hashSync(newPassword, salt);
 
-    const query = 'UPDATE usuario SET contrasenia = ?, recovery_code = NULL, firstLogin = 0 WHERE email = ?';
+    const query = 'UPDATE usuario SET contrasenia = ?, cod_recuperacion = NULL, firstLogin = 0 WHERE email = ?';
     db.query(query, [passwordHash, email], (err, result) => {
         if (err) {
             console.error('Error al actualizar la contraseña:', err);

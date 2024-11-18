@@ -21,7 +21,7 @@ function RecoveryPassword() {
         }
         setLoading(true);
         try {
-            await axios.post('http://localhost:8081/sendRecoveryCode', { email });
+            await axios.post('http://localhost:8081/sendcod_recuperacion', { email });
             setMessage('Código de recuperación enviado');
             setLoading(false);
             setTimeout(() => {

@@ -25,7 +25,7 @@ function RecoveryCode() {
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
-            await axios.post('http://localhost:8081/verifyRecoveryCode', { email, recoveryCode: code });
+            await axios.post('http://localhost:8081/verifycod_recuperacion', { email, cod_recuperacion: code });
             localStorage.setItem('firstLogin', '0');
             navigate('/chPsw', { state: { email } });
         } catch (err) {
@@ -35,7 +35,7 @@ function RecoveryCode() {
 
     const handleResendCode = async () => {
         try {
-            await axios.post('http://localhost:8081/sendRecoveryCode', { email });
+            await axios.post('http://localhost:8081/sendcod_recuperacion', { email });
             setMessage('Nuevo código enviado');
             setResendTimeout(60);
         } catch (err) {
