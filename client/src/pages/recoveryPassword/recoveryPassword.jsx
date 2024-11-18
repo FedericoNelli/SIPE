@@ -37,8 +37,13 @@ function RecoveryPassword() {
         }
     };
 
+    const firstLogin = localStorage.getItem('firstLogin');
+    const messageTitle = firstLogin === '1'
+        ? 'Como es tu primer inicio de sesión, tenés que cambiar tu contraseña'
+        : (state?.source === 'navbar'
+            ? 'Cambiá tu contraseña'
+            : 'Recuperá tu contraseña');
 
-    const messageTitle = state?.source === 'navbar' ? 'Cambiá tu contraseña' : 'Recuperá tu contraseña';
 
     return (
         <div className="bg-sipe-blue-dark">
@@ -55,7 +60,7 @@ function RecoveryPassword() {
                         <div className="mx-auto w-full max-w-md space-y-4">
                             <div className="space-y-2">
                                 <h1 className="font-bold text-sipe-white text-4xl">{messageTitle}</h1>
-                                <p className="font-thin text-sipe-white">Escribí tu email y recibí allí un código para reestablecer tu contraseña</p>
+                                <p className="font-thin text-sipe-white">Escribí tu email y recibí allí un código para cambiar tu contraseña</p>
                             </div>
                             <div className="space-y-4">
                                 <div className="space-y-2">

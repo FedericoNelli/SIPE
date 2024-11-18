@@ -27,6 +27,21 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
     const [categorias, setCategorias] = useState([]);
 
     useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                onClose(); // Cierra el modal cuando se presiona Escape
+            }
+        };
+
+        document.addEventListener('keydown', handleEscape);
+
+        // Limpia el evento cuando el componente se desmonta
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [onClose]);
+
+    useEffect(() => {
         axios.get('http://localhost:8081/deposit-locations')
             .then(response => {
                 setLocations(response.data);
@@ -83,10 +98,19 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prevData) => ({
-            ...prevData,
-            [name]: value
-        }));
+        if (value === '' || /^[1-9]\d*$/.test(value)) {
+            setFormData((prevData) => ({
+                ...prevData,
+                [name]: value
+            }));
+        } else {
+            if (parseInt(value, 10) < 0) {
+                const errorMessage = {
+                    numero: "El número de estante debe ser mayor a 0"
+                };
+                notify('error', errorMessage[name] || "El valor debe ser mayor a 0");
+            }
+        }
     };
 
     const handleSelectChange = (name, value) => {
@@ -98,45 +122,36 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
 
     const handleSubmit = async () => {
         try {
-            if (formData.numero <= 0) {
-                notify('error', "El número de pasillo debe ser mayor que 0");
-                return;
-            }
-            // Asegurar que `idLado2` sea `null` si no se selecciona
             const dataToSend = {
                 ...formData,
                 idLado2: formData.idLado2 || null
             };
-
             const response = await axios.post('http://localhost:8081/addAisle', dataToSend);
-
             if (response.status !== 200) {
                 throw new Error(response.data.error || "Error al agregar pasillo");
             }
-
             if (!isTutorial) {
                 notify('success', "¡Pasillo creado con éxito!");
             }
-
             if (onClose) onClose();
-
             const idUbicacion = ubicacionId;
             const idDeposito = depositoId;
             const idCategoria = categoriaId;
-
             if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria, response.data.id); // Ejecutar onSubmit después del delay
-
             // Verificar si no estamos en el tutorial y recargar la página
             const isInTutorial = localStorage.getItem('inTutorial');
             if (!isInTutorial || isInTutorial === 'false') {
                 window.location.reload(); // Recargar la página si no estamos en el tutorial
             }
-
-
         } catch (error) {
             console.error('Error al agregar el pasillo:', error);
-            notify('error', error.message || "Error al agregar pasillo");
+            if (error.response && error.response.data && error.response.data.error) {
+                notify('error', error.response.data.error);
+            } else {
+                notify('error', "Error al agregar pasillo");
+            }
         }
+
     };
 
     const handleCancel = async () => {
@@ -145,7 +160,7 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
             if (onClose) onClose();
         } else {
             // Lógica cuando estamos en el tutorial y debemos volver al paso anterior
-            if (currentStep === 4 && categoriaId) {
+            if (currentStep === 3 && categoriaId) {
                 try {
                     // Eliminar la categoría creado cuando se vuelve al paso anterior
                     await axios.delete(`http://localhost:8081/category/delete/${categoriaId}`);

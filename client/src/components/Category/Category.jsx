@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import { Plus, Trash2, PenLine } from 'lucide-react';
 import CategoryForm from '@/components/Category/CategoryForm';
 import CategoryList from './CategoryList';
-import axios from 'axios';
 import CategoryEditModal from '@/components/Category/CategoryEditModal'; // Importar el modal de edición
 
 function Category({ notify }) {
@@ -32,10 +33,17 @@ function Category({ notify }) {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentCategories = categories.slice(indexOfFirstItem, indexOfLastItem);
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    const totalPages = Math.ceil(categories.length / itemsPerPage);
+
+    const paginate = (pageNumber) => {
+        if (pageNumber >= 1 && pageNumber <= totalPages) {
+            setCurrentPage(pageNumber);
+        }
+    };
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
+        setIsDeleteMode(false);
     };
 
     const closeFormModal = () => {
@@ -49,7 +57,8 @@ function Category({ notify }) {
 
     // Función para abrir el modal de edición
     const openEditModal = () => {
-        setIsEditModalOpen(true);  // Solo abrir el modal
+        setIsEditModalOpen(true);
+        setIsDeleteMode(false);
     };
 
     // Función para cerrar el modal de edición
@@ -92,12 +101,12 @@ function Category({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de categorías</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} variant="sipemodal">NUEVA CATEGORÍA</Button>
+                        <Button onClick={openFormModal} variant="sipemodal"><Plus /> AÑADIR</Button>
                         <Button onClick={openEditModal} variant="sipemodalalt2">
-                            EDITAR CATEGORÍA
+                            <PenLine /> EDITAR
                         </Button>
                         <Button onClick={toggleDeleteMode} variant="sipemodalalt">
-                            {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR CATEGORÍAS'}
+                            <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR'}
                         </Button>
                     </div>
                 </div>
@@ -112,7 +121,7 @@ function Category({ notify }) {
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
-                            {[...Array(Math.ceil(categories.length / itemsPerPage)).keys()].map(page => (
+                            {[...Array(totalPages).keys()].map(page => (
                                 <PaginationItem key={page + 1}>
                                     <PaginationLink href="#" onClick={() => paginate(page + 1)} isActive={currentPage === page + 1}>
                                         {page + 1}

@@ -4,7 +4,7 @@ import { Badge } from "@/components/Common/Badge/Badge";
 import axios from "axios";
 import MaterialDetailModal from "@/components/Material/MaterialDetailModal";
 
-function MaterialList({ materials }) {
+function MaterialList({ materials, notify }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMaterial, setSelectedMaterial] = useState(null);
     const [shelves, setShelves] = useState([]);
@@ -53,7 +53,6 @@ function MaterialList({ materials }) {
                     <TableHeader>
                         <TableRow>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10 rounded-tl-lg">Nombre</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">ID</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Estado</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad</TableHead>
@@ -66,8 +65,7 @@ function MaterialList({ materials }) {
                         {materials.map(material => (
                             <TableRow key={material.id} onClick={() => handleCellClick(material)}>
                                 <TableCell className="text-center font-light">{material.nombre}</TableCell>
-                                <TableCell className="text-center font-light">{material.id}</TableCell>
-                                <TableCell className="text-center font-light">{material.depositoNombre}</TableCell>
+                                <TableCell className="text-center font-light">{material.depositoNombre || "Sin Depósito"}</TableCell>
                                 <TableCell className="text-center font-light">
                                     <Badge
                                         variant="default"
@@ -80,9 +78,9 @@ function MaterialList({ materials }) {
                                 <TableCell className="text-center font-light">
                                     {material.cantidad} {material.cantidad === 1 ? "unidad" : "unidades"}
                                 </TableCell>
-                                <TableCell className="text-center font-light">{material.ubicacionNombre}</TableCell>
+                                <TableCell className="text-center font-light">{material.ubicacionNombre || "Sin Ubicación"}</TableCell>
                                 <TableCell className="text-center font-light">{material.matricula}</TableCell>
-                                <TableCell className="text-center font-light">{material.categoriaNombre}</TableCell>
+                                <TableCell className="text-center font-light">{material.categoriaNombre || "Sin Categoría"}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -93,6 +91,7 @@ function MaterialList({ materials }) {
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 selectedMaterial={selectedMaterial}
+                notify={notify}
             />
         </>
     );

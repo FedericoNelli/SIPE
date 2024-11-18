@@ -26,6 +26,7 @@ function RecoveryCode() {
         event.preventDefault();
         try {
             await axios.post('http://localhost:8081/verifyRecoveryCode', { email, recoveryCode: code });
+            localStorage.setItem('firstLogin', '0');
             navigate('/chPsw', { state: { email } });
         } catch (err) {
             setMessage('Código incorrecto');
@@ -42,7 +43,8 @@ function RecoveryCode() {
         }
     };
 
-    const messageTitle = state?.source === 'navbar' ? 'Cambiá tu contraseña' : 'Recuperá tu contraseña';
+    const messageTitle = "Validación de código"
+
 
     return (
         <>

@@ -6,20 +6,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function MovementForm({ onClose, onAddPendingMovement, notify }) {
+function MovementForm({ onClose, addPendingMovement, notify }) {
     const [formData, setFormData] = useState({
         fechaMovimiento: '',
         idMaterial: '',
         idUsuario: '',
         idDepositoOrigen: '',
         idDepositoDestino: '',
-        cantidadMovida: ''
+        cantidadMovida: '',
+        numero: ''
     });
     const [materiales, setMateriales] = useState([]);
     const [usuarios, setUsuarios] = useState([]);
     const [depositos, setDepositos] = useState([]);
     const [cantidadDisponible, setCantidadDisponible] = useState('');
     const [maxDatetime, setMaxDatetime] = useState('');
+    
+    // Cerrar modal al presionar la tecla Escape
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [onClose]);
 
     useEffect(() => {
         axios.get('http://localhost:8081/materials')
@@ -59,7 +74,7 @@ function MovementForm({ onClose, onAddPendingMovement, notify }) {
 
     useEffect(() => {
         const now = new Date();
-        setMaxDatetime(now.toISOString().slice(0, 16));
+        setMaxDatetime(now.toISOString().split("T")[0]);
     }, []);
 
     const handleInputChange = (e) => {
@@ -68,16 +83,29 @@ function MovementForm({ onClose, onAddPendingMovement, notify }) {
         if (name === "fechaMovimiento") {
             const now = new Date();
             const selectedDate = new Date(value);
-
             if (selectedDate > now) {
                 notify('error', 'La hora seleccionada no puede ser futura');
                 return;
             }
         }
-
         if (name === "cantidadMovida" && value > cantidadDisponible) {
             notify('error', 'La cantidad a mover no puede ser mayor a la disponible');
             return;
+        }
+        // Validación solo para el campo "numero"
+        if (name === "numero") {
+            if (value === "" || value === "-") {
+                setFormData((prevData) => ({
+                    ...prevData,
+                    [name]: value
+                }));
+                return;
+            }
+            const numero = Number(value);
+            if (numero <= 0) {
+                notify('error', 'El número de movimiento no puede ser 0 ni negativo');
+                return;
+            }
         }
 
         setFormData((prevData) => ({
@@ -93,9 +121,24 @@ function MovementForm({ onClose, onAddPendingMovement, notify }) {
         }));
     };
 
-    const handleSubmit = () => {
-        // Pasar el movimiento al componente padre como pendiente
-        onAddPendingMovement(formData);
+    const handleAddPendingMovement = () => {
+        const material = materiales.find(mat => mat.id === formData.idMaterial);
+        const usuario = usuarios.find(user => user.id === formData.idUsuario);
+        const depositoOrigen = depositos.find(dep => dep.id === formData.idDepositoOrigen);
+        const depositoDestino = depositos.find(dep => dep.id === formData.idDepositoDestino);
+
+        const movementWithDetails = {
+            ...formData,
+            fechaMovimiento: new Date(formData.fechaMovimiento).toISOString().split('T')[0],
+            materialNombre: material ? material.nombre : '',
+            usuarioNombre: usuario ? usuario.nombre : '',
+            depositoOrigenNombre: depositoOrigen ? depositoOrigen.nombre : '',
+            depositoDestinoNombre: depositoDestino ? depositoDestino.nombre : '',
+            expiry: new Date().getTime() + 7 * 24 * 60 * 60 * 1000
+        };
+
+        addPendingMovement(movementWithDetails);
+        onClose();
     };
 
     const handleCancel = () => {
@@ -111,12 +154,24 @@ function MovementForm({ onClose, onAddPendingMovement, notify }) {
             <CardContent className="flex flex-col space-y-10">
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-2">
+                        <Label htmlFor="numero" className="text-sm font-medium">Número de movimiento</Label>
+                        <Input
+                            className="border-b"
+                            id="numero"
+                            name="numero"
+                            type="number"
+                            value={formData.numero}
+                            onChange={handleInputChange}
+                            max={1}
+                        />
+                    </div>
+                    <div className="flex items-center gap-2">
                         <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha de Movimiento</Label>
                         <Input
                             className="border-b"
                             id="fechaMovimiento"
                             name="fechaMovimiento"
-                            type="datetime-local"
+                            type="date"
                             value={formData.fechaMovimiento}
                             onChange={handleInputChange}
                             max={maxDatetime}
@@ -135,7 +190,7 @@ function MovementForm({ onClose, onAddPendingMovement, notify }) {
                             <SelectContent>
                                 {materiales.map((material) => (
                                     <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id}>
-                                        {material.nombre}
+                                        {material.nombre} - {material.depositoNombre} - {material.ubicacionNombre}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -165,7 +220,7 @@ function MovementForm({ onClose, onAddPendingMovement, notify }) {
                         />
                     </div>
                     <div className="flex items-center gap-2">
-                        <Label htmlFor="idUsuario" className="text-sm font-medium">Usuario</Label>
+                        <Label htmlFor="idUsuario" className="text-sm font-medium">Usuario que mueve el material</Label>
                         <Select
                             value={formData.idUsuario}
                             onValueChange={handleSelectChange('idUsuario')}
@@ -230,7 +285,7 @@ function MovementForm({ onClose, onAddPendingMovement, notify }) {
                 <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
                     CANCELAR
                 </Button>
-                <Button variant="sipebutton" size="sipebutton" onClick={handleSubmit}>
+                <Button variant="sipebutton" size="sipebutton" onClick={handleAddPendingMovement}>
                     AGREGAR
                 </Button>
             </CardFooter>

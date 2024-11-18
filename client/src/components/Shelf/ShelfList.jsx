@@ -80,10 +80,10 @@ function ShelfList({ shelves, isDeleteMode, isEmptyMode, selectedShelves, setSel
                             <TableCell className="text-center font-light">Estantería {shelf.numero}</TableCell>
                             <TableCell className="text-center font-light">{shelf.cantidad_estante}</TableCell>
                             <TableCell className="text-center font-light">{shelf.cantidad_division}</TableCell>
-                            <TableCell className="text-center font-light">{shelf.nombreUbicacion}</TableCell>
-                            <TableCell className="text-center font-light">{shelf.nombreDeposito}</TableCell>
-                            <TableCell className="text-center font-light">{shelf.numeroPasillo}</TableCell>
-                            <TableCell className="text-center font-light">{shelf.direccionLado}</TableCell>
+                            <TableCell className="text-center font-light">{shelf.nombreUbicacion || "Sin Ubicación"}</TableCell>
+                            <TableCell className="text-center font-light">{shelf.nombreDeposito || "Sin Depósito"}</TableCell>
+                            <TableCell className="text-center font-light">{shelf.numeroPasillo || "Sin Pasillo"}</TableCell>
+                            <TableCell className="text-center font-light">{shelf.direccionLado || "Sin Lado"}</TableCell>
                             <TableCell className="text-center font-light">{shelf.totalMateriales}</TableCell>
                         </TableRow>
                     ))}
