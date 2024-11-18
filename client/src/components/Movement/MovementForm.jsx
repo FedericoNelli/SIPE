@@ -148,7 +148,7 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
     return (
         <Card className="bg-sipe-blue-dark text-sipe-white p-4">
             <CardHeader>
-                <CardTitle className="text-3xl text-center font-bold mb-2">Agregar nuevo Movimiento</CardTitle>
+                <CardTitle className="text-3xl text-center font-bold mb-2">Agregar nuevo movimiento</CardTitle>
                 <hr className="text-sipe-gray" />
             </CardHeader>
             <CardContent className="flex flex-col space-y-10">
@@ -166,7 +166,7 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
                         />
                     </div>
                     <div className="flex items-center gap-2">
-                        <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha de Movimiento</Label>
+                        <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha de movimiento</Label>
                         <Input
                             className="border-b"
                             id="fechaMovimiento"
@@ -187,9 +187,9 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona un material" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-sipe-blue-light">
                                 {materiales.map((material) => (
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id}>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={material.id} value={material.id}>
                                         {material.nombre} - {material.depositoNombre} - {material.ubicacionNombre}
                                     </SelectItem>
                                 ))}
@@ -229,9 +229,9 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona un usuario" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-sipe-blue-light">
                                 {usuarios.map((usuario) => (
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={usuario.id} value={usuario.id}>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={usuario.id} value={usuario.id}>
                                         {usuario.nombre}
                                     </SelectItem>
                                 ))}
@@ -249,9 +249,9 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona un depósito origen" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-sipe-blue-light">
                                 {depositos.map((deposito) => (
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposito.id} value={deposito.id}>
                                         {deposito.nombre} - {deposito.ubicacion}
                                     </SelectItem>
                                 ))}
@@ -268,11 +268,11 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona un depósito destino" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-sipe-blue-light">
                                 {depositos
                                     .filter(deposito => deposito.id !== formData.idDepositoOrigen)
                                     .map((deposito) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposito.id} value={deposito.id}>
                                             {deposito.nombre} - {deposito.ubicacion}
                                         </SelectItem>
                                     ))}

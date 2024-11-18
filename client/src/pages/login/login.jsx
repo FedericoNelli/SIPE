@@ -71,7 +71,7 @@ function Login() {
                     initial={{ x: "100%" }}
                     animate={{ x: isLoginOpen ? "0%" : "100%" }}
                     transition={{ type: "tween", duration: 1, ease: 'easeInOut' }}
-                    className="fixed right-0 top-0 bottom-0 w-1/4 bg-sipe-blue-dark flex items-center justify-center"
+                    className="fixed right-0 top-0 bottom-0 w-1/3 2xl:w-1/4 bg-sipe-blue-dark flex items-center justify-center"
                 >
                     {isLoginOpen && <LoginInput onLoginSuccess={handleLoginSuccess} onFirstLogin={handleFirstLogin} />}
                 </motion.div>

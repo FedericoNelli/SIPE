@@ -228,9 +228,6 @@ function MaterialForm({ onClose, notify }) {
     return (
         <>
             <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl relative">
-                <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
-                    <X size={14} strokeWidth={4} onClick={onClose} />
-                </div>
                 <CardHeader>
                     <CardTitle className="text-3xl font-bold mb-2 text-center">Agregar nuevo material</CardTitle>
                     <hr />
@@ -239,17 +236,17 @@ function MaterialForm({ onClose, notify }) {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="nombre" className="text-sm font-medium">Nombre del material</Label>
-                            <Input className="border-b text-sm" id="nombre" placeholder="Ingresa el nombre del material" value={formData.nombre} onChange={handleInputChange} />
+                            <Input className="border-b text-sm focus:outline-none" id="nombre" placeholder="Ingresa el nombre del material" value={formData.nombre} onChange={handleInputChange} />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="depositLocation" className="text-sm font-medium">Ubicación del depósito</Label>
                             <Select id="depositLocation" onValueChange={(value) => handleSelectChange('depositLocation', value)}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" placeholder="Selecciona la ubicación" />
+                                    <SelectValue className="bg-sipe-blue-light text-sipe-white border-sipe-white" placeholder="Selecciona la ubicación" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {depositLocations.map(location => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={location.id} value={location.id}>{location.nombre}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={location.id} value={location.id}>{location.nombre}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -262,9 +259,9 @@ function MaterialForm({ onClose, notify }) {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Selecciona el depósito" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {depositNames.map(deposit => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -272,12 +269,12 @@ function MaterialForm({ onClose, notify }) {
                         <div className="grid gap-2">
                             <Label htmlFor="categoria" className="text-sm font-medium">Categoría</Label>
                             <Select id="categoria" onValueChange={(value) => handleSelectChange('categoria', value)}>
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-sm">
                                     <SelectValue placeholder="Selecciona la categoría" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {categories.map(category => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={category.id} value={category.id}>{category.descripcion}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={category.id} value={category.id}>{category.descripcion}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -308,9 +305,9 @@ function MaterialForm({ onClose, notify }) {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Pasillo" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {aisles.map(aisle => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>Pasillo {aisle.numero}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={aisle.id} value={aisle.id}>Pasillo {aisle.numero}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -320,9 +317,9 @@ function MaterialForm({ onClose, notify }) {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Estantería" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {shelves.map(shelf => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={shelf.id} value={shelf.id}>Estantería {shelf.numero}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={shelf.id} value={shelf.id}>Estantería {shelf.numero}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -343,10 +340,10 @@ function MaterialForm({ onClose, notify }) {
                                     )}
                                 </SelectTrigger>
                                 {spaces.length > 0 && (
-                                    <SelectContent>
+                                    <SelectContent className="bg-sipe-blue-light">
                                         {spaces.map((space) => (
                                             <SelectItem
-                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
                                                 key={space.id}
                                                 value={space.id}
                                                 disabled={space.ocupado}

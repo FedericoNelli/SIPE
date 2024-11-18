@@ -132,7 +132,7 @@ const UserForm = ({ onClose, notify }) => {
                     <CardTitle className="text-3xl text-center font-bold mb-2">Agregar nuevo usuario</CardTitle>
                     <hr className="text-sipe-gray" />
                 </CardHeader>
-                <CardContent className="flex flex-col space-y-10">
+                <CardContent className="flex flex-col space-y-6 2xl:space-y-10">
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
                             <Label htmlFor="nombre" className="text-sm font-medium">
@@ -257,9 +257,9 @@ const UserForm = ({ onClose, notify }) => {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-gray border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Rol" />
                             </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Colaborador">Colaborador</SelectItem>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Administrador">Administrador</SelectItem>
+                            <SelectContent className="bg-sipe-blue-light">
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Colaborador">Colaborador</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Administrador">Administrador</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

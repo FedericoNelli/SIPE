@@ -207,9 +207,9 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
                                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                                 <SelectValue placeholder="Selecciona el rol" />
                                             </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Administrador">Administrador</SelectItem>
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Colaborador">Colaborador</SelectItem>
+                                            <SelectContent className="bg-sipe-blue-light">
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Administrador">Administrador</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Colaborador">Colaborador</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -220,21 +220,21 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
                                         {formData.imagenPreview ? (
                                             <img src={formData.imagenPreview} alt="Imagen del usuario" className="rounded-md w-16 h-16 object-cover" />
                                         ) : (
-                                            <div className="w-16 h-16 border rounded-2xl flex justify-center items-center">
+                                            <div className="w-20 h-20 border rounded-2xl flex justify-center items-center">
                                                 <p className="text-sm text-center font-thin">No hay imagen disponible</p>
                                             </div>
                                         )}
                                         <div className="flex flex-row gap-2">
-                                            <Button variant="sipemodalalt" onClick={handleDeleteImage}>Eliminar Imagen</Button>
+                                            <Button variant="sipemodalalt" onClick={handleDeleteImage}>ELIMINAR IMAGEN</Button>
                                             <input type="file" id="photo" className="hidden" onChange={handleFileChange} />
-                                            <Button variant="sipemodal" onClick={() => document.getElementById('photo').click()}>Subir Nueva Imagen</Button>
+                                            <Button variant="sipemodal" onClick={() => document.getElementById('photo').click()}>SUBIR NUEVA IMAGEN</Button>
                                         </div>
                                     </div>
                                 </div>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-4">
                                 <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>CANCELAR</Button>
-                                <Button variant="sipebutton" size="sipebutton" onClick={handleSave}>Guardar</Button>
+                                <Button variant="sipebutton" size="sipebutton" onClick={handleSave}>GUARDAR</Button>
                             </CardFooter>
                         </Card>
                     </motion.div>

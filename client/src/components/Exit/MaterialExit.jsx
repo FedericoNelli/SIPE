@@ -95,11 +95,6 @@ function MaterialExit({ notify }) {
         closeFilterModal();
     };
 
-
-
-
-
-
     const resetFilters = () => {
         setFilteredExits(materialExits);
         setFilters({
@@ -202,7 +197,7 @@ function MaterialExit({ notify }) {
                             <Button onClick={toggleDeleteMode} variant="sipemodalalt2"> <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : ' ELIMINAR '}</Button>
                             </>
                         )}
-                        <Button onClick={openFilterModal} variant="secondary" className="bg-sipe-gray bg-opacity-50 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
+                        <Button onClick={openFilterModal} variant="sipebuttonalt3" className="bg-sipe-gray bg-opacity-80 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2">
                             <Filter /> FILTRAR
                         </Button>
                         
@@ -243,7 +238,7 @@ function MaterialExit({ notify }) {
                             className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
                         >
                             <motion.div
-                                className="w-[600px] max-w-full h-auto shadow-xl bg-sipe-blue-dark rounded-2xl p-6 relative"
+                                className="w-[600px] max-w-full h-auto shadow-xl bg-sipe-blue-dark rounded-2xl 2xl:p-2 relative"
                                 onClick={(e) => e.stopPropagation()}
                                 initial={{ scale: 0.95, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}

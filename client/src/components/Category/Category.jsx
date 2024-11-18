@@ -132,12 +132,12 @@ function Category({ notify }) {
                     </Pagination>
                 </div>
                 {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <CategoryForm onClose={closeFormModal} notify={notify} />
                     </div>
                 )}
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <CategoryEditModal onClose={closeEditModal} onCategoryUpdated={handleCategoryUpdate} notify={notify} />
                     </div>
                 )}

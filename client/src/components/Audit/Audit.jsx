@@ -66,7 +66,7 @@ function Audit({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de auditorías</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
+                        <Button onClick={toggleDeleteMode} variant="sipebuttonalt4">
                             <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR'}
                         </Button>
                     </div>
