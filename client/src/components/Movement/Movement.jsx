@@ -96,10 +96,6 @@ function Movement({ notify }) {
         closeFilterModal();
     };
 
-
-
-
-
     const resetFilters = () => {
         setFilteredMovements(movements);
         setFilters({
@@ -185,6 +181,7 @@ function Movement({ notify }) {
                 setMovements(movements.filter(movement => !selectedMovements.includes(movement.id)));
                 setSelectedMovements([]);
                 setIsDeleteMode(false);
+                loadMovements();
             })
             .catch(error => {
                 console.error('Error eliminando movimientos:', error);
@@ -247,6 +244,7 @@ function Movement({ notify }) {
                         <MovementForm
                             onClose={closeFormModal}
                             addPendingMovement={addPendingMovement}
+                            onMovementUpdated={loadMovements}
                             notify={notify}
                         />
                     </div>

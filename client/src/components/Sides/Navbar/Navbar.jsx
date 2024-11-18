@@ -97,9 +97,9 @@ function Navbar() {
 
     function obtenerSaludo() {
         const hora = new Date().getHours();
-        if (hora < 12) {
+        if (hora > 6 && hora < 14) {
             return "Buen día";
-        } else if (hora < 18) {
+        } else if (hora < 20) {
             return "Buenas tardes";
         } else {
             return "Buenas noches";

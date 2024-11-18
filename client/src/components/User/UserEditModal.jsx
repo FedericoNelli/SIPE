@@ -8,7 +8,7 @@ import { Button } from "@/components/Common/Button/Button";
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 
-function UserEditModal({ isOpen, onClose, user, notify }) {
+function UserEditModal({ isOpen, onClose, user, notify, onUserUpdated }) {
     const [isVisible, setIsVisible] = useState(isOpen);
     const [formData, setFormData] = useState({
         nombre: user?.nombre || '',
@@ -30,7 +30,6 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
                 onClose();
             }
         };
-
         window.addEventListener('keydown', handleKeyDown);
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
@@ -60,7 +59,7 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
         const file = e.target.files[0];
         if (file) {
             if (file.size > 10 * 1024 * 1024) {
-                notify('error' ,'El archivo es demasiado grande. El tamaño máximo es 10 MB.');
+                notify('error', 'El archivo es demasiado grande. El tamaño máximo es 10 MB.');
                 return;
             }
             setFormData(prevData => ({
@@ -68,7 +67,7 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
                 imagen: file,
                 imagenPreview: URL.createObjectURL(file)
             }));
-            setIsImageToDelete(false); 
+            setIsImageToDelete(false);
             notify('success', 'Imagen lista para guardarse');
         } else {
             notify('error', 'Error al cargar imagen');
@@ -100,7 +99,35 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
 
     const handleSave = async () => {
         const { nombre, apellido, legajo, nombre_usuario, email, rol, imagen } = formData;
-
+    
+        // Regex para validaciones
+        const emailRegex = /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+        const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/; // Solo letras, espacios y caracteres con tilde
+        const usernameRegex = /^[a-zA-Z0-9_.-]+$/; // Letras, números, guión bajo, punto y guión
+        const legajoRegex = /^[0-9]+$/; // Solo números
+    
+        // Validaciones
+        if (!nameRegex.test(nombre)) {
+            notify('error', 'El nombre solo puede contener letras y espacios.');
+            return;
+        }
+        if (!nameRegex.test(apellido)) {
+            notify('error', 'El apellido solo puede contener letras y espacios.');
+            return;
+        }
+        if (!usernameRegex.test(nombre_usuario)) {
+            notify('error', 'El nombre de usuario solo puede contener letras, números, guiones y puntos.');
+            return;
+        }
+        if (!legajoRegex.test(legajo)) {
+            notify('error', 'El legajo solo puede contener números.');
+            return;
+        }
+        if (!emailRegex.test(email)) {
+            notify('error', 'El correo electrónico debe ser válido.');
+            return;
+        }
+    
         const formDataToSend = new FormData();
         formDataToSend.append('nombre', nombre);
         formDataToSend.append('apellido', apellido);
@@ -110,29 +137,27 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
         formDataToSend.append('rol', rol);
         if (imagen) formDataToSend.append('imagen', imagen);
         if (isImageToDelete) formDataToSend.append('eliminarImagen', true);
-
         try {
             const response = await axios.put(`http://localhost:8081/editUser/${user.id}`, formDataToSend, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+                    'Content-Type': 'multipart/form-data',
+                },
             });
-
             if (response.status !== 200) {
-                throw new Error(response.data.error || "Error al actualizar el usuario");
+                throw new Error(response.data.error || 'Error al actualizar el usuario');
             }
-            notify('success', "Usuario actualizado correctamente");
-
+            notify('success', 'Usuario actualizado correctamente');
             setIsVisible(false);
-
-            setTimeout(() => {
-                window.location.reload();
-            }, 2500);
-
+            onUserUpdated();
         } catch (error) {
-            notify('error', "Error al actualizar el usuario");
+            if (error.response && error.response.data && error.response.data.message) {
+                notify('error', error.response.data.message);
+            } else {
+                notify('error', 'Error al actualizar el usuario');
+            }
         }
     };
+    
 
     const handleCancel = () => {
         setIsVisible(false);

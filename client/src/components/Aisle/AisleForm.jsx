@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep, ubicacionId, depositoId, categoriaId }) {
+function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep, ubicacionId, depositoId, categoriaId, onAisleUpdated }) {
 
     const [locations, setLocations] = useState([]);
     const [depositNames, setDepositNames] = useState([]);
@@ -31,11 +31,9 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
             if (event.key === 'Escape') {
                 onClose(); // Cierra el modal cuando se presiona Escape
             }
+            onAisleUpdated();
         };
-
         document.addEventListener('keydown', handleEscape);
-
-        // Limpia el evento cuando el componente se desmonta
         return () => {
             document.removeEventListener('keydown', handleEscape);
         };
@@ -132,6 +130,8 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
             }
             if (!isTutorial) {
                 notify('success', "¡Pasillo creado con éxito!");
+                onAisleUpdated();
+                onClose();
             }
             if (onClose) onClose();
             const idUbicacion = ubicacionId;
@@ -141,7 +141,8 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
             // Verificar si no estamos en el tutorial y recargar la página
             const isInTutorial = localStorage.getItem('inTutorial');
             if (!isInTutorial || isInTutorial === 'false') {
-                window.location.reload(); // Recargar la página si no estamos en el tutorial
+                onAisleUpdated();
+                onClose();
             }
         } catch (error) {
             console.error('Error al agregar el pasillo:', error);
@@ -170,8 +171,6 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                     notify('error', "No se pudo eliminar la categoría. Intenta nuevamente.");
                 }
             }
-
-            // Llamar a la función para volver al paso anterior en el tutorial
             handlePreviousStep();
         }
     };
@@ -231,82 +230,105 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                             <div className="flex items-center gap-4">
                                 <Label className="text-sm font-medium">Depósito</Label>
                                 <div className="flex w-full gap-4">
-                                    <Select id="aisle" onValueChange={(value) => handleSelectChange('idDeposito', value)}>
-                                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                            <SelectValue placeholder="Seleccione el depósito" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {depositNames.map((deposit) => (
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    {depositNames.length > 0 ? (
+                                        <Select id="aisle" onValueChange={(value) => handleSelectChange('idDeposito', value)}>
+                                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                                <SelectValue placeholder="Seleccione el depósito" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {depositNames.map((deposit) => (
+                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposit.id} value={deposit.id}>
+                                                        {deposit.nombre}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    ) : (
+                                        <p className="text-sipe-gray">No existen depósitos</p>
+                                    )}
                                 </div>
                             </div>
+
                         )}
 
                     {/* Select de lado 1 */}
                     <div className="flex items-center gap-4">
-
                         <div className="flex w-full gap-4">
-                            <Select id="lado1" onValueChange={(value) => handleSelectChange('idLado1', value)}>
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Seleccione el lado" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {sides.map((side) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>{side.descripcion}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-
-                    {/* Si se selecciona "Agregar Otro Lado", mostramos el segundo select */}
-                    {showSecondSide && (
-                        <div className="flex items-center gap-4">
-
-                            <div className="flex w-full gap-4">
-                                <Select id="lado2" onValueChange={(value) => handleSelectChange('idLado2', value)}>
+                            {depositNames.length === 0 ? (
+                                <div className="text-sipe-gray">No hay lados disponibles</div>
+                            ) : (
+                                <Select id="lado1" onValueChange={(value) => handleSelectChange('idLado1', value)}>
                                     <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                        <SelectValue placeholder="Seleccione el segundo lado" />
+                                        <SelectValue placeholder="Seleccione el lado" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {sides
-                                            .filter((side) => side.id !== formData.idLado1)
-                                            .map((side) => (
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>{side.descripcion}</SelectItem>
-                                            ))}
+                                        {sides.map((side) => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                key={side.id}
+                                                value={side.id}
+                                            >
+                                                {side.descripcion}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
-                            </div>
+                            )}
                         </div>
-                    )}
-
-                    {isTutorial ? <div className='flex flex-row justify-center gap-2'>
-                        <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
-                            {ubicaciones.find(u => u.id === formData.idUbicacion)?.nombre || "Sin ubicación seleccionada"}
-                        </span>
-                        <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
-                            {depositos.find(u => u.id === formData.idDeposito)?.nombreDeposito || "Sin depósito seleccionado"}
-                        </span>
-                        <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
-                            {categorias.find(u => u.id === formData.idCategoria)?.descripcion || "Sin categoría seleccionado"}
-                        </span>
                     </div>
-                        : ("")
-                    }
 
-                    {/* Botón para agregar otro lado */}
-                    {!showSecondSide && (
-                        <div className="flex justify-start">
-                            <Button variant="sipebuttonalt2" size="sipebutton" onClick={() => setShowSecondSide(true)}>
-                                AGREGAR LADO NUEVO
-                            </Button>
-                        </div>
+                    {/* Si hay lados disponibles, mostramos el botón y la lógica para agregar otro lado */}
+                    {depositNames.length > 0 && (
+                        <>
+                            {showSecondSide && (
+                                <div className="flex items-center gap-4">
+                                    <div className="flex w-full gap-4">
+                                        <Select id="lado2" onValueChange={(value) => handleSelectChange('idLado2', value)}>
+                                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                                <SelectValue placeholder="Seleccione el segundo lado" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {sides
+                                                    .filter((side) => side.id !== formData.idLado1)
+                                                    .map((side) => (
+                                                        <SelectItem
+                                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                            key={side.id}
+                                                            value={side.id}
+                                                        >
+                                                            {side.descripcion}
+                                                        </SelectItem>
+                                                    ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            )}
+                            {/* Botón para agregar otro lado */}
+                            {!showSecondSide && (
+                                <div className="flex justify-start">
+                                    <Button variant="sipebuttonalt2" size="sipebutton" onClick={() => setShowSecondSide(true)}>
+                                        AGREGAR LADO NUEVO
+                                    </Button>
+                                </div>
+                            )}
+                            {isTutorial ? <div className='flex flex-row justify-center gap-2'>
+                                <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
+                                    {ubicaciones.find(u => u.id === formData.idUbicacion)?.nombre || "Sin ubicación seleccionada"}
+                                </span>
+                                <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
+                                    {depositos.find(u => u.id === formData.idDeposito)?.nombreDeposito || "Sin depósito seleccionado"}
+                                </span>
+                                <span className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg px-4 py-2">
+                                    {categorias.find(u => u.id === formData.idCategoria)?.descripcion || "Sin categoría seleccionado"}
+                                </span>
+                            </div>
+                                : ("")
+                            }
+                        </>
                     )}
                 </CardContent>
+
                 <CardFooter className="flex justify-end gap-2">
                     <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
                         {isTutorial ? "VOLVER" : "CANCELAR"}

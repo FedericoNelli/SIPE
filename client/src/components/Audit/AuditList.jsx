@@ -40,7 +40,7 @@ function AuditList({ audits, isDeleteMode, selectedAudits, setSelectedAudits, ha
     return (
         <>
             {audits.length === 0 ? (
-                <p className="text-center text-white">No hay registros de auditoría</p>
+                <p className="text-center text-white">No hay registros de auditorías</p>
             ) : (
                 <Table className="w-full text-white">
                     <TableHeader>

@@ -17,7 +17,7 @@ function RecoveryCode() {
     useEffect(() => {
         let timer;
         if (resendTimeout > 0) {
-            timer = setTimeout(() => setResendTimeout(resendTimeout - 1), 1000);
+            timer = setTimeout(() => setResendTimeout(resendTimeout - 1), 500);
         }
         return () => clearTimeout(timer);
     }, [resendTimeout]);

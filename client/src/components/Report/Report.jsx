@@ -17,19 +17,20 @@ function Report({ notify }) {
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false); // Estado del modal de detalles
     const [loading, setLoading] = useState(true);
 
+    const loadReports = async () => {
+        try {
+            const response = await axios.get('http://localhost:8081/reports');
+            setReports(response.data);
+        } catch (error) {
+            console.error('Error fetching reports:', error);
+            notify('error', 'Error al cargar los informes');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Cargar los informes al montar
     useEffect(() => {
-        const loadReports = async () => {
-            try {
-                const response = await axios.get('http://localhost:8081/reports');
-                setReports(response.data);
-            } catch (error) {
-                console.error('Error fetching reports:', error);
-                notify('error', 'Error al cargar los informes');
-            } finally {
-                setLoading(false);
-            }
-        };
         loadReports();
     }, [notify]);
 
@@ -98,6 +99,7 @@ function Report({ notify }) {
                 <ReportList
                     isDeleteMode={isDeleteMode}
                     notify={notify}
+                    onReportUpdated={loadReports}
                     fetchReportDetails={fetchReportDetails}
                     setReports={setReports}
                     reports={currentReports} // Pasamos solo los informes de la página actual
@@ -121,7 +123,10 @@ function Report({ notify }) {
                 {/* Modal de formulario de generación de informes */}
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <ReportForm onClose={closeFormModal} notify={notify} />
+                        <ReportForm 
+                        onClose={closeFormModal} 
+                        notify={notify}
+                        onReportUpdated={loadReports} />
                     </div>
                 )}
 

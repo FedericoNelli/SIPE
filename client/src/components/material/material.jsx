@@ -35,7 +35,7 @@ function Material({ notify }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
 
-    useEffect(() => {
+    const loadMaterials = () => {
         axios.get('http://localhost:8081/materials')
             .then(response => {
                 setMaterials(response.data);
@@ -44,6 +44,12 @@ function Material({ notify }) {
             .catch(error => {
                 console.error('Error fetching materials:', error);
             });
+    }
+
+
+    useEffect(() => {
+
+        loadMaterials();
 
         axios.get('http://localhost:8081/deposit-locations')
             .then(response => setAvailableLocations(response.data))
@@ -123,6 +129,7 @@ function Material({ notify }) {
     const closeDetailModal = () => {
         setIsDetailModalOpen(false);
         setMaterialDetail(null);
+        loadMaterials();
     };
 
     const handleFilterChange = (e) => {
@@ -185,18 +192,19 @@ function Material({ notify }) {
                                 <Plus /> AÑADIR
                             </Button>
                         )}
-                            <>
-                                <Button onClick={openFilterModal} variant="secondary" className="bg-sipe-gray bg-opacity-50 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
-                                    <Filter /> FILTRAR
-                                </Button>
-                                <Button onClick={openModalSearch} variant="secondary" className="bg-transparent border border-sipe-white/20 text-sipe-white font-semibold px-2 py-2 flex items-center gap-2">
-                                    <Search /> BUSCAR
-                                </Button>
-                            </>
+                        <>
+                            <Button onClick={openFilterModal} variant="secondary" className="bg-sipe-gray bg-opacity-50 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
+                                <Filter /> FILTRAR
+                            </Button>
+                            <Button onClick={openModalSearch} variant="secondary" className="bg-transparent border border-sipe-white/20 text-sipe-white font-semibold px-2 py-2 flex items-center gap-2">
+                                <Search /> BUSCAR
+                            </Button>
+                        </>
                     </div>
                 </div>
-                <MaterialList 
+                <MaterialList
                     materials={currentMaterials}
+                    loadMaterials={loadMaterials}
                     notify={notify}
                 />
 
@@ -220,7 +228,7 @@ function Material({ notify }) {
                         <div className="bg-sipe-blue-dark rounded-lg p-6 w-full max-w-4xl">
                             <div className="flex justify-between items-center">
                                 <h2 className="text-lg font-bold text-sipe-white">Buscar material</h2>
-                                <button onClick={closeModalSearch} className="text-gray-300">X</button>
+                                <button onClick={closeModalSearch} className="text-sipe-gray">X</button>
                             </div>
                             <Input
                                 type="text"
@@ -277,7 +285,7 @@ function Material({ notify }) {
                                 exit={{ scale: 0.95, opacity: 0 }}
                                 transition={{ duration: 0.3 }}
                             >
-                                <MaterialForm onClose={closeFormModal} notify={notify} />
+                                <MaterialForm onClose={closeFormModal} notify={notify} loadMaterials={loadMaterials} />
                             </motion.div>
                         </motion.div>
                     )}
@@ -287,6 +295,7 @@ function Material({ notify }) {
                     {isDetailModalOpen && materialDetail && (
                         <MaterialDetailModal
                             isOpen={isDetailModalOpen}
+                            loadMaterials={loadMaterials}
                             onClose={closeDetailModal}
                             selectedMaterial={materialDetail}
                             notify={notify}

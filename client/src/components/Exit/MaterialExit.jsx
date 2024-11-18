@@ -63,10 +63,8 @@ function MaterialExit({ notify }) {
         if (filters.material) {
             // Descomponemos el valor de filters.material para obtener material, deposito y ubicación
             const [materialNombre, depositoNombre, ubicacionNombre] = filters.material.split(' - ');
-
             filtered = filtered.filter(exit => {
                 if (!exit.nombresMateriales) return false;
-
                 // Buscamos coincidencias exactas para nombre del material, depósito y ubicación
                 return exit.nombresMateriales.includes(materialNombre.trim()) &&
                     exit.depositoNombre === depositoNombre.trim() &&
@@ -77,7 +75,6 @@ function MaterialExit({ notify }) {
             const [day, month, year] = dateString.split('-');
             return `${year}-${month}-${day}`;
         };
-        
         if (filters.startDate) {
             filtered = filtered.filter(exit => {
                 const exitDateYMD = convertDateToYMD(exit.fechaSalida);
@@ -90,15 +87,9 @@ function MaterialExit({ notify }) {
                 return exitDateYMD <= filters.endDate;
             });
         }
-
         setFilteredExits(filtered);
         closeFilterModal();
     };
-
-
-
-
-
 
     const resetFilters = () => {
         setFilteredExits(materialExits);
@@ -141,7 +132,6 @@ function MaterialExit({ notify }) {
             notify('error', 'No hay salidas seleccionadas para eliminar');
             return;
         }
-
         axios.delete('http://localhost:8081/delete-exits', { data: { exitIds: selectedExits } })
             .then(() => {
                 notify('success', 'Salidas eliminadas correctamente');
@@ -195,17 +185,17 @@ function MaterialExit({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de salidas</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                    {userRole === 'Administrador' && (
-                        <>
-                            <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR</Button>
-                            <Button onClick={openEditModal} variant="sipemodalalt"> <PenLine /> EDITAR</Button>
-                            <Button onClick={toggleDeleteMode} variant="sipemodalalt2"> <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : ' ELIMINAR '}</Button>
+                        {userRole === 'Administrador' && (
+                            <>
+                                <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR</Button>
+                                <Button onClick={openEditModal} variant="sipemodalalt"> <PenLine /> EDITAR</Button>
+                                <Button onClick={toggleDeleteMode} variant="sipemodalalt2"> <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : ' ELIMINAR '}</Button>
                             </>
                         )}
                         <Button onClick={openFilterModal} variant="secondary" className="bg-sipe-gray bg-opacity-50 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
                             <Filter /> FILTRAR
                         </Button>
-                        
+
                     </div>
                 </div>
 

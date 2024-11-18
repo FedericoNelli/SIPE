@@ -1,20 +1,6 @@
-import { useEffect, useState } from 'react';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
-import axios from 'axios';
 
-function UserList({ onUserClick }) {
-    const [users, setUsers] = useState([]);
-    
-    useEffect(() => {
-        axios.get('http://localhost:8081/users')
-            .then(response => {
-                setUsers(response.data);
-            })
-            .catch(error => {
-                console.error('Error fetching users:', error);
-            });
-    }, []);
-
+function UserList({ onUserClick, users }) {
     return (
         <>
         {users.length === 0 ? (

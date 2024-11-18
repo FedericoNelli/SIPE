@@ -8,7 +8,7 @@ import { Button } from "@/components/Common/Button/Button";
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 
-function MaterialEditModal({ isOpen, onClose, notify, material }) {
+function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials }) {
     const [isVisible, setIsVisible] = useState(isOpen);
     const [depositLocations, setDepositLocations] = useState([]);
     const [depositNames, setDepositNames] = useState([]);
@@ -273,38 +273,44 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
 
     const handleSave = async () => {
         const { nombre, cantidad, matricula, bajoStock, estado, categoria, deposito, imagen } = formData;
+
         const formDataToSend = new FormData();
         if (nombre) formDataToSend.append('nombre', nombre);
         if (cantidad) formDataToSend.append('cantidad', cantidad);
         if (matricula) formDataToSend.append('matricula', matricula);
-        if (bajoStock) formDataToSend.append('bajoStock', bajoStock); // Aquí se añade bajoStock
+        if (bajoStock) formDataToSend.append('bajoStock', bajoStock);
         if (estado) formDataToSend.append('idEstado', estado);
         if (categoria) formDataToSend.append('idCategoria', categoria);
         if (deposito) formDataToSend.append('idDeposito', deposito);
         if (selectedSpace) formDataToSend.append('idEspacio', selectedSpace);
         if (imagen) formDataToSend.append('imagen', imagen);
-        if (isImageToDelete) formDataToSend.append('eliminarImagen', true); // Agrega esta línea
+        if (isImageToDelete) formDataToSend.append('eliminarImagen', true);
 
         try {
-            const token = localStorage.getItem('token'); // Asegúrate de que el token esté almacenado en localStorage o de otra manera accesible
+            const token = localStorage.getItem('token');
             const response = await axios.put(`http://localhost:8081/materiales/${material.id}`, formDataToSend, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
-                    'Authorization': `Bearer ${token}` // Incluye el token aquí
+                    'Authorization': `Bearer ${token}`
                 }
             });
-            if (response.status !== 200) {
-                throw new Error(response.data.error || "Error al actualizar Material");
+
+            if (response.data.success) {
+                // Notifica éxito solo si la clave "success" está presente
+                notify('success', response.data.success);
+                setIsVisible(false);
+                loadMaterials();
+            } else {
+                notify('error', response.data.error || 'Error inesperado al actualizar el material');
             }
-            notify('success', 'Material actualizado correctamente');
-            setIsVisible(false);
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
         } catch (error) {
-            notify('error', "Error al actualizar el material");
+            // Manejo de errores del catch, solo si ocurre una excepción
+            if (error.response && error.response.data && error.response.data.error) {
+                notify('error', error.response.data.error);
+            }
         }
     };
+
 
     const handleCancel = () => {
         setIsVisible(false);
@@ -375,16 +381,30 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="deposito" className="text-sm font-medium">Nombre del depósito</Label>
-                                        <Select id="deposito" value={formData.deposito} onValueChange={(value) => handleSelectChange('deposito', value)}>
-                                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                                <SelectValue placeholder="Selecciona el depósito" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {depositNames.map(deposit => (
-                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        {depositNames.length === 0 ? (
+                                            <p className="text-sipe-gray">No hay depósitos disponibles</p>
+                                        ) : (
+                                            <Select
+                                                id="deposito"
+                                                value={formData.deposito}
+                                                onValueChange={(value) => handleSelectChange('deposito', value)}
+                                            >
+                                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                                    <SelectValue placeholder="Selecciona el depósito" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {depositNames.map((deposit) => (
+                                                        <SelectItem
+                                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                            key={deposit.id}
+                                                            value={deposit.id}
+                                                        >
+                                                            {deposit.nombre}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="categoria" className="text-sm font-medium">Categoría</Label>
@@ -413,45 +433,71 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="aisle" className="text-sm font-medium">Pasillo</Label>
-                                        <Select
-                                            id="aisle"
-                                            value={selectedAisle}
-                                            onValueChange={(value) => handleAisleChange(value)}>
-                                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                                <SelectValue>
-                                                    {selectedAisle && aisles.find(aisle => aisle.id === selectedAisle) ? `Pasillo ${aisles.find(aisle => aisle.id === selectedAisle)?.numero}` : "Pasillo no seleccionado"}
-                                                </SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {aisles.map(aisle => (
-                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>{`Pasillo ${aisle.numero}`}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        {depositNames.length === 0 ? (
+                                            <p className="text-sipe-gray text-sm">No hay pasillos disponibles</p>
+                                        ) : (
+                                            <Select
+                                                id="aisle"
+                                                value={selectedAisle}
+                                                onValueChange={(value) => handleAisleChange(value)}
+                                            >
+                                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                                    <SelectValue>
+                                                        {selectedAisle && aisles.find(aisle => aisle.id === selectedAisle)
+                                                            ? `Pasillo ${aisles.find(aisle => aisle.id === selectedAisle)?.numero}`
+                                                            : "Pasillo no seleccionado"}
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {aisles.map(aisle => (
+                                                        <SelectItem
+                                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                            key={aisle.id}
+                                                            value={aisle.id}
+                                                        >
+                                                            {`Pasillo ${aisle.numero}`}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="shelf" className="text-sm font-medium">Estantería</Label>
-                                        <Select
-                                            id="shelf"
-                                            value={selectedShelf}
-                                            onValueChange={(value) => handleShelfChange(value)}>
-                                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                                <SelectValue>
-                                                    {selectedShelf && shelves.find(shelf => shelf.id === selectedShelf) ? `Estantería ${shelves.find(shelf => shelf.id === selectedShelf)?.numero}` : "Estantería no seleccionada"}
-                                                </SelectValue>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {shelves.map(shelf => (
-                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={shelf.id} value={shelf.id}>{`Estantería ${shelf.numero}`}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-
+                                        {depositNames.length === 0 ? (
+                                            <p className="text-sipe-gray text-sm">No hay estanterías disponibles</p>
+                                        ) : (
+                                            <Select
+                                                id="shelf"
+                                                value={selectedShelf}
+                                                onValueChange={(value) => handleShelfChange(value)}
+                                            >
+                                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                                    <SelectValue>
+                                                        {selectedShelf && shelves.find(shelf => shelf.id === selectedShelf)
+                                                            ? `Estantería ${shelves.find(shelf => shelf.id === selectedShelf)?.numero}`
+                                                            : "Estantería no seleccionada"}
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {shelves.map(shelf => (
+                                                        <SelectItem
+                                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                            key={shelf.id}
+                                                            value={shelf.id}
+                                                        >
+                                                            {`Estantería ${shelf.numero}`}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
                                     </div>
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="grid gap-2">
                                             <Label htmlFor="space" className="text-sm font-medium">Espacio</Label>
-                                            {spaces.length > 0 ? (
+                                            {spaces.length > 0 && depositNames.length > 0 ? (
                                                 <Select
                                                     id="space"
                                                     value={selectedSpace}
@@ -474,7 +520,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material }) {
                                                     </SelectContent>
                                                 </Select>
                                             ) : (
-                                                <p className="text-sm text-gray-500">Estantería sin espacios, por favor vuelva a generar los espacios</p>
+                                                <p className="text-sm text-sipe-gray">Estantería sin espacios, por favor vuelva a generar los espacios</p>
                                             )}
                                         </div>
                                     </div>

@@ -132,7 +132,6 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
             notify('error', 'La cantidad a mover no puede ser mayor a la cantidad disponible');
             return;
         }
-
         try {
             await axios.put(`http://localhost:8081/edit-movements/${selectedMovementId}`, {
                 numero: movementNumber,
@@ -147,7 +146,11 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
             onMovementUpdated(); // Recargar lista de movimientos
             onClose(); // Cerrar modal
         } catch (error) {
-            notify('error', 'Error al actualizar el movimiento');
+            if (error.response && error.response.data && error.response.data.error) {
+                notify('error', error.response.data.error)
+            } else {
+                notify('error', 'Error al actualizar el movimiento');
+            }
         }
     };
 
@@ -241,7 +244,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                         <SelectContent>
                                             {materials.map((material) => (
                                                 <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id}>
-                                                    {material.nombre}
+                                                    {`${material.nombre} - ${material.depositoNombre} - ${material.ubicacionNombre}`}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>

@@ -44,6 +44,7 @@ function MovementConfirmModal({ movement, onClose, notify, onMovementConfirmed, 
             notify('success', '¡Movimiento confirmado exitosamente!');
             if (onClose) onClose();
             if (onMovementConfirmed) onMovementConfirmed();
+            window.location.reload();
 
         } catch (error) {
             console.error('Error al confirmar el movimiento:', error);
