@@ -49,15 +49,6 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
         axios.get('http://localhost:8081/deposit-locations')
             .then(response => {
                 setLocations(response.data);
-            })
-            .catch(error => {
-                console.error('Error fetching locations:', error);
-                notify('error', 'Error al cargar ubicaciones');
-            });
-
-        axios.get('http://localhost:8081/deposit-locations')
-            .then(response => {
-                setLocations(response.data);
                 setUbicaciones(response.data);
             })
             .catch(error => {
@@ -176,7 +167,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
             const idCategoria = categoriaId;
             const idPasillo = pasilloId;
 
-            if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria, idPasillo, response.data.result.id); // Ejecutar onSubmit después del delay
+            if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria, idPasillo, response.data.id); // Ejecutar onSubmit después del delay
 
             // Verificar si no estamos en el tutorial y recargar la página
             const isInTutorial = localStorage.getItem('inTutorial');
@@ -336,17 +327,17 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                             {/* Select de Pasillo */}
                             <div className="flex items-center gap-2">
                                 <Label className="text-sm font-medium">Pasillo</Label>
-                                {(isTutorial ? pasillos.length : aisles.length) > 0 && deposits.length > 0 ? (
-                                    <Select
-                                        onValueChange={(value) => {
-                                            handleSelectChange('idPasillo', value);
-                                            fetchSidesByAisle(value);
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-36 bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                            <SelectValue placeholder="Pasillo" />
-                                        </SelectTrigger>
-                                        {isTutorial ? (
+                                {isTutorial ? (
+                                    pasillos.length > 0 ? (
+                                        <Select
+                                            onValueChange={(value) => {
+                                                handleSelectChange('idPasillo', value);
+                                                fetchSidesByAisle(value);
+                                            }}
+                                        >
+                                            <SelectTrigger className="w-36 bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                                <SelectValue placeholder="Pasillo" />
+                                            </SelectTrigger>
                                             <SelectContent className="bg-sipe-blue-light">
                                                 {pasillos.map((aisle) => (
                                                     <SelectItem
@@ -358,7 +349,21 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
-                                        ) : (
+                                        </Select>
+                                    ) : (
+                                        <p className="text-sipe-gray">No existen pasillos</p>
+                                    )
+                                ) : (
+                                    aisles.length > 0 && deposits.length > 0 ? (
+                                        <Select
+                                            onValueChange={(value) => {
+                                                handleSelectChange('idPasillo', value);
+                                                fetchSidesByAisle(value);
+                                            }}
+                                        >
+                                            <SelectTrigger className="w-36 bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                                <SelectValue placeholder="Pasillo" />
+                                            </SelectTrigger>
                                             <SelectContent className="bg-sipe-blue-light">
                                                 {aisles.map((aisle) => (
                                                     <SelectItem
@@ -370,39 +375,66 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
-                                        )}
-                                    </Select>
-                                ) : (
-                                    <p className="text-sipe-gray">No existen pasillos</p>
+                                        </Select>
+                                    ) : (
+                                        <p className="text-sipe-gray">No existen pasillos</p>
+                                    )
                                 )}
                             </div>
+
 
                             {/* Select de Lado del Pasillo */}
                             <div className="flex items-center gap-2">
                                 <Label className="text-sm font-medium">Lado</Label>
-                                {aisles.length && deposits.length > 0 ? (
-                                    <Select
-                                        onValueChange={(value) => handleSelectChange('idLado', value)}
-                                    >
-                                        <SelectTrigger className="w-36 bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                            <SelectValue placeholder="Lado" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-sipe-blue-light">
-                                            {sides.map((side) => (
-                                                <SelectItem
-                                                    className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
-                                                    key={side.id}
-                                                    value={side.id}
-                                                >
-                                                    {side.descripcion}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                {isTutorial ? (
+                                    sides.length > 0 ? (
+                                        <Select
+                                            onValueChange={(value) => handleSelectChange('idLado', value)}
+                                        >
+                                            <SelectTrigger className="w-36 bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                                <SelectValue placeholder="Lado" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-sipe-blue-light">
+                                                {sides.map((side) => (
+                                                    <SelectItem
+                                                        className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                        key={side.id}
+                                                        value={side.id}
+                                                    >
+                                                        {side.descripcion}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    ) : (
+                                        <div className="text-sipe-gray">No existen lados disponibles</div>
+                                    )
                                 ) : (
-                                    <div className="text-sipe-gray">No existen lados disponibles</div>
+                                    aisles.length && deposits.length> 0 ? (
+                                        <Select
+                                            onValueChange={(value) => handleSelectChange('idLado', value)}
+                                        >
+                                            <SelectTrigger className="w-36 bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                                <SelectValue placeholder="Lado" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-sipe-blue-light">
+                                                {sides.map((side) => (
+                                                    <SelectItem
+                                                        className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                        key={side.id}
+                                                        value={side.id}
+                                                    >
+                                                        {side.descripcion}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    ) : (
+                                        <div className="text-sipe-gray">No existen lados disponibles</div>
+                                    )
                                 )}
                             </div>
+
                         </div>
 
                     </div>
