@@ -9,7 +9,7 @@ function MainDashboard() {
     const [lowStockMaterials, setLowStockMaterials] = useState(0);
     const [totalEstanterias, setTotalEstanterias] = useState(0);
     const [lastMaterial, setLastMaterial] = useState('');
-    const [totalAuditorias, setTotalAuditorias] = useState(0); // Nuevo estado
+    const [totalAuditorias, setTotalAuditorias] = useState(0);
     const [updateTrigger, setUpdateTrigger] = useState(false);
     const [totalInformes, setTotalInformes] = useState(0);
     const [lastOutput, setLastOutput] = useState(null);
@@ -50,19 +50,27 @@ function MainDashboard() {
 
 
                 const lastMaterialOutputResponse = await axios.get('http://localhost:8081/last-material-output');
-                setLastOutput({
-                    fecha: lastMaterialOutputResponse.data.fecha
-                });
+                if (lastMaterialOutputResponse.data.data === null) {
+                    setLastOutput(null);
+                } else {
+                    setLastOutput({
+                        fecha: lastMaterialOutputResponse.data.data.fecha,
+                    });
+                }
 
                 const lastMovedMaterialResponse = await axios.get('http://localhost:8081/last-moved-material');
-                setLastMovedMaterial({
-                    nombre: lastMovedMaterialResponse.data.materialNombre,
-                });
+
+                if (lastMovedMaterialResponse.data.data === null) {
+                    setLastMovedMaterial(null);
+                } else {
+                    setLastMovedMaterial({
+                        nombre: lastMovedMaterialResponse.data.data.materialNombre,
+                    });
+                }
             } catch (error) {
                 console.error('Error al obtener los datos:', error);
             }
         };
-
         fetchData();
     }, [updateTrigger]);
 
@@ -107,8 +115,8 @@ function MainDashboard() {
                 <CustomCard
                     Icon={ArrowUpRight}
                     colSpan={1}
-                    title={lastMovedMaterial ? "Último material movido" : "No existen movimientos de material"}
-                    totalElement={lastMovedMaterial ? `${lastMovedMaterial.nombre}\n`: "Sin información disponible"}
+                    title={lastMovedMaterial === null ? "No existen movimientos de material" : "Último material movido"}
+                    totalElement={lastMovedMaterial ? `${lastMovedMaterial.nombre}\n` : ''}
                     buttonText={buttonSection[0].label}
                     buttonDisabled={buttonSection[0].disabled}
                     onButtonClick={() => handleButtonClick(buttonSection[0].path)}
@@ -118,11 +126,12 @@ function MainDashboard() {
                     Icon={CornerDownRight}
                     colSpan={1}
                     title={lastOutput ? "Última salida realizada" : "No existen salidas registradas"}
-                    totalElement={lastOutput?.fecha ? `Fecha: ${new Date(lastOutput.fecha).toLocaleDateString()}` : "Sin información disponible"}
+                    totalElement={lastOutput?.fecha ? `Fecha: ${new Date(lastOutput.fecha).toLocaleDateString()}` : ""}
                     buttonText={buttonSection[1].label}
                     buttonDisabled={buttonSection[1].disabled}
                     onButtonClick={() => handleButtonClick(buttonSection[1].path)}
                 />
+
                 <CustomCard
                     Icon={Package}
                     colSpan={2}
@@ -131,7 +140,7 @@ function MainDashboard() {
                     buttonText={buttonSection[2].label}
                     buttonDisabled={buttonSection[2].disabled}
                     additionalDescription="Materiales en depósitos: datos clave para optimizar la gestión de recursos"
-                    onButtonClick={() => handleButtonClick(buttonSection[2].path)} 
+                    onButtonClick={() => handleButtonClick(buttonSection[2].path)}
                 />
                 <CustomCard
                     Icon={TriangleAlert}
@@ -141,7 +150,7 @@ function MainDashboard() {
                     buttonText={buttonSection[2].label}
                     buttonDisabled={buttonSection[2].disabled}
                     additionalDescription="Cantidad de materiales que están por debajo del nivel mínimo de stock"
-                    onButtonClick={() => handleButtonClick(buttonSection[2].path)} 
+                    onButtonClick={() => handleButtonClick(buttonSection[2].path)}
                 />
                 <CustomCard
                     Icon={AlignStartVertical}

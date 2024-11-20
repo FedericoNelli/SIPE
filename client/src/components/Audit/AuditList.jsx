@@ -55,7 +55,7 @@ function AuditList({ audits, isDeleteMode, selectedAudits, setSelectedAudits, ha
                                 </TableHead>
                             )}
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Fecha</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Usuario</TableHead>
+                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Usuario que realizó la acción</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Tipo de Acción</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Comentario</TableHead>
                         </TableRow>

@@ -204,27 +204,27 @@ function UserEditModal({ isOpen, onClose, user, notify, onUserUpdated }) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="nombre" className="text-sm font-medium">Nombre</Label>
-                                        <Input id="nombre" placeholder="Ingresa el nombre" value={formData.nombre} onChange={handleInputChange} />
+                                        <Input id="nombre" className="border-b-1" placeholder="Ingresa el nombre" value={formData.nombre} onChange={handleInputChange} />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="apellido" className="text-sm font-medium">Apellido</Label>
-                                        <Input id="apellido" placeholder="Ingresa el apellido" value={formData.apellido} onChange={handleInputChange} />
+                                        <Input id="apellido" className="border-b-1" placeholder="Ingresa el apellido" value={formData.apellido} onChange={handleInputChange} />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="legajo" className="text-sm font-medium">Legajo</Label>
-                                        <Input id="legajo" placeholder="Ingresa el legajo" value={formData.legajo} onChange={handleInputChange} />
+                                        <Input id="legajo" className="border-b-1" placeholder="Ingresa el legajo" value={formData.legajo} onChange={handleInputChange} />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="nombre_usuario" className="text-sm font-medium">Nombre de usuario</Label>
-                                        <Input id="nombre_usuario" placeholder="Ingresa el nombre de usuario" value={formData.nombre_usuario} onChange={handleInputChange} />
+                                        <Input id="nombre_usuario" className="border-b-1" placeholder="Ingresa el nombre de usuario" value={formData.nombre_usuario} onChange={handleInputChange} />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                                        <Input id="email" placeholder="Ingresa el email" value={formData.email} onChange={handleInputChange} />
+                                        <Input id="email" className="border-b-1" placeholder="Ingresa el email" value={formData.email} onChange={handleInputChange} />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="rol" className="text-sm font-medium">Rol</Label>

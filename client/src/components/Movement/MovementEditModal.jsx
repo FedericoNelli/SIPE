@@ -388,7 +388,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                            </>
+                            </div>
                         ) : (
                             // Muestra el mensaje si no hay movimientos
                             <p className="text-gray-500 text-center">No hay movimientos generados.</p>

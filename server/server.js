@@ -1061,11 +1061,15 @@ app.get('/last-material-output', (req, res) => {
         }
 
         if (results.length === 0) {
-            return res.status(404).json({ message: 'No hay registros de salidas de material' });
+            // Devuelve un mensaje y `data` como null cuando no hay registros
+            return res.json({ message: 'No hay registros de salidas de material', data: null });
         }
-        res.json(results[0]);
+
+        // Devuelve el resultado dentro de un objeto `data` para consistencia
+        res.json({ data: results[0] });
     });
 });
+
 
 
 
@@ -1538,11 +1542,11 @@ app.post('/addUser', upload.single('imagen'), (req, res) => {
     try {
         decoded = jwt.verify(token, SECRET_KEY);
     } catch (err) {
-        return res.status(401).json({message: 'Por favor inicie sesión nuevamente'});
+        return res.status(401).json({ message: 'Por favor inicie sesión nuevamente' });
     }
 
     if (decoded.rol !== 'Administrador') {
-        return res.status(403).json({message: 'Permiso denegado'});
+        return res.status(403).json({ message: 'Permiso denegado' });
     }
 
     const checkUserQuery = `
@@ -3262,12 +3266,10 @@ app.get('/last-moved-material', (req, res) => {
             mat.nombre AS materialNombre,
             MAX(m.fechaMovimiento) AS ultimaFecha
         FROM Movimiento m
-
         LEFT JOIN Material mat ON m.idMaterial = mat.id
         WHERE m.confirmado = TRUE
         GROUP BY m.idMaterial
         ORDER BY ultimaFecha DESC
-
         LIMIT 1;
     `;
 
@@ -3278,12 +3280,15 @@ app.get('/last-moved-material', (req, res) => {
         }
 
         if (results.length === 0) {
-            return res.status(404).json({ message: 'No existen movimientos de material registrados' });
+            // Devolvemos un estado 200 con un mensaje y datos nulos
+            return res.json({ message: 'No existen movimientos de material registrados', data: null });
         }
 
-        res.json(results[0]);
+        // Devolvemos el resultado dentro de un objeto 'data' para consistencia
+        res.json({ data: results[0] });
     });
 });
+
 
 
 

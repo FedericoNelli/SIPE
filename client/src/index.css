@@ -52,12 +52,12 @@ root, html, body{
   }
 
   input:-webkit-autofill {
-    -webkit-box-shadow: 0 0 0 30px #1B2632 inset; /* Cambia 'white' por el color deseado */
-    -webkit-text-fill-color: #EEE9DF; /* Cambia 'black' por el color del texto deseado */
+    -webkit-box-shadow: 0 0 0 30px #1B2632 inset; 
+    -webkit-text-fill-color: #EEE9DF; 
   }
 
   input:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0 30px #1B2632 inset; /* Cambia 'white' por el color deseado */
-    -webkit-text-fill-color: #EEE9DF; /* Cambia 'black' por el color del texto deseado */
+    -webkit-box-shadow: 0 0 0 30px #1B2632 inset;
+    -webkit-text-fill-color: #EEE9DF; 
   }
 }

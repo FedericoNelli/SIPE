@@ -42,7 +42,7 @@ function CustomCard({
     }, []);
 
     return (
-        <Card className={`flex flex-col items-center justify-center bg-sipe-white bg-opacity-10 shadow-[6px_6px_8px_rgba(0,0,0,0.25)] text-sipe-white ${colSpanClass}`}>
+        <Card className={`flex flex-col items-center justify-center text-center bg-sipe-white bg-opacity-10 shadow-[6px_6px_8px_rgba(0,0,0,0.25)] text-sipe-white ${colSpanClass}`}>
             <CardHeader className="flex flex-col items-center">
                 {Icon && <Icon size={iconSize} color="#FFB162" />} {/* Icono responsivo */}
                 <CardTitle className="text-base 2xl:text-2xl font-light">{title}</CardTitle>

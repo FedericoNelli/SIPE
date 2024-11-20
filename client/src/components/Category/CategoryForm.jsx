@@ -56,11 +56,16 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prevData) => ({
-            ...prevData,
-            [name]: value
-        }));
+        const regex = /^[a-zA-ZáéíóúÁÉÍÓÚ\s]*$/;
+
+        if (regex.test(value)) {
+            setFormData((prevData) => ({
+                ...prevData,
+                [name]: value
+            }));
+        }
     };
+
 
     const handleSubmit = async () => {
         if (isTutorial && formData.descripcion.trim() === '') {

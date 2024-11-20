@@ -4,9 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Common/Select/Select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/Common/Dropdown/Dropdown-menu";
 import { Button } from "@/components/Common/Button/Button";
-import { X } from 'lucide-react';
 
 const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
     const [categories, setCategories] = useState([]);
@@ -17,20 +15,15 @@ const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.key === 'Escape') {
-                onClose(); // Llamar a la función onClose cuando se presiona Escape
+                onClose();
             }
         };
-
-        // Agregar el event listener
         window.addEventListener('keydown', handleKeyDown);
-
-        // Eliminar el event listener al desmontar el componente
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [onClose]);
 
-    // Cargar las categorías cuando se abre el modal
     useEffect(() => {
         const fetchCategories = async () => {
             try {
@@ -44,8 +37,16 @@ const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
         fetchCategories();
     }, []);
 
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        const regex = /^[a-zA-ZáéíóúÁÉÍÓÚ\s]*$/;
+        if (!regex.test(newDescription)) {
+            notify('error', 'La descripción solo puede contener letras y espacios.');
+            return;
+        }
+
         if (!selectedCategory || !newDescription) {
             notify('error', 'Debes seleccionar una categoría y proporcionar una nueva descripción.');
             return;

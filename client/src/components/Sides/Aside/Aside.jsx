@@ -86,63 +86,70 @@ function Aside() {
         }
     };
 
+    const currentYear = new Date().getFullYear();
+
     return (
-        <aside className="w-64 bg-sipe-blue-light text-sipe-white min-h-full pl-12 py-8">
-            <div>
-                <Link to="/">
-                    <img className="w-40 mb-12 mr-20" src="src/assets/images/logo/LogoSIPE.png" alt="SIPE" />
-                </Link>
-                <section className='flex flex-col items-start'>
-                    {sections
-                        .filter(section => section.roles.includes(rol))
-                        .map((section, index) => (
-                            <div key={index} className='w-full'>
-                                {section.subMenu ? (
-                                    <div>
-                                        <button
-                                            onClick={() => toggleSubMenu(section.name)}
-                                            className={`w-full text-left font-light  rounded-l-lg px-3 py-3 mb-2 transition ease-in-out duration-300 flex justify-between items-center hover:bg-sipe-gray/20 hover:text-sipe-white text-zinc-400`}
+        <div className="relative h-full">
+            <aside className="w-64 bg-sipe-blue-light text-sipe-white min-h-full pl-12 py-8 flex flex-col justify-between">
+                <div>
+                    <Link to="/">
+                        <img className="w-40 mb-12 mr-20" src="src/assets/images/logo/LogoSIPE.png" alt="SIPE" />
+                    </Link>
+                    <section className='flex flex-col items-start'>
+                        {sections
+                            .filter(section => section.roles.includes(rol))
+                            .map((section, index) => (
+                                <div key={index} className='w-full'>
+                                    {section.subMenu ? (
+                                        <div>
+                                            <button
+                                                onClick={() => toggleSubMenu(section.name)}
+                                                className={`w-full text-left font-light rounded-l-lg px-3 py-3 mb-2 transition ease-in-out duration-300 flex justify-between items-center hover:bg-sipe-gray/20 hover:text-sipe-white text-zinc-400`}
+                                            >
+                                                <span className='flex flex-row gap-2 items-center'>
+                                                    {section.icon}
+                                                    {section.label}
+                                                </span>
+                                                {openSubMenu === section.name ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                            </button>
+                                            {openSubMenu === section.name && (
+                                                <div className="ml-8">
+                                                    {section.subMenu.map((subItem, subIndex) => (
+                                                        <NavLink
+                                                            key={subIndex}
+                                                            to={subItem.path}
+                                                            className={({ isActive }) =>
+                                                                `flex items-center text-left font-light text-sipe-white rounded-l-lg px-3 py-2 mb-2 transition ease-in-out duration-300 before:content-['●'] before:mr-2 before:mb-0.5 ${isActive ? 'bg-sipe-orange-dark text-sipe-white' : 'hover:bg-sipe-gray/20 hover:text-sipe-white text-zinc-400'}`
+                                                            }
+                                                        >
+                                                            {subItem.name}
+                                                        </NavLink>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <NavLink
+                                            to={section.path}
+                                            className={({ isActive }) =>
+                                                `w-full text-left font-light text-sipe-white rounded-l-lg px-3 py-3 mb-2 transition ease-in-out duration-300 flex items-center gap-2 ${isActive ? 'bg-sipe-orange-dark text-sipe-white' : 'hover:bg-sipe-gray/20 hover:text-sipe-white text-zinc-400'}`
+                                            }
                                         >
                                             <span className='flex flex-row gap-2 items-center'>
                                                 {section.icon}
                                                 {section.label}
                                             </span>
-                                            {openSubMenu === section.name ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                        </button>
-                                        {openSubMenu === section.name && (
-                                            <div className="ml-8">
-                                                {section.subMenu.map((subItem, subIndex) => (
-                                                    <NavLink
-                                                        key={subIndex}
-                                                        to={subItem.path}
-                                                        className={({ isActive }) =>
-                                                            `flex items-center text-left font-light text-sipe-white rounded-l-lg px-3 py-2 mb-2 transition ease-in-out duration-300 before:content-['●'] before:mr-2 before:mb-0.5 ${isActive ? 'bg-sipe-orange-dark text-sipe-white' : 'hover:bg-sipe-gray/20 hover:text-sipe-white text-zinc-400'}`
-                                                        }
-                                                    >
-                                                        {subItem.name}
-                                                    </NavLink>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <NavLink
-                                        to={section.path}
-                                        className={({ isActive }) =>
-                                            `w-full text-left font-light text-sipe-white rounded-l-lg px-3 py-3 mb-2 transition ease-in-out duration-300 flex items-center gap-2 ${isActive ? 'bg-sipe-orange-dark text-sipe-white' : 'hover:bg-sipe-gray/20 hover:text-sipe-white text-zinc-400'}`
-                                        }
-                                    >
-                                        <span className='flex flex-row gap-2 items-center'>
-                                            {section.icon}
-                                            {section.label}
-                                        </span>
-                                    </NavLink>
-                                )}
-                            </div>
-                        ))}
-                </section>
+                                        </NavLink>
+                                    )}
+                                </div>
+                            ))}
+                    </section>
+                </div>
+            </aside>
+            <div className='bg-sipe-blue-light absolute z-20 bottom-0 left-0 w-64 mb-3'>
+                <p className='font-thin text-sipe-gray opacity-90 text-xs text-center'><strong>SIPE {currentYear} - Version 1.0</strong></p>
             </div>
-        </aside>
+        </div>
     );
 }
 

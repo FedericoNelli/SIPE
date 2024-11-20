@@ -78,7 +78,7 @@ function UserDetailModal({ isOpen, onClose, selectedUser, notify, onUserUpdated 
                     className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 backdrop-blur-sm"
                 >
                     <motion.div
-                        className="bg-sipe-blue-dark rounded-xl p-6 w-[500px] max-w-full shadow-xl relative flex flex-col items-center justify-center"
+                        className="bg-sipe-blue-dark rounded-xl p-6 w-[550px] max-w-full shadow-xl relative flex flex-col items-center justify-center"
                         onClick={(e) => e.stopPropagation()}
                         initial={{ scale: 0.95, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}

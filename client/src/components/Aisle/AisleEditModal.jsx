@@ -232,14 +232,14 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                             >
                                                 {deposit.nombre}
                                             </SelectItem>
-                                          ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             ) : (
                                 <div className="text-sipe-gray">No hay depósitos disponibles</div>
                             )}
                         </div>
+
                         {deposits.length === 0 ? (
                             <div className="text-sipe-gray">No hay lados disponibles</div>
                         ) : (

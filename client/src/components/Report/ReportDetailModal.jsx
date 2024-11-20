@@ -1,30 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, Bar, BarChart, Cell, LabelList, Pie, PieChart, Label } from "recharts";
-import { X } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/Common/Chart/Chart";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/Common/Button/Button";
-import { format } from "date-fns"; // Usar para formatear fechas
+import { format } from "date-fns";
 
 function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafico, selectedMaterial, dateRange, selectedOption, selectedOption1 }) {
     const [chartData, setChartData] = useState([]);
-    const [materialDetails, setMaterialDetails] = useState([]); // Para los detalles de materiales en los informes de salida de material y movimientos
-
+    const [materialDetails, setMaterialDetails] = useState([]);
 
     function generateRandomColor() {
-        const isBlue = Math.random() > 0.5; // 50% probabilidad de azul o naranja
+        const isBlue = Math.random() > 0.5;
     
         if (isBlue) {
             // Generar un color azul (R y G bajos, B alto)
-            const r = Math.floor(Math.random() * 50); // Bajo R
-            const g = Math.floor(Math.random() * 50); // Bajo G
-            const b = Math.floor(Math.random() * 206) + 50; // Alto B
+            const r = Math.floor(Math.random() * 50); 
+            const g = Math.floor(Math.random() * 50); 
+            const b = Math.floor(Math.random() * 206) + 50; 
             return `rgb(${r}, ${g}, ${b})`;
         } else {
             // Generar un color naranja (R y G altos, B bajo)
-            const r = Math.floor(Math.random() * 156) + 100; // Alto R
-            const g = Math.floor(Math.random() * 156) + 100; // Alto G
-            const b = Math.floor(Math.random() * 50); // Bajo B
+            const r = Math.floor(Math.random() * 156) + 100; 
+            const g = Math.floor(Math.random() * 156) + 100; 
+            const b = Math.floor(Math.random() * 50); 
             return `rgb(${r}, ${g}, ${b})`;
         }
     }
@@ -247,8 +245,8 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                             data={chartData}
                                             dataKey="value"
                                             nameKey="name"
-                                            innerRadius={100}
-                                            outerRadius={200}
+                                            innerRadius={75}
+                                            outerRadius={125}
                                             strokeWidth={5}
                                             isAnimationActive={true}
                                             label={({ name, value, cx, cy, midAngle, outerRadius }) => {
