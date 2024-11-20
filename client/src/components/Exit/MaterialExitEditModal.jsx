@@ -218,23 +218,20 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
 
   return (
     <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl relative">
-      <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
-        <X size={14} strokeWidth={4} onClick={onClose} />
-      </div>
       <CardHeader>
-        <CardTitle className="text-3xl font-bold mb-2 text-center">Editar Salida de Material</CardTitle>
+        <CardTitle className="text-3xl font-bold mb-2 text-center">Editar salida de material</CardTitle>
         <hr />
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid gap-2 mt-4">
-          <Label htmlFor="numeroSalida" className="text-sm font-medium">Número de Salida</Label>
+          <Label htmlFor="numeroSalida" className="text-sm font-medium">Número de salida</Label>
 
           {salidas.length > 0 ? (
             <Select onValueChange={handleExitSelection}>
               <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                 <SelectValue placeholder="Selecciona un número de salida" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-sipe-blue-light">
                 {salidas.map(salida => (
                   <SelectItem className="bg-sipe-blue-light text-sipe-white" key={salida.salidaId} value={salida.salidaId}>
                     {salida.numero}
@@ -251,7 +248,7 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
         {salidaData && (
           <>
             <div className="grid gap-2 mt-4">
-              <Label htmlFor="editNumeroSalida" className="text-sm font-medium">Nuevo número de Salida</Label>
+              <Label htmlFor="editNumeroSalida" className="text-sm font-medium">Nuevo número de salida</Label>
               <Input
                 type="text"
                 value={exitNumber}
@@ -261,7 +258,7 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
               />
             </div>
             <div className="grid gap-2 mt-4">
-              <Label htmlFor="fecha" className="text-sm font-medium">Fecha de Salida</Label>
+              <Label htmlFor="fecha" className="text-sm font-medium">Fecha de salida</Label>
               <Input
                 type="date"
                 value={selectedDate}
@@ -276,7 +273,7 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                   <SelectValue placeholder="Selecciona una ubicación" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-sipe-blue-light">
                   {ubicaciones.map(location => (
                     <SelectItem key={location.id} value={location.id}>{location.nombre}</SelectItem>
                   ))}
@@ -290,7 +287,7 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                   <SelectValue placeholder="Selecciona un depósito" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-sipe-blue-light">
                   {depositos.map(deposit => (
                     <SelectItem key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
                   ))}
@@ -337,7 +334,7 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
                   <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg mt-2">
                     <SelectValue placeholder="Selecciona un material" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-sipe-blue-light">
                     {materials.filter(material => !selectedMaterials.some(m => m.id === material.id)).map(material => (
                       <SelectItem key={material.id} value={material.id}>{material.nombre} (Disponible: {material.cantidad})</SelectItem>
                     ))}
@@ -366,7 +363,7 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                   <SelectValue placeholder="Selecciona un usuario" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-sipe-blue-light">
                   {usuarios.map(user => (
                     <SelectItem key={user.id} value={user.id}>{user.nombre}</SelectItem>
                   ))}

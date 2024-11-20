@@ -4,6 +4,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@
 import UserForm from '@/components/User/UserForm';
 import UserList from '@/components/User/UserList';
 import UserDetailModal from '@/components/User/UserDetailModal'; // Importa el nuevo componente de detalle de usuario
+import { Plus } from 'lucide-react';
 import axios from 'axios';
 
 function User({ notify }) {
@@ -64,7 +65,7 @@ function User({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de usuarios</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} variant="sipemodal">NUEVO USUARIO</Button>
+                        <Button onClick={openFormModal} variant="sipemodal"><Plus /> NUEVO USUARIO</Button>
                     </div>
                 </div>
                 <UserList users={currentUsers} onUserClick={openDetailModal} notify={notify} />
@@ -82,7 +83,7 @@ function User({ notify }) {
                     </Pagination>
                 </div>
                 {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <UserForm onClose={closeFormModal} notify={notify} />
                     </div>
                 )}

@@ -166,12 +166,12 @@ function Shelf({ notify }) {
                     </Pagination>
                 </div>
                 {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <ShelfForm onClose={closeFormModal} notify={notify} />
                     </div>
                 )}
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <ShelfEditModal onClose={closeEditModal} onShelfUpdated={onShelfUpdated} notify={notify} />
                     </div>
                 )}

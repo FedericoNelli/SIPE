@@ -97,9 +97,9 @@ function Navbar() {
 
     function obtenerSaludo() {
         const hora = new Date().getHours();
-        if (hora < 12) {
+        if (hora > 6 && hora < 14) {
             return "Buen día";
-        } else if (hora < 18) {
+        } else if (hora < 20) {
             return "Buenas tardes";
         } else {
             return "Buenas noches";
@@ -110,7 +110,6 @@ function Navbar() {
     return (
         <div className="flex justify-between items-center text-sipe-white font-light p-10 px-10">
             <h1 className="text-4xl font-bold">{obtenerSaludo()}, {userName}!</h1>
-
             <div>
                 <ul className="flex flex-row justify-center items-center gap-6 text-lg">
                     <li>{currentDate}</li>
@@ -142,7 +141,7 @@ function Navbar() {
                     <div className="flex flex-row justify-center items-center">
                         <DropdownMenu>
                             <DropdownMenuTrigger className="flex items-center bg-sipe-white rounded-full pe-1">
-                                <div className="flex items-center justify-center w-8 h-8 bg-sipe-blue-dark text-sipe-white rounded-full">
+                                <div className="flex items-center justify-center w-8 h-8 -ml-1 bg-sipe-blue-dark text-sipe-white rounded-full">
                                     {initial}
                                 </div>
                                 <div className="flex items-center justify-center ml-1">

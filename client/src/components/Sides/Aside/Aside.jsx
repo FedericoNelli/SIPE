@@ -87,7 +87,7 @@ function Aside() {
     };
 
     return (
-        <aside className="bg-sipe-blue-light text-sipe-white min-h-full pl-12 py-8">
+        <aside className="w-64 bg-sipe-blue-light text-sipe-white min-h-full pl-12 py-8">
             <div>
                 <Link to="/">
                     <img className="w-40 mb-12 mr-20" src="src/assets/images/logo/LogoSIPE.png" alt="SIPE" />

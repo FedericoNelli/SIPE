@@ -131,12 +131,12 @@ function Aisle({ notify }) {
                     </Pagination>
                 </div>
                 {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <AisleForm onClose={closeFormModal} notify={notify} />
                     </div>
                 )}
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <AisleEditModal onClose={closeEditModal} onAisleUpdated={handleAisleUpdate} notify={notify} />
                     </div>
                 )}

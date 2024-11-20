@@ -137,11 +137,8 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
 
     return (
         <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl relative">
-            <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
-                <X size={14} strokeWidth={4} onClick={onClose} />
-            </div>
             <CardHeader>
-                <CardTitle className="text-3xl font-bold mb-2 text-center">Registrar Salida de Material</CardTitle>
+                <CardTitle className="text-3xl font-bold mb-2 text-center">Registrar salida de material</CardTitle>
                 <hr />
             </CardHeader>
             <CardContent className="grid gap-4">
@@ -166,9 +163,9 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona una ubicación" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-sipe-blue-light">
                                 {ubicaciones.map(ubicacion => (
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={ubicacion.id} value={ubicacion.id}>{ubicacion.nombre}</SelectItem>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={ubicacion.id} value={ubicacion.id}>{ubicacion.nombre}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -179,9 +176,9 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona un depósito" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-sipe-blue-light">
                                 {depositos.map(deposito => (
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>{deposito.nombre}</SelectItem>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposito.id} value={deposito.id}>{deposito.nombre}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -196,9 +193,9 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona un material" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-sipe-blue-light">
                                 {availableMaterials.map(material => (
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id}>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={material.id} value={material.id}>
                                         {material.nombre} (Disponible: {material.cantidad})
                                     </SelectItem>
                                 ))}
@@ -255,9 +252,9 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
                         <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                             <SelectValue placeholder="Selecciona un usuario" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-sipe-blue-light">
                             {users.map(user => (
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={user.id} value={user.id}>{user.nombre}</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={user.id} value={user.id}>{user.nombre}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>

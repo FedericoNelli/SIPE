@@ -161,14 +161,11 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="relative bg-sipe-blue-dark text-sipe-white p-4 rounded-xl w-full max-w-2xl">
-                <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
-                    <X size={14} strokeWidth={4} onClick={onClose} />
-                </div>
-                <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="relative bg-sipe-blue-dark text-sipe-white 2xl:p-4 rounded-xl w-full max-w-2xl">
+                <Card className="bg-sipe-blue-dark text-sipe-white 2xl:p-4 rounded-xl">
                     <CardHeader>
-                        <CardTitle className="text-3xl font-bold mb-2 text-center">Editar Pasillo</CardTitle>
+                        <CardTitle className="text-3xl font-bold mb-2 text-center">Editar pasillo</CardTitle>
                         <hr />
                     </CardHeader>
                     <CardContent className="grid gap-4">
@@ -178,9 +175,9 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Seleccionar pasillo" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {aisles.map((aisle) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={aisle.id} value={aisle.id}>
                                             {aisle.numero}
                                         </SelectItem>
                                     ))}
@@ -206,9 +203,9 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Seleccionar ubicación" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {locations.map((location) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={location.id} value={location.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={location.id} value={location.id}>
                                             {location.nombre}
                                         </SelectItem>
                                     ))}
@@ -221,9 +218,9 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Seleccionar depósito" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {deposits.map((deposit) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposit.id} value={deposit.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposit.id} value={deposit.id}>
                                             {deposit.nombre}
                                         </SelectItem>
                                     ))}
@@ -236,9 +233,9 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Seleccionar lado 1" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {sides.map((side) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={side.id} value={side.id}>
                                             {side.descripcion}
                                         </SelectItem>
                                     ))}
@@ -251,12 +248,12 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue>{selectedSide2 === null ? "Sin Lado" : sides.find(side => side.id === selectedSide2)?.descripcion || "Seleccionar lado 2"}</SelectValue>
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key="null" value="null">Sin Lado</SelectItem>
+                                <SelectContent className="bg-sipe-blue-light">
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key="null" value="null">Sin Lado</SelectItem>
                                     {sides
                                         .filter((side) => side.id !== selectedSide1)
                                         .map((side) => (
-                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>
+                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={side.id} value={side.id}>
                                                 {side.descripcion}
                                             </SelectItem>
                                         ))}

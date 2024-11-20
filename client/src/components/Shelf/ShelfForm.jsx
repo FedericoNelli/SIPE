@@ -177,7 +177,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
             const idCategoria = categoriaId;
             const idPasillo = pasilloId;
 
-            if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria, idPasillo, response.data.result.insertId); // Ejecutar onSubmit después del delay
+            if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria, idPasillo, response.data.id); // Ejecutar onSubmit después del delay
 
             // Verificar si no estamos en el tutorial y recargar la página
             const isInTutorial = localStorage.getItem('inTutorial');
@@ -294,9 +294,9 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                         <SelectTrigger className="w-36 bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                             <SelectValue placeholder="Ubicación" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="bg-sipe-blue-light">
                                             {locations.map((location) => (
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={location.id} value={location.id}>{location.nombre}</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={location.id} value={location.id}>{location.nombre}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -312,9 +312,9 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                         <SelectTrigger className="w-36 bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                             <SelectValue placeholder="Depósito" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="bg-sipe-blue-light">
                                             {deposits.map((deposit) => (
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -338,15 +338,15 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                         <SelectValue placeholder="Pasillo" />
                                     </SelectTrigger>
                                     {isTutorial ?
-                                        <SelectContent>
+                                        <SelectContent className="bg-sipe-blue-light">
                                             {pasillos.map((aisle) => (
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>{aisle.numero}</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={aisle.id} value={aisle.id}>{aisle.numero}</SelectItem>
                                             ))}
                                         </SelectContent>
                                         :
-                                        <SelectContent>
+                                        <SelectContent className="bg-sipe-blue-light">
                                             {aisles.map((aisle) => (
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>{aisle.numero}</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={aisle.id} value={aisle.id}>{aisle.numero}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     }
@@ -362,9 +362,9 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                     <SelectTrigger className="w-36 bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                         <SelectValue placeholder="Lado" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-sipe-blue-light">
                                         {sides.map((side) => (
-                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>{side.descripcion}</SelectItem>
+                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={side.id} value={side.id}>{side.descripcion}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
