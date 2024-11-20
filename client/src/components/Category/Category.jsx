@@ -5,19 +5,19 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@
 import { Plus, Trash2, PenLine } from 'lucide-react';
 import CategoryForm from '@/components/Category/CategoryForm';
 import CategoryList from './CategoryList';
-import CategoryEditModal from '@/components/Category/CategoryEditModal'; // Importar el modal de edición
+import CategoryEditModal from '@/components/Category/CategoryEditModal'; 
 
 function Category({ notify }) {
     const [categories, setCategories] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para el modo de eliminación
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Estado para abrir/cerrar el modal de edición
-    const [selectedCategories, setSelectedCategories] = useState([]); // Estado para las categorías seleccionadas
+    const [isDeleteMode, setIsDeleteMode] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false); 
+    const [selectedCategories, setSelectedCategories] = useState([]); 
 
     useEffect(() => {
-        fetchCategories(); // Cargar categorías al montar el componente
+        fetchCategories();
     }, []);
 
     const fetchCategories = async () => {
@@ -64,6 +64,7 @@ function Category({ notify }) {
     // Función para cerrar el modal de edición
     const closeEditModal = () => {
         setIsEditModalOpen(false);
+        handleCategoryUpdate();
     };
 
     // Función para manejar la eliminación de categorías
@@ -78,6 +79,7 @@ function Category({ notify }) {
                 notify('success', 'Categorías eliminadas correctamente');
                 setCategories(categories.filter(category => !selectedCategories.includes(category.id)));
                 setSelectedCategories([]);
+                handleCategoryUpdate();
                 setIsDeleteMode(false);
             })
             .catch(error => {
@@ -88,7 +90,7 @@ function Category({ notify }) {
 
     // Función para manejar la actualización de categorías
     const handleCategoryUpdate = () => {
-        fetchCategories(); // Volver a cargar las categorías después de una edición
+        fetchCategories();
     };
 
     return (
@@ -133,7 +135,10 @@ function Category({ notify }) {
                 </div>
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <CategoryForm onClose={closeFormModal} notify={notify} />
+                        <CategoryForm 
+                        onClose={closeFormModal} 
+                        notify={notify} 
+                        updateCategories={handleCategoryUpdate} />
                     </div>
                 )}
                 {isEditModalOpen && (

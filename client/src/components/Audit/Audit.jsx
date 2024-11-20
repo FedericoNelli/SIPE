@@ -49,6 +49,7 @@ function Audit({ notify }) {
                 setAudits(audits.filter(audit => !selectedAudits.includes(audit.id)));
                 setSelectedAudits([]);
                 setIsDeleteMode(false);
+                loadAudits();
             })
             .catch(error => {
                 console.error('Error eliminando auditorías:', error);

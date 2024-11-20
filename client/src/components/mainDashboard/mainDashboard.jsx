@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CustomCard from '@/components/Common/Cards/CustomCard';
-import { Package, TriangleAlert, Rows3, CornerDownRight, AlignStartVertical, Tags } from 'lucide-react';
+import { Package, TriangleAlert, CornerDownRight, AlignStartVertical, Tags, ArrowUpRight, ScrollText } from 'lucide-react';
 
 function MainDashboard() {
     const [totalMaterials, setTotalMaterials] = useState(0);
@@ -12,145 +12,122 @@ function MainDashboard() {
     const [totalAuditorias, setTotalAuditorias] = useState(0); // Nuevo estado
     const [updateTrigger, setUpdateTrigger] = useState(false);
     const [totalInformes, setTotalInformes] = useState(0);
-    
-    const navigate = useNavigate(); 
+    const [lastOutput, setLastOutput] = useState(null);
+    const [lastMovedMaterial, setLastMovedMaterial] = useState(null);
 
-    const triggerUpdate = () => { 
+    const navigate = useNavigate();
+
+    const triggerUpdate = () => {
         setUpdateTrigger(prev => !prev);
     };
 
     useEffect(() => {
-        const fetchTotalMaterials = async () => {
+        const fetchData = async () => {
             try {
-                const response = await axios.get('http://localhost:8081/total-materials');
-                setTotalMaterials(response.data.total);
+
+                const totalMaterialsResponse = await axios.get('http://localhost:8081/total-materials');
+                setTotalMaterials(totalMaterialsResponse.data.total);
+
+
+                const lowStockMaterialsResponse = await axios.get('http://localhost:8081/low-stock-materials');
+                setLowStockMaterials(lowStockMaterialsResponse.data.total);
+
+
+                const totalEstanteriasResponse = await axios.get('http://localhost:8081/total-estanterias');
+                setTotalEstanterias(totalEstanteriasResponse.data.total);
+
+
+                const lastMaterialResponse = await axios.get('http://localhost:8081/last-material');
+                setLastMaterial(lastMaterialResponse.data.nombre);
+
+
+                const totalAuditoriasResponse = await axios.get('http://localhost:8081/total-audits');
+                setTotalAuditorias(totalAuditoriasResponse.data.total);
+
+
+                const totalInformesResponse = await axios.get('http://localhost:8081/total-reports');
+                setTotalInformes(totalInformesResponse.data.total);
+
+
+                const lastMaterialOutputResponse = await axios.get('http://localhost:8081/last-material-output');
+                setLastOutput({
+                    fecha: lastMaterialOutputResponse.data.fecha
+                });
+
+                const lastMovedMaterialResponse = await axios.get('http://localhost:8081/last-moved-material');
+                setLastMovedMaterial({
+                    nombre: lastMovedMaterialResponse.data.materialNombre,
+                });
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error al obtener los datos:', error);
             }
         };
-        fetchTotalMaterials();
+
+        fetchData();
     }, [updateTrigger]);
 
-    useEffect(() => {
-        const fetchLowStockMaterials = async () => {
-            try {
-                const response = await axios.get('http://localhost:8081/low-stock-materials');
-                setLowStockMaterials(response.data.total);
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        };
-        fetchLowStockMaterials();
-    }, [updateTrigger]);
-
-    useEffect(() => {
-        const fetchTotalEstanterias = async () => {
-            try {
-                const response = await axios.get('http://localhost:8081/total-estanterias');
-                setTotalEstanterias(response.data.total);
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        };
-        fetchTotalEstanterias();
-    }, [updateTrigger]);
-
-    useEffect(() => {
-        const fetchLastMaterial = async () => {
-            try {
-                const response = await axios.get('http://localhost:8081/last-material');
-                setLastMaterial(response.data.nombre);
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        };
-        fetchLastMaterial();
-    }, [updateTrigger]);
-
-    useEffect(() => {
-        const fetchTotalAuditorias = async () => { // Nueva llamada al endpoint
-            try {
-                const response = await axios.get('http://localhost:8081/total-audits');
-                setTotalAuditorias(response.data.total);
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        };
-        fetchTotalAuditorias();
-    }, [updateTrigger]);
-
-    useEffect(() => {
-        const fetchTotalInformes = async () => {
-            try {
-                const response = await axios.get('http://localhost:8081/total-reports');
-                setTotalInformes(response.data.total);
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        };
-        fetchTotalInformes();
-    }, [updateTrigger]);
 
     const rol = localStorage.getItem('rol');
     const buttonSection = [
-        { 
-            label: 'IR A ESTANTERÍAS',
-            disabled: rol !== 'Administrador',
-            path: '/shelf' 
-        },
-        { 
+        {
             label: 'IR A MOVIMIENTOS',
             disabled: rol !== 'Administrador',
-            path: '/movement' 
+            path: '/movement'
         },
-        { 
+        {
+            label: 'IR A SALIDAS',
+            disabled: rol !== 'Administrador',
+            path: '/exits'
+        },
+        {
             label: 'IR A MATERIALES',
             disabled: rol !== 'Administrador' && rol !== 'Colaborador',
-            path: '/enters' 
+            path: '/enters'
         },
-        { 
+        {
             label: 'IR A INFORMES',
             disabled: rol !== 'Administrador',
-            path: '/inf' 
+            path: '/inf'
         },
-        { 
+        {
             label: 'IR A AUDITORÍAS',
             disabled: rol !== 'Administrador',
-            path: '/audits'  
+            path: '/audits'
         }
     ];
 
     const handleButtonClick = (path) => {
         navigate(path);
-        triggerUpdate(); 
+        triggerUpdate();
     };
 
     return (
         <main className="max-h-screen p-3 py-0 flex flex-col">
             <div className="grid grid-cols-4 gap-4 flex-grow">
                 <CustomCard
-                    Icon={Rows3}
+                    Icon={ArrowUpRight}
                     colSpan={1}
-                    title="Total de estanterías"
-                    totalElement={`${totalEstanterias} ${totalEstanterias === 1 ? 'estantería' : 'estanterías'}`} 
+                    title={lastMovedMaterial ? "Último material movido" : "No existen movimientos de material"}
+                    totalElement={lastMovedMaterial ? `${lastMovedMaterial.nombre}\n`: "Sin información disponible"}
                     buttonText={buttonSection[0].label}
                     buttonDisabled={buttonSection[0].disabled}
                     onButtonClick={() => handleButtonClick(buttonSection[0].path)}
                 />
+
                 <CustomCard
                     Icon={CornerDownRight}
                     colSpan={1}
-                    title={lastMaterial ? "Último cambio de estado" : "No existen cambios de estado"}
-                    totalElement={lastMaterial}
+                    title={lastOutput ? "Última salida realizada" : "No existen salidas registradas"}
+                    totalElement={lastOutput?.fecha ? `Fecha: ${new Date(lastOutput.fecha).toLocaleDateString()}` : "Sin información disponible"}
                     buttonText={buttonSection[1].label}
                     buttonDisabled={buttonSection[1].disabled}
-                    onButtonClick={() => handleButtonClick(buttonSection[1].path)} 
+                    onButtonClick={() => handleButtonClick(buttonSection[1].path)}
                 />
                 <CustomCard
                     Icon={Package}
                     colSpan={2}
                     title="Total de stock"
-                    totalElement={`${totalMaterials} materiales`} 
+                    totalElement={`${totalMaterials} materiales`}
                     buttonText={buttonSection[2].label}
                     buttonDisabled={buttonSection[2].disabled}
                     additionalDescription="Materiales en depósitos: datos clave para optimizar la gestión de recursos"
@@ -173,16 +150,16 @@ function MainDashboard() {
                     totalElement={`${totalInformes} informes`}
                     buttonText={buttonSection[3].label}
                     buttonDisabled={buttonSection[3].disabled}
-                    onButtonClick={() => handleButtonClick(buttonSection[3].path)} 
+                    onButtonClick={() => handleButtonClick(buttonSection[3].path)}
                 />
                 <CustomCard
-                    Icon={Tags}
+                    Icon={ScrollText}
                     colSpan={1}
                     title="Cantidad de auditorías"
                     totalElement={`${totalAuditorias} auditorías`}
                     buttonText={buttonSection[4].label}
                     buttonDisabled={buttonSection[4].disabled}
-                    onButtonClick={() => handleButtonClick(buttonSection[4].path)} 
+                    onButtonClick={() => handleButtonClick(buttonSection[4].path)}
                 />
             </div>
         </main>

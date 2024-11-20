@@ -3,7 +3,7 @@ import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import UserForm from '@/components/User/UserForm';
 import UserList from '@/components/User/UserList';
-import UserDetailModal from '@/components/User/UserDetailModal'; // Importa el nuevo componente de detalle de usuario
+import UserDetailModal from '@/components/User/UserDetailModal';
 import { Plus } from 'lucide-react';
 import axios from 'axios';
 
@@ -12,10 +12,15 @@ function User({ notify }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false); // Nuevo estado para controlar el modal de detalles
-    const [selectedUser, setSelectedUser] = useState(null); // Estado para almacenar el usuario seleccionado
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null); 
+
 
     useEffect(() => {
+        loadUsers();
+    }, []);
+
+    const loadUsers = () => {
         axios.get('http://localhost:8081/users')
             .then(response => {
                 setUsers(response.data);
@@ -23,7 +28,7 @@ function User({ notify }) {
             .catch(error => {
                 console.error('Error fetching users:', error);
             });
-    }, []);
+    }
 
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -52,6 +57,7 @@ function User({ notify }) {
 
     const closeDetailModal = () => {
         setIsDetailModalOpen(false);
+        loadUsers();
         setSelectedUser(null);
     };
 
@@ -84,7 +90,10 @@ function User({ notify }) {
                 </div>
                 {isFormModalOpen && (
                     <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <UserForm onClose={closeFormModal} notify={notify} />
+                        <UserForm 
+                        onClose={closeFormModal} 
+                        notify={notify} 
+                        onUserUpdated={loadUsers} />
                     </div>
                 )}
                 {isDetailModalOpen && selectedUser && (
@@ -92,6 +101,7 @@ function User({ notify }) {
                         isOpen={isDetailModalOpen}
                         onClose={closeDetailModal}
                         selectedUser={selectedUser}
+                        onUserUpdated={loadUsers}
                         notify={notify}
                     />
                 )}

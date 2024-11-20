@@ -13,23 +13,23 @@ const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [newDescription, setNewDescription] = useState('');
 
-        // Cerrar modal al presionar la tecla Escape
-        useEffect(() => {
-            const handleKeyDown = (event) => {
-                if (event.key === 'Escape') {
-                    onClose(); // Llamar a la función onClose cuando se presiona Escape
-                }
-            };
-    
-            // Agregar el event listener
-            window.addEventListener('keydown', handleKeyDown);
-    
-            // Eliminar el event listener al desmontar el componente
-            return () => {
-                window.removeEventListener('keydown', handleKeyDown);
-            };
-        }, [onClose]);
-        
+    // Cerrar modal al presionar la tecla Escape
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                onClose(); // Llamar a la función onClose cuando se presiona Escape
+            }
+        };
+
+        // Agregar el event listener
+        window.addEventListener('keydown', handleKeyDown);
+
+        // Eliminar el event listener al desmontar el componente
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [onClose]);
+
     // Cargar las categorías cuando se abre el modal
     useEffect(() => {
         const fetchCategories = async () => {
@@ -50,7 +50,6 @@ const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
             notify('error', 'Debes seleccionar una categoría y proporcionar una nueva descripción.');
             return;
         }
-
         try {
             const response = await axios.put(`http://localhost:8081/categories/${selectedCategory}`, {
                 descripcion: newDescription,
@@ -60,7 +59,11 @@ const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
             if (onClose) onClose();
         } catch (error) {
             console.error('Error al actualizar la categoría:', error);
-            notify('error', 'Error al actualizar la categoría');
+            if (error.response && error.response.data && error.response.data.message) {
+                notify('error', error.response.data.message)
+            } else {
+                notify('error', 'Error al actualizar la categoría');
+            }
         }
     };
 

@@ -9,6 +9,7 @@ const multer = require('multer');
 const path = require('path');
 const app = express();
 const fs = require('fs');
+const fsPromises = fs.promises;
 const SECRET_KEY = process.env.SECRET_KEY;
 const { format, addDays } = require('date-fns');
 
@@ -37,6 +38,15 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+const queryPromise = (sql, params) => {
+    return new Promise((resolve, reject) => {
+        db.query(sql, params, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+        });
+    });
+};
+
 // Configuración de multer para almacenar archivos en public/uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -58,7 +68,7 @@ function authenticateToken(req, res, next) {
     if (!token) return res.status(401).json({ error: 'Token no proporcionado' });
 
     jwt.verify(token, SECRET_KEY, (err, user) => {
-        if (err) return res.status(403).json({ error: 'Token inválido' });
+        if (err) return res.status(403).json({ error: 'Por Favor inicie sesión nuevamente' });
         req.user = user;
         next();
     });
@@ -360,9 +370,7 @@ app.put('/materiales/:id', authenticateToken, upload.single('imagen'), (req, res
     const nuevaImagen = req.file ? '/uploads/' + req.file.filename : null;
     let { idEstado } = req.body;
     let idEstadoComp = idEstado;
-
-    // Aquí obtienes el ID del usuario logueado (por ejemplo, desde el token)
-    const usuarioId = req.user.id; // Ajusta según cómo obtienes el usuario del token
+    const usuarioId = req.user.id;
 
     idEstado = assignStatus(cantidad, bajoStock);
 
@@ -374,22 +382,38 @@ app.put('/materiales/:id', authenticateToken, upload.single('imagen'), (req, res
         }
 
         const imagenActual = results.length > 0 ? results[0].imagen : null;
+        const nombreActual = results[0].nombre;
+        const idDepositoActual = results[0].idDeposito;
 
-        // Construir la consulta de actualización con los parámetros que se han enviado
-        const queryParams = [
-            nombre || null,
-            cantidad || null,
-            bajoStock || null,
-            matricula || null,
-            fechaUltimoEstado || null,
-            idEstado || null,
-            idCategoria || null,
-            idDeposito || null,
-            idEspacio || null,
-            nuevaImagen
-        ];
+        // Determinar el nombre e idDeposito que se utilizarán
+        const nombreFinal = nombre || nombreActual;
+        const idDepositoFinal = idDeposito || idDepositoActual;
 
-        let query = `
+        // Validar que no exista otro material con el mismo nombre en el mismo depósito
+        db.query('SELECT * FROM Material WHERE nombre = ? AND idDeposito = ? AND id != ?', [nombreFinal, idDepositoFinal, id], (err, results) => {
+            if (err) {
+                console.error('Error al verificar si ya existe un material con el mismo nombre en el mismo depósito:', err);
+                return res.status(500).json({ error: 'Error al verificar el material' });
+            }
+            if (results.length > 0) {
+                // Existe otro material con el mismo nombre en el mismo depósito
+                return res.status(400).json({ error: 'Ya existe un material con el mismo nombre en este depósito' });
+            }
+            // Construir la consulta de actualización con los parámetros que se han enviado
+            const queryParams = [
+                nombre || null,
+                cantidad || null,
+                bajoStock || null,
+                matricula || null,
+                fechaUltimoEstado || null,
+                idEstado || null,
+                idCategoria || null,
+                idDeposito || null,
+                idEspacio || null,
+                nuevaImagen
+            ];
+
+            let query = `
             UPDATE Material SET
             nombre = COALESCE(?, nombre),
             cantidad = COALESCE(?, cantidad),
@@ -401,50 +425,63 @@ app.put('/materiales/:id', authenticateToken, upload.single('imagen'), (req, res
             idDeposito = COALESCE(?, idDeposito),
             idEspacio = COALESCE(?, idEspacio)`;
 
-        if (nuevaImagen) {
-            query += `, imagen = ?`;
-        } else if (eliminarImagen === 'true' && imagenActual) {
-            query += `, imagen = NULL`;
-            queryParams.pop(); // No incluir nuevaImagen ya que se está eliminando
-        } else {
-            queryParams.pop(); // No incluir nuevaImagen si no se está eliminando ni agregando
-        }
-
-        query += ` WHERE id = ?`;
-        queryParams.push(id);
-
-        db.query(query, queryParams, (err, result) => {
-            if (err) {
-                console.error('Error al actualizar el material:', err);
-                return res.status(500).json({ error: 'Error al actualizar el material', details: err.message });
+            if (nuevaImagen) {
+                query += `, imagen = ?`;
+            } else if (eliminarImagen === 'true' && imagenActual) {
+                query += `, imagen = NULL`;
+                queryParams.pop(); // No incluir nuevaImagen ya que se está eliminando
+            } else {
+                queryParams.pop(); // No incluir nuevaImagen si no se está eliminando ni agregando
             }
 
-            // Si se sube una nueva imagen, eliminar la imagen anterior
-            if (nuevaImagen && imagenActual) {
-                const fullPath = path.join(__dirname, 'public', imagenActual);
-                fs.unlink(fullPath, (err) => {
-                    if (err) {
-                        console.error('Error al eliminar la imagen anterior:', err);
-                    }
-                });
-            }
+            query += ` WHERE id = ?`;
+            queryParams.push(id);
 
-            // Si se marca para eliminar y no hay nueva imagen, eliminar la imagen actual
-            if (eliminarImagen === 'true' && imagenActual && !nuevaImagen) {
-                const fullPath = path.join(__dirname, 'public', imagenActual);
-                fs.unlink(fullPath, (err) => {
-                    if (err) {
-                        console.error('Error al eliminar la imagen marcada para eliminación:', err);
-                    }
-                });
-            }
+            db.query(query, queryParams, (err, result) => {
+                if (err) {
+                    console.error('Error al actualizar el material:', err);
+                    return res.status(500).json({ error: 'Error al actualizar el material', details: err.message });
+                }
 
-            if (idEstado != idEstadoComp) {
-                handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
-                    if (error) {
-                        return res.status(500).json({ mensaje: 'Error al manejar notificaciones de stock' });
-                    }
+                // Si se sube una nueva imagen, eliminar la imagen anterior
+                if (nuevaImagen && imagenActual) {
+                    const fullPath = path.join(__dirname, 'public', imagenActual);
+                    fs.unlink(fullPath, (err) => {
+                        if (err) {
+                            console.error('Error al eliminar la imagen anterior:', err);
+                        }
+                    });
+                }
 
+                // Si se marca para eliminar y no hay nueva imagen, eliminar la imagen actual
+                if (eliminarImagen === 'true' && imagenActual && !nuevaImagen) {
+                    const fullPath = path.join(__dirname, 'public', imagenActual);
+                    fs.unlink(fullPath, (err) => {
+                        if (err) {
+                            console.error('Error al eliminar la imagen marcada para eliminación:', err);
+                        }
+                    });
+                }
+
+                if (idEstado != idEstadoComp) {
+                    handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
+                        if (error) {
+                            return res.status(500).json({ error: 'Error al manejar notificaciones de stock' });
+                        }
+                        // Insertar registro en Auditoria después de la actualización
+                        db.query(
+                            `INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, 'Edición de Material', ?)`,
+                            [usuarioId, `Material editado: ${nombre}`],
+                            (err) => {
+                                if (err) {
+                                    console.error('Error al registrar auditoría:', err);
+                                    return res.status(500).json({ error: 'Error al registrar auditoría' });
+                                }
+                                res.status(200).json({ success: 'Material actualizado con éxito y auditoría registrada' });
+                            }
+                        );
+                    });
+                } else {
                     // Insertar registro en Auditoria después de la actualización
                     db.query(
                         `INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, 'Edición de Material', ?)`,
@@ -452,26 +489,13 @@ app.put('/materiales/:id', authenticateToken, upload.single('imagen'), (req, res
                         (err) => {
                             if (err) {
                                 console.error('Error al registrar auditoría:', err);
-                                return res.status(500).json({ mensaje: 'Error al registrar auditoría' });
+                                return res.status(500).json({ error: 'Error al registrar auditoría' });
                             }
-                            res.status(200).json({ mensaje: 'Material actualizado con éxito y auditoría registrada' });
+                            res.status(200).json({ success: 'Material actualizado con éxito y auditoría registrada' });
                         }
                     );
-                });
-            } else {
-                // Insertar registro en Auditoria después de la actualización
-                db.query(
-                    `INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, 'Edición de Material', ?)`,
-                    [usuarioId, `Material editado: ${nombre}`],
-                    (err) => {
-                        if (err) {
-                            console.error('Error al registrar auditoría:', err);
-                            return res.status(500).json({ mensaje: 'Error al registrar auditoría' });
-                        }
-                        res.status(200).json({ mensaje: 'Material actualizado con éxito y auditoría registrada' });
-                    }
-                );
-            };
+                };
+            });
         });
     });
 });
@@ -674,7 +698,6 @@ app.get('/exits', (req, res) => {
     });
 });
 
-
 //Este endpoint se usa para el informe de salida de material y para el editar salida de materiales
 app.get('/exits-details', (req, res) => {
     const query = `
@@ -717,7 +740,6 @@ app.get('/exits-details', (req, res) => {
         res.status(200).json(results);
     });
 });
-
 
 app.post('/materials/exits', async (req, res) => {
     const salidas = req.body; // Aquí recibes un array de objetos
@@ -830,7 +852,6 @@ app.post('/materials/exits', async (req, res) => {
 });
 
 
-
 app.put('/materials/exits/:id', async (req, res) => {
     const salidaId = req.params.id;
     const salidasActualizadas = req.body;
@@ -868,9 +889,8 @@ app.put('/materials/exits/:id', async (req, res) => {
                     resolve(rows);
                 });
             });
-
             if (existingNumero.length > 0) {
-                return res.status(409).json({ message: `El número de salida ${numero} ya está en uso. Debe ser único.` });
+                return res.status(409).json({ message: `El número de salida ${numero} ya existe.` });
             }
         }
 
@@ -909,10 +929,8 @@ app.put('/materials/exits/:id', async (req, res) => {
                 });
             }
         }
-
         // Formatear la fecha
         const formattedFecha = fecha.includes('-') ? fecha : format(new Date(fecha), 'yyyy-MM-dd');
-
         await new Promise((resolve, reject) => {
             db.query(
                 'UPDATE salida_material SET numero = ?, fecha = ?, motivo = ?, idUsuario = ? WHERE id = ?',
@@ -923,7 +941,6 @@ app.put('/materials/exits/:id', async (req, res) => {
                 }
             );
         });
-
         // Borrar los detalles de salida anteriores para agregar los nuevos detalles
         await new Promise((resolve, reject) => {
             db.query('DELETE FROM detalle_salida_material WHERE idSalida = ?', [salidaId], (err) => {
@@ -931,14 +948,12 @@ app.put('/materials/exits/:id', async (req, res) => {
                 resolve();
             });
         });
-
         // Insertar los detalles de salida actualizados y ajustar inventario
         for (const salida of materials) {
             const { idMaterial, cantidad } = salida;
             if (cantidad < 0) {
                 return res.status(400).json({ message: 'La cantidad no puede ser negativa' });
             }
-
             const result = await new Promise((resolve, reject) => {
                 db.query('SELECT cantidad, bajoStock, nombre FROM Material WHERE id = ?', [idMaterial], (err, rows) => {
                     if (err) return reject(err);
@@ -949,14 +964,11 @@ app.put('/materials/exits/:id', async (req, res) => {
             if (!result || result.length === 0) {
                 return res.status(404).json({ message: 'Material no encontrado' });
             }
-
             const material = result[0];
             const nuevaCantidadMaterial = material.cantidad - cantidad;
-
             if (nuevaCantidadMaterial < 0) {
                 return res.status(400).json({ message: `La cantidad de salida no puede ser mayor a la cantidad disponible para el material ${material.nombre}` });
             }
-
             await new Promise((resolve, reject) => {
                 db.query('INSERT INTO detalle_salida_material (idSalida, idMaterial, cantidad) VALUES (?, ?, ?)', [salidaId, idMaterial, cantidad], (err) => {
                     if (err) return reject(err);
@@ -1030,6 +1042,32 @@ app.get('/materials-with-exits', (req, res) => {
     });
 });
 
+app.get('/last-material-output', (req, res) => {
+    const query = `
+        SELECT 
+            sm.id AS idSalida,
+            sm.fecha
+        FROM 
+            Salida_material sm
+        ORDER BY 
+            sm.fecha DESC
+        LIMIT 1;
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error al obtener la última salida de material:', err);
+            return res.status(500).json({ error: 'Error al obtener la última salida de material' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'No hay registros de salidas de material' });
+        }
+        res.json(results[0]);
+    });
+});
+
+
 
 app.delete('/delete-exits', (req, res) => {
     const { exitIds } = req.body; // El JSON enviado desde el frontend debe contener un campo "exitIds"
@@ -1089,6 +1127,8 @@ app.get('/aisles-shelves', (req, res) => {
     const query = `
         SELECT 
             p.id, p.numero, d.Nombre AS nombreDeposito, u.nombre AS ubicacionDeposito,
+            p.idLado1,
+            p.idLado2,
             COALESCE(l1.descripcion, 'Sin lado') AS lado1Descripcion, 
             COALESCE(l2.descripcion, 'Sin lado') AS lado2Descripcion
         FROM 
@@ -1461,7 +1501,7 @@ app.post('/login', (req, res) => {
         }
 
         // Generar y devolver el token JWT
-        const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '5h' });
+        const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '24h' });
 
         // Verificar si es el primer login
         const firstLogin = user.firstLogin;
@@ -1498,11 +1538,11 @@ app.post('/addUser', upload.single('imagen'), (req, res) => {
     try {
         decoded = jwt.verify(token, SECRET_KEY);
     } catch (err) {
-        return res.status(401).send("Token inválido");
+        return res.status(401).json({message: 'Por favor inicie sesión nuevamente'});
     }
 
     if (decoded.rol !== 'Administrador') {
-        return res.status(403).send('Permiso denegado');
+        return res.status(403).json({message: 'Permiso denegado'});
     }
 
     const checkUserQuery = `
@@ -1543,19 +1583,19 @@ app.post('/addUser', upload.single('imagen'), (req, res) => {
                 fs.rename(imagen.path, newFilePath, (err) => {
                     if (err) {
                         console.error('Error al renombrar la imagen:', err);
-                        return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
+                        return res.status(500).json({ message: 'Error al guardar la imagen' });
                     }
 
                     db.query('UPDATE usuario SET imagen = ? WHERE id = ?', [imagenPath, userId], (err) => {
                         if (err) {
                             console.error('Error al actualizar la base de datos con la imagen:', err);
-                            return res.status(500).json({ mensaje: 'Error al actualizar la imagen en la base de datos' });
+                            return res.status(500).json({ message: 'Error al actualizar la imagen en la base de datos' });
                         }
-                        res.status(200).json({ mensaje: 'Usuario creado con éxito y imagen guardada' });
+                        res.status(200).json({ message: 'Usuario creado con éxito y imagen guardada' });
                     });
                 });
             } else {
-                res.status(200).json({ mensaje: 'Usuario creado con éxito' });
+                res.status(200).json({ message: 'Usuario creado con éxito' });
             }
         });
     });
@@ -1617,7 +1657,7 @@ app.delete('/users/delete/:id', (req, res) => {
 });
 
 // Editar un usuario
-app.put('/editUser/:id', upload.single('imagen'), (req, res) => {
+app.put('/editUser/:id', upload.single('imagen'), async (req, res) => {
     const userId = req.params.id;
     const { nombre, apellido, legajo, nombre_usuario, email, rol, eliminarImagen } = req.body;
     const imagen = req.file;
@@ -1626,72 +1666,92 @@ app.put('/editUser/:id', upload.single('imagen'), (req, res) => {
         return res.status(400).json({ message: 'Faltan campos obligatorios' });
     }
 
-    // Actualiza la información del usuario
-    const updateUserQuery = 'UPDATE usuario SET nombre = ?, apellido = ?, legajo = ?, nombre_usuario = ?, email = ?, rol = ? WHERE id = ?';
-    const values = [nombre, apellido, legajo, nombre_usuario, email, rol, userId];
-
-    db.query(updateUserQuery, values, (err) => {
-        if (err) {
-            return res.status(500).json({ message: 'Error al actualizar el usuario' });
+    try {
+        // Verificar duplicado de nombre_usuario
+        const existingUsername = await queryPromise(
+            'SELECT id FROM usuario WHERE nombre_usuario = ? AND id != ?',
+            [nombre_usuario, userId]
+        );
+        if (existingUsername.length > 0) {
+            return res.status(409).json({ message: 'El nombre de usuario ya está en uso' });
         }
+
+        // Verificar duplicado de legajo
+        const existingLegajo = await queryPromise(
+            'SELECT id FROM usuario WHERE legajo = ? AND id != ?',
+            [legajo, userId]
+        );
+        if (existingLegajo.length > 0) {
+            return res.status(409).json({ message: 'El legajo ya está en uso' });
+        }
+
+        // Verificar duplicado de email
+        const existingEmail = await queryPromise(
+            'SELECT id FROM usuario WHERE email = ? AND id != ?',
+            [email, userId]
+        );
+        if (existingEmail.length > 0) {
+            return res.status(409).json({ message: 'El email ya está en uso' });
+        }
+
+        // Actualiza la información del usuario
+        const updateUserQuery = `
+            UPDATE usuario 
+            SET nombre = ?, apellido = ?, legajo = ?, nombre_usuario = ?, email = ?, rol = ? 
+            WHERE id = ?
+        `;
+        const values = [nombre, apellido, legajo, nombre_usuario, email, rol, userId];
+
+        await queryPromise(updateUserQuery, values);
 
         // Si hay una nueva imagen para guardar
         if (imagen) {
             const imagenPath = `/uploads/SIPEUser-img-${userId}${path.extname(imagen.originalname)}`;
             const newFilePath = path.join(__dirname, 'public', imagenPath);
 
-            fs.rename(imagen.path, newFilePath, (err) => {
-                if (err) {
-                    console.error('Error al renombrar la imagen:', err);
-                    return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
-                }
+            try {
+                await fsPromises.rename(imagen.path, newFilePath);
 
-                db.query('UPDATE usuario SET imagen = ? WHERE id = ?', [imagenPath, userId], (err) => {
-                    if (err) {
-                        console.error('Error al actualizar la base de datos con la imagen:', err);
-                        return res.status(500).json({ mensaje: 'Error al actualizar la imagen en la base de datos' });
-                    }
-                    res.status(200).json({ mensaje: 'Usuario actualizado correctamente con imagen' });
-                });
-            });
+                await queryPromise('UPDATE usuario SET imagen = ? WHERE id = ?', [imagenPath, userId]);
+                return res.status(200).json({ message: 'Usuario actualizado correctamente con imagen' });
+            } catch (err) {
+                console.error('Error al procesar la imagen:', err);
+                return res.status(500).json({ message: 'Error al procesar la imagen' });
+            }
         }
         // Si se solicita eliminar la imagen
         else if (eliminarImagen === 'true') {
-            // Elimina el archivo físico si existe
-            db.query('SELECT imagen FROM usuario WHERE id = ?', [userId], (err, result) => {
-                if (err) {
-                    console.error('Error al obtener la imagen actual:', err);
-                    return res.status(500).json({ mensaje: 'Error al obtener la imagen actual' });
-                }
-
+            try {
+                const result = await queryPromise('SELECT imagen FROM usuario WHERE id = ?', [userId]);
                 const currentImagePath = result[0]?.imagen;
                 if (currentImagePath) {
                     const fullPath = path.join(__dirname, 'public', currentImagePath);
-                    fs.unlink(fullPath, (err) => {
-                        if (err && err.code !== 'ENOENT') {
+                    try {
+                        await fsPromises.unlink(fullPath);
+                    } catch (err) {
+                        if (err.code !== 'ENOENT') {
                             console.error('Error al eliminar la imagen física:', err);
-                            return res.status(500).json({ mensaje: 'Error al eliminar la imagen física' });
+                            return res.status(500).json({ message: 'Error al eliminar la imagen física' });
                         }
+                    }
 
-                        // Actualiza la columna de imagen en la base de datos
-                        db.query('UPDATE usuario SET imagen = NULL WHERE id = ?', [userId], (err) => {
-                            if (err) {
-                                console.error('Error al actualizar la base de datos:', err);
-                                return res.status(500).json({ mensaje: 'Error al actualizar la base de datos' });
-                            }
-                            res.status(200).json({ mensaje: 'Usuario actualizado y la imagen eliminada correctamente' });
-                        });
-                    });
+                    await queryPromise('UPDATE usuario SET imagen = NULL WHERE id = ?', [userId]);
+                    return res.status(200).json({ message: 'Usuario actualizado y la imagen eliminada correctamente' });
                 } else {
-                    res.status(200).json({ mensaje: 'Usuario actualizado correctamente' });
+                    return res.status(200).json({ message: 'Usuario actualizado correctamente' });
                 }
-            });
-        }
-        else {
+            } catch (err) {
+                console.error('Error al procesar la eliminación de imagen:', err);
+                return res.status(500).json({ message: 'Error al procesar la eliminación de imagen' });
+            }
+        } else {
             // Si no se eliminó ni agregó una imagen
-            res.status(200).json({ mensaje: 'Usuario actualizado correctamente' });
+            return res.status(200).json({ message: 'Usuario actualizado correctamente' });
         }
-    });
+    } catch (err) {
+        console.error('Error al actualizar el usuario:', err);
+        return res.status(500).json({ message: 'Error al actualizar el usuario' });
+    }
 });
 
 
@@ -1718,7 +1778,7 @@ app.post('/sendRecoveryCode', (req, res) => {
         const recoveryCode = Math.floor(10000 + Math.random() * 90000).toString();
 
         // Guardar el código de recuperación en la base de datos
-        const query = 'UPDATE usuario SET recovery_code = ? WHERE email = ?';
+        const query = 'UPDATE usuario SET cod_recuperacion = ? WHERE email = ?';
         db.query(query, [recoveryCode, email], (err, result) => {
             if (err) {
                 console.error('Error al actualizar el código de recuperación:', err);
@@ -1763,7 +1823,7 @@ app.post('/sendRecoveryCode', (req, res) => {
 app.post('/verifyRecoveryCode', (req, res) => {
     const { email, recoveryCode } = req.body;
 
-    const query = 'SELECT * FROM usuario WHERE email = ? AND recovery_code = ?';
+    const query = 'SELECT * FROM usuario WHERE email = ? AND cod_recuperacion = ?';
     db.query(query, [email, recoveryCode], (err, results) => {
         if (err) {
             console.error('Error al consultar la base de datos:', err);
@@ -1786,7 +1846,7 @@ app.post('/changePassword', (req, res) => {
     const salt = bcrypt.genSaltSync(10);
     const passwordHash = bcrypt.hashSync(newPassword, salt);
 
-    const query = 'UPDATE usuario SET contrasenia = ?, recovery_code = NULL, firstLogin = 0 WHERE email = ?';
+    const query = 'UPDATE usuario SET contrasenia = ?, cod_recuperacion = NULL, firstLogin = 0 WHERE email = ?';
     db.query(query, [passwordHash, email], (err, result) => {
         if (err) {
             console.error('Error al actualizar la contraseña:', err);
@@ -1863,13 +1923,16 @@ app.get('/aisles', (req, res) => {
         `;
 
     if (depositoId) {
-        query += ` WHERE p.idDeposito = ? GROUP BY p.id, p.numero, d.Nombre, u.nombre, l1.descripcion, l2.descripcion`;
+        query += ` WHERE p.idDeposito = ? 
+        GROUP BY p.id, p.numero, d.Nombre, u.nombre, l1.descripcion, l2.descripcion
+        ORDER BY p.numero ASC`;
         db.query(query, [depositoId], (err, results) => {
             if (err) return res.status(500).send('Error al consultar la base de datos');
             res.json(results);
         });
     } else {
-        query += ` GROUP BY p.id, p.numero, d.Nombre, u.nombre, l1.descripcion, l2.descripcion`;
+        query += ` GROUP BY p.id, p.numero, d.Nombre, u.nombre, l1.descripcion, l2.descripcion
+        ORDER BY p.numero ASC`;
         db.query(query, (err, results) => {
             if (err) return res.status(500).send('Error al consultar la base de datos');
             res.json(results);
@@ -1934,28 +1997,47 @@ app.put('/edit-aisle/:id', (req, res) => {
         return res.status(400).json({ error: 'Todos los campos requeridos deben estar completos' });
     }
 
-    // Si idLado2 no está definido o es una cadena vacía, se asigna null
     const idLado2Value = idLado2 !== undefined && idLado2 !== '' ? idLado2 : null;
 
-    const query = `
-        UPDATE Pasillo 
-        SET numero = ?, idDeposito = ?, idLado1 = ?, idLado2 = ? 
-        WHERE id = ?
+    // Verificar si ya existe un pasillo con el mismo número en el mismo depósito (excluyendo el actual)
+    const checkQuery = `
+        SELECT id FROM Pasillo 
+        WHERE numero = ? AND idDeposito = ? AND id != ?
     `;
 
-    const values = [numero, idDeposito, idLado1, idLado2Value, aisleId];
-
-    db.query(query, values, (err, result) => {
+    db.query(checkQuery, [numero, idDeposito, aisleId], (err, results) => {
         if (err) {
-            console.error('Error al actualizar el pasillo:', err);
-            return res.status(500).json({ error: 'Error al actualizar el pasillo', details: err });
+            console.error('Error al verificar el pasillo:', err);
+            return res.status(500).json({ error: 'Error al verificar el pasillo' });
         }
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Pasillo no encontrado' });
+
+        if (results.length > 0) {
+            // Existe otro pasillo con el mismo número en el mismo depósito
+            return res.status(409).json({ error: 'Ya existe un pasillo con el mismo número en este depósito' });
         }
-        res.status(200).json({ message: 'Pasillo actualizado correctamente' });
+
+        // Si no existe conflicto, proceder con la actualización
+        const updateQuery = `
+            UPDATE Pasillo 
+            SET numero = ?, idDeposito = ?, idLado1 = ?, idLado2 = ? 
+            WHERE id = ?
+        `;
+
+        const values = [numero, idDeposito, idLado1, idLado2Value, aisleId];
+
+        db.query(updateQuery, values, (err, result) => {
+            if (err) {
+                console.error('Error al actualizar el pasillo:', err);
+                return res.status(500).json({ error: 'Error al actualizar el pasillo', details: err });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'Pasillo no encontrado' });
+            }
+            res.status(200).json({ message: 'Pasillo actualizado correctamente' });
+        });
     });
 });
+
 
 
 
@@ -2086,27 +2168,45 @@ app.put('/edit-deposit/:id', (req, res) => {
         return res.status(400).json({ error: 'Todos los campos requeridos deben estar completos' });
     }
 
-    const query = `
-        UPDATE Deposito
-        SET nombre = ?, idUbicacion = ?
-        WHERE id = ?
+    // Verificar si ya existe un depósito con el mismo nombre en la misma ubicación, excluyendo el depósito actual
+    const checkDuplicateQuery = `
+        SELECT id FROM Deposito
+        WHERE nombre = ? AND idUbicacion = ? AND id != ?
     `;
 
-    const values = [nombre, idUbicacion, depositId];
-
-    db.query(query, values, (err, result) => {
+    db.query(checkDuplicateQuery, [nombre, idUbicacion, depositId], (err, results) => {
         if (err) {
-            console.error('Error al actualizar el depósito:', err);
-            return res.status(500).json({ error: 'Error al actualizar el depósito' });
+            console.error('Error al verificar depósito duplicado:', err);
+            return res.status(500).json({ error: 'Error al verificar depósito duplicado' });
         }
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Depósito no encontrado' });
+        if (results.length > 0) {
+            // Ya existe otro depósito con el mismo nombre en la misma ubicación
+            return res.status(409).json({ error: 'Ya existe un depósito con el mismo nombre en esta ubicación' });
         }
 
-        res.status(200).json({ message: 'Depósito actualizado correctamente' });
+        // Si no hay duplicados, proceder con la actualización
+        const updateQuery = `
+            UPDATE Deposito
+            SET nombre = ?, idUbicacion = ?
+            WHERE id = ?
+        `;
+        const values = [nombre, idUbicacion, depositId];
+        db.query(updateQuery, values, (err, result) => {
+            if (err) {
+                console.error('Error al actualizar el depósito:', err);
+                return res.status(500).json({ error: 'Error al actualizar el depósito' });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: 'Depósito no encontrado' });
+            }
+
+            res.status(200).json({ message: 'Depósito actualizado correctamente' });
+        });
     });
 });
+
 
 
 app.get('/deposit-names', (req, res) => {
@@ -2310,16 +2410,27 @@ app.put('/categories/:id', (req, res) => {
     if (!descripcion) {
         return res.status(400).json({ message: 'La descripción es obligatoria' });
     }
-
-    const query = 'UPDATE Categoria SET descripcion = ? WHERE id = ?';
-    db.query(query, [descripcion, categoryId], (err, result) => {
+    // Verificar si ya existe una categoría con la misma descripción (excluyendo la actual)
+    const checkQuery = 'SELECT id FROM Categoria WHERE descripcion = ? AND id != ?';
+    db.query(checkQuery, [descripcion, categoryId], (err, results) => {
         if (err) {
-            console.error('Error al actualizar la categoría:', err);
-            return res.status(500).json({ message: 'Error al actualizar la categoría' });
+            console.error('Error al verificar la categoría:', err);
+            return res.status(500).json({ message: 'Error al verificar la categoría' });
         }
-        res.status(200).json({ message: 'Categoría actualizada exitosamente' });
+        if (results.length > 0) {
+            return res.status(409).json({ message: 'Ya existe una categoría con esa descripción' });
+        }
+        const updateQuery = 'UPDATE Categoria SET descripcion = ? WHERE id = ?';
+        db.query(updateQuery, [descripcion, categoryId], (err, result) => {
+            if (err) {
+                console.error('Error al actualizar la categoría:', err);
+                return res.status(500).json({ message: 'Error al actualizar la categoría' });
+            }
+            res.status(200).json({ message: 'Categoría actualizada exitosamente' });
+        });
     });
 });
+
 
 app.get('/total-categories', (req, res) => {
     const query = 'SELECT COUNT(id) AS total FROM Categoria';
@@ -2391,9 +2502,9 @@ app.post('/addShelf', (req, res) => {
     // Primero, verificar si ya existe una estantería idéntica
     const checkQuery = `
         SELECT * FROM Estanteria 
-        WHERE numero = ? AND idPasillo = ? AND idLado = ?
+        WHERE numero = ?
     `;
-    db.query(checkQuery, [numero, idPasillo, idLado], (err, results) => {
+    db.query(checkQuery, [numero], (err, results) => {
         if (err) {
             console.error('Error al verificar estantería:', err);
             return res.status(500).json({ error: 'Error al verificar estantería', details: err });
@@ -2401,7 +2512,7 @@ app.post('/addShelf', (req, res) => {
 
         if (results.length > 0) {
             // La estantería ya existe
-            return res.status(400).json({ error: 'Ya existe una estantería con este número en el pasillo y lado seleccionados' });
+            return res.status(400).json({ error: 'Ya existe una estantería con este número' });
         } else {
             // Si no existe, proceder a insertar
             const insertQuery = `
@@ -2449,75 +2560,94 @@ app.put('/edit-shelf/:id', (req, res) => {
     const shelfId = req.params.id;
     const { numero, cantidad_estante, cantidad_division, idPasillo, idLado } = req.body;
 
-    // Primero obtenemos los valores actuales de la estantería
-    const getCurrentShelfQuery = `
-        SELECT cantidad_estante, cantidad_division 
-        FROM Estanteria 
-        WHERE id = ?
+    // Primero verificamos si ya existe una estantería con el mismo número en el mismo pasillo y lado (excluyendo la actual)
+    const checkDuplicateShelfQuery = `
+        SELECT id FROM Estanteria 
+        WHERE numero = ? AND id != ?
     `;
 
-    db.query(getCurrentShelfQuery, [shelfId], (err, rows) => {
+    db.query(checkDuplicateShelfQuery, [numero, shelfId], (err, duplicateResults) => {
         if (err) {
-            console.error('Error al obtener datos actuales de la estantería:', err);
-            return res.status(500).json({ error: 'Error al obtener los datos de la estantería' });
+            console.error('Error al verificar estantería duplicada:', err);
+            return res.status(500).json({ error: 'Error al verificar estantería duplicada' });
         }
 
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'Estantería no encontrada' });
+        if (duplicateResults.length > 0) {
+            // Existe otra estantería con el mismo número en el mismo pasillo y lado
+            return res.status(409).json({ error: 'Ya existe una estantería con este número' });
         }
 
-        const currentShelf = rows[0];
-
-        // Comparamos si los valores de cantidad_estante o cantidad_division cambian
-        if (currentShelf.cantidad_estante !== cantidad_estante || currentShelf.cantidad_division !== cantidad_division) {
-            // Validamos si hay materiales en los espacios de la estantería
-            const checkMaterialsQuery = `
-                SELECT Material.id 
-                FROM Material 
-                INNER JOIN Espacio ON Material.idEspacio = Espacio.id 
-                WHERE Espacio.idEstanteria = ?
-            `;
-
-            db.query(checkMaterialsQuery, [shelfId], (err, materials) => {
-                if (err) {
-                    console.error('Error verificando materiales:', err);
-                    return res.status(500).json({ error: 'Error verificando materiales en la estantería' });
-                }
-
-                if (materials.length > 0) {
-                    return res.status(400).json({ message: 'No se pueden modificar cantidad_estante o cantidad_division si hay materiales en los espacios de la estantería' });
-                }
-
-                // Si no hay materiales, procedemos con la actualización
-                updateShelf();
-            });
-        } else {
-            // Si no cambian esos valores, procedemos directamente con la actualización
-            updateShelf();
-        }
-    });
-
-    function updateShelf() {
-        const query = `
-            UPDATE Estanteria
-            SET numero = ?, cantidad_estante = ?, cantidad_division = ?, idPasillo = ?, idLado = ?
+        // Continuamos con el proceso existente
+        // Primero obtenemos los valores actuales de la estantería
+        const getCurrentShelfQuery = `
+            SELECT cantidad_estante, cantidad_division 
+            FROM Estanteria 
             WHERE id = ?
         `;
 
-        const values = [numero, cantidad_estante, cantidad_division, idPasillo, idLado, shelfId];
-
-        db.query(query, values, (err, result) => {
+        db.query(getCurrentShelfQuery, [shelfId], (err, rows) => {
             if (err) {
-                console.error('Error al actualizar estantería:', err);
-                return res.status(500).json({ error: 'Para modificar este campo primero debe vaciar la estantería' });
+                console.error('Error al obtener datos actuales de la estantería:', err);
+                return res.status(500).json({ error: 'Error al obtener los datos de la estantería' });
             }
-            if (result.affectedRows === 0) {
+
+            if (rows.length === 0) {
                 return res.status(404).json({ error: 'Estantería no encontrada' });
             }
-            res.status(200).json({ message: 'Estantería actualizada correctamente' });
+
+            const currentShelf = rows[0];
+
+            // Comparamos si los valores de cantidad_estante o cantidad_division cambian
+            if (currentShelf.cantidad_estante !== cantidad_estante || currentShelf.cantidad_division !== cantidad_division) {
+                // Validamos si hay materiales en los espacios de la estantería
+                const checkMaterialsQuery = `
+                    SELECT Material.id 
+                    FROM Material 
+                    INNER JOIN Espacio ON Material.idEspacio = Espacio.id 
+                    WHERE Espacio.idEstanteria = ?
+                `;
+
+                db.query(checkMaterialsQuery, [shelfId], (err, materials) => {
+                    if (err) {
+                        console.error('Error verificando materiales:', err);
+                        return res.status(500).json({ error: 'Error verificando materiales en la estantería' });
+                    }
+
+                    if (materials.length > 0) {
+                        return res.status(400).json({ error: 'No se pueden modificar cantidad_estante o cantidad_division si hay materiales en los espacios de la estantería' });
+                    }
+                    // Si no hay materiales, procedemos con la actualización
+                    updateShelf();
+                });
+            } else {
+                // Si no cambian esos valores, procedemos directamente con la actualización
+                updateShelf();
+            }
         });
-    }
+
+        function updateShelf() {
+            const query = `
+                UPDATE Estanteria
+                SET numero = ?, cantidad_estante = ?, cantidad_division = ?, idPasillo = ?, idLado = ?
+                WHERE id = ?
+            `;
+
+            const values = [numero, cantidad_estante, cantidad_division, idPasillo, idLado, shelfId];
+
+            db.query(query, values, (err, result) => {
+                if (err) {
+                    console.error('Error al actualizar estantería:', err);
+                    return res.status(500).json({ error: 'Error al actualizar la estantería' });
+                }
+                if (result.affectedRows === 0) {
+                    return res.status(404).json({ error: 'Estantería no encontrada' });
+                }
+                res.status(200).json({ message: 'Estantería actualizada correctamente' });
+            });
+        }
+    });
 });
+
 
 
 // Endpoint para vaciar estanterías
@@ -2937,6 +3067,32 @@ app.put('/edit-movements/:id', async (req, res) => {
         // Iniciar la transacción
         await db.beginTransaction();
 
+        // Verificar si ya existe otro movimiento con el mismo número, excluyendo el actual
+        const checkNumeroQuery = `
+        SELECT id FROM movimiento 
+        WHERE numero = ? AND id != ?
+        `;
+        const numeroResults = await new Promise((resolve, reject) => {
+            db.query(checkNumeroQuery, [numero, id], (err, results) => {
+                if (err) {
+                    console.error('Error al verificar número duplicado:', err);
+                    reject(err);
+                } else {
+                    resolve(results);
+                }
+            });
+        });
+
+        if (numeroResults.length > 0) {
+            await new Promise((resolve, reject) => {
+                db.rollback((err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            return res.status(409).json({ error: 'Ya existe un movimiento con el mismo número' });
+        }
+
         // Obtener el movimiento actual para comparar los cambios
         const queryMovimientoActual = `
             SELECT idDepositoOrigen, idDepositoDestino, cantidad
@@ -3079,7 +3235,6 @@ app.delete('/delete-movements', (req, res) => {
     });
 });
 
-
 app.get('/materials-with-movements', (req, res) => {
     const query = `
         SELECT DISTINCT m.id AS idMaterial, m.nombre AS nombreMaterial, d2.nombre AS depositoNombre, u.nombre AS ubicacionNombre
@@ -3099,6 +3254,37 @@ app.get('/materials-with-movements', (req, res) => {
         res.status(200).json({ materiales: results });
     });
 });
+
+app.get('/last-moved-material', (req, res) => {
+    const query = `
+        SELECT 
+            m.idMaterial AS materialId, 
+            mat.nombre AS materialNombre,
+            MAX(m.fechaMovimiento) AS ultimaFecha
+        FROM Movimiento m
+
+        LEFT JOIN Material mat ON m.idMaterial = mat.id
+        WHERE m.confirmado = TRUE
+        GROUP BY m.idMaterial
+        ORDER BY ultimaFecha DESC
+
+        LIMIT 1;
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error al obtener el último material movido:', err);
+            return res.status(500).json({ error: 'Error al obtener el último material movido' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'No existen movimientos de material registrados' });
+        }
+
+        res.json(results[0]);
+    });
+});
+
 
 
 app.get('/deposit-locations-movements', (req, res) => {

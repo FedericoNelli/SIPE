@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import { X } from "lucide-react";
 
-function MaterialForm({ onClose, notify }) {
+function MaterialForm({ onClose, notify, loadMaterials }) {
     const [depositLocations, setDepositLocations] = useState([]);
     const [depositNames, setDepositNames] = useState([]);
     const [aisles, setAisles] = useState([]);
@@ -204,9 +204,7 @@ function MaterialForm({ onClose, notify }) {
             }
             notify('success', "Material agregado correctamente!");
             if (onClose) onClose();
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
+            loadMaterials();
 
         } catch (error) {
             console.error('Error al agregar el material:', error);
@@ -220,7 +218,7 @@ function MaterialForm({ onClose, notify }) {
             }
         };
     }
-    
+
     const handleCancel = () => {
         if (onClose) onClose();
     };
@@ -255,17 +253,28 @@ function MaterialForm({ onClose, notify }) {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="deposito" className="text-sm font-medium">Nombre del depósito</Label>
-                            <Select id="deposito" onValueChange={(value) => handleSelectChange('deposito', value)}>
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Selecciona el depósito" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-sipe-blue-light">
-                                    {depositNames.map(deposit => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            {depositNames.length === 0 ? (
+                                <p className="text-sipe-gray ">No hay depósitos disponibles</p>
+                            ) : (
+                                <Select id="deposito" onValueChange={(value) => handleSelectChange('deposito', value)}>
+                                    <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                        <SelectValue placeholder="Selecciona el depósito" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-sipe-blue-light">
+                                        {depositNames.map(deposit => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                key={deposit.id}
+                                                value={deposit.id}
+                                            >
+                                                {deposit.nombre}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
+
                         <div className="grid gap-2">
                             <Label htmlFor="categoria" className="text-sm font-medium">Categoría</Label>
                             <Select id="categoria" onValueChange={(value) => handleSelectChange('categoria', value)}>
@@ -297,11 +306,11 @@ function MaterialForm({ onClose, notify }) {
                         </div>
                     </div>
                     <div className="grid gap-4">
-                        <Label className="text-sm font-medium">Ubicación</Label>
+                        <Label className="text-sm font-medium">Ubicación del material</Label>
                         <div className="grid grid-cols-3 sm:grid-cols-3 gap-4">
                             <Select id="aisle" onValueChange={(value) => {
                                 handleSelectChange('aisle', value);
-                            }} disabled={!formData.deposito}>
+                            }} disabled={!formData.deposito || depositNames.length === 0}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Pasillo" />
                                 </SelectTrigger>
@@ -313,7 +322,7 @@ function MaterialForm({ onClose, notify }) {
                             </Select>
                             <Select id="shelf" onValueChange={(value) => {
                                 handleSelectChange('shelf', value);
-                            }} disabled={!formData.aisle}>
+                            }} disabled={!formData.aisle || depositNames.length === 0}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Estantería" />
                                 </SelectTrigger>
@@ -326,7 +335,7 @@ function MaterialForm({ onClose, notify }) {
                             <Select
                                 id="espacio"
                                 onValueChange={(value) => handleSelectChange('espacio', value)}
-                                disabled={!formData.shelf || spaces.length === 0}
+                                disabled={!formData.shelf || spaces.length === 0 || depositNames.length === 0}
                             >
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     {formData.shelf ? (

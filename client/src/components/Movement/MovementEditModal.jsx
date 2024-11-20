@@ -132,7 +132,6 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
             notify('error', 'La cantidad a mover no puede ser mayor a la cantidad disponible');
             return;
         }
-
         try {
             await axios.put(`http://localhost:8081/edit-movements/${selectedMovementId}`, {
                 numero: movementNumber,
@@ -147,7 +146,11 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
             onMovementUpdated(); // Recargar lista de movimientos
             onClose(); // Cerrar modal
         } catch (error) {
-            notify('error', 'Error al actualizar el movimiento');
+            if (error.response && error.response.data && error.response.data.error) {
+                notify('error', error.response.data.error)
+            } else {
+                notify('error', 'Error al actualizar el movimiento');
+            }
         }
     };
 
@@ -294,7 +297,98 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                         </Select>
                                     </div>
                                 </div>
-                            </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha del movimiento</Label>
+                                    <Input
+                                        id="fechaMovimiento"
+                                        type="date"
+                                        value={fechaMovimiento}
+                                        onChange={(e) => setFechaMovimiento(e.target.value)}
+                                        required
+                                        className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
+                                        max={maxDatetime}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="cantidadDisponible" className="text-sm font-medium">Cantidad Disponible</Label>
+                                    <Input
+                                        id="cantidadDisponible"
+                                        value={cantidadDisponible}
+                                        readOnly
+                                        className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="cantidad" className="text-sm font-medium">Cantidad</Label>
+                                    <Input
+                                        id="cantidad"
+                                        value={cantidad}
+                                        onChange={(e) => setCantidad(e.target.value)}
+                                        required
+                                        className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="idMaterial" className="text-sm font-medium">Material</Label>
+                                    <Select value={idMaterial} onValueChange={setIdMaterial}>
+                                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                            <SelectValue placeholder="Seleccionar material" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {materials.map((material) => (
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id}>
+                                                    {`${material.nombre} - ${material.depositoNombre} - ${material.ubicacionNombre}`}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="usuario" className="text-sm font-medium">Usuario</Label>
+                                    <Select value={selectedUsuario} onValueChange={setSelectedUsuario}>
+                                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                            <SelectValue placeholder="Seleccionar usuario" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {usuarios.map((usuario) => (
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={usuario.id} value={usuario.id}>
+                                                    {usuario.nombre}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="depositoOrigen" className="text-sm font-medium">Depósito de origen</Label>
+                                    <Select value={selectedDepositoOrigen} onValueChange={setSelectedDepositoOrigen}>
+                                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                            <SelectValue placeholder="Seleccionar depósito origen" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {depositos.map((deposito) => (
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
+                                                    {deposito.nombre} - {deposito.ubicacion}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="depositoDestino" className="text-sm font-medium">Depósito de destino</Label>
+                                    <Select value={selectedDepositoDestino} onValueChange={setSelectedDepositoDestino}>
+                                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                            <SelectValue placeholder="Seleccionar depósito destino" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {depositos.map((deposito) => (
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
+                                                    {deposito.nombre} - {deposito.ubicacion}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </>
                         ) : (
                             // Muestra el mensaje si no hay movimientos
                             <p className="text-gray-500 text-center">No hay movimientos generados.</p>

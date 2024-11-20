@@ -87,7 +87,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
             )
         );
     };
-    
+
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -110,7 +110,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
                         onExitCreated();
                         onClose();
                     }
-                }, 1000);
+                }, 500);
             })
             .catch(error => {
                 console.error('Error registrando salida:', error);
@@ -119,7 +119,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
                 } else {
                     notify('error', 'Error al registrar la salida');
                 }
-                
+
             });
 
     };
@@ -172,37 +172,53 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
                     </div>
                     <div className="grid gap-2 mt-4">
                         <Label htmlFor="deposito" className="text-sm font-medium">Depósito</Label>
-                        <Select onValueChange={handleDepositoChange}>
-                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                <SelectValue placeholder="Selecciona un depósito" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-sipe-blue-light">
-                                {depositos.map(deposito => (
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposito.id} value={deposito.id}>{deposito.nombre}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        {depositos.length > 0 ? (
+                            <Select onValueChange={handleDepositoChange}>
+                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                    <SelectValue placeholder="Selecciona un depósito" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-sipe-blue-light">
+                                    {depositos.map(deposito => (
+                                        <SelectItem
+                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                            key={deposito.id}
+                                            value={deposito.id}
+                                        >
+                                            {deposito.nombre}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        ) : (
+                            <p className="text-sipe-gray">No existen depósitos</p>
+                        )}
                     </div>
                 </div>
 
                 <div className="grid gap-2">
                     <Label htmlFor="material" className="text-sm font-medium">Material</Label>
-                    
                     {showMaterialSelect && (
-                        <Select onValueChange={handleMaterialChange}>
-                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                <SelectValue placeholder="Selecciona un material" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-sipe-blue-light">
-                                {availableMaterials.map(material => (
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={material.id} value={material.id}>
-                                        {material.nombre} (Disponible: {material.cantidad})
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        availableMaterials.length && depositos.length > 0 ? (
+                            <Select onValueChange={handleMaterialChange}>
+                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                    <SelectValue placeholder="Selecciona un material" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-sipe-blue-light">
+                                    {availableMaterials.map(material => (
+                                        <SelectItem
+                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                            key={material.id}
+                                            value={material.id}
+                                        >
+                                            {material.nombre} (Disponible: {material.cantidad})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        ) : (
+                            <p className="text-sipe-gray">No hay materiales en el depósito</p>
+                        )
                     )}
-
                     {!showMaterialSelect && availableMaterials.length > 0 && (
                         <button
                             className="text-green-500 hover:text-green-700 text-sm flex items-center mt-2"
@@ -211,9 +227,8 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
                             <Plus size={16} className="mr-1" /> Agregar Material
                         </button>
                     )}
-
                     {!showMaterialSelect && availableMaterials.length === 0 && (
-                        <p className="text-gray-500 mt-2">No existen más materiales en el depósito</p>
+                        <p className="text-sipe-gray mt-2">No existen más materiales en el depósito</p>
                     )}
                 </div>
 

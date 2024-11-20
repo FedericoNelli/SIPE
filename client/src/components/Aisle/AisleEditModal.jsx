@@ -65,7 +65,7 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                     setSelectedLocation(data.idUbicacion !== undefined && data.idUbicacion !== null ? data.idUbicacion : 'Sin ubicación'); // Si no existe idUbicacion, usa 'Sin ubicación'
                     setSelectedDeposit(data.idDeposito !== undefined && data.idDeposito !== null ? data.idDeposito : 'Sin depósito'); // Si no existe idDeposito, usa 'Sin depósito'
                     setSelectedSide1(data.idLado1 !== undefined && data.idLado1 !== null ? data.idLado1 : 'Sin lado 1'); // Si no existe idLado1, usa 'Sin lado 1'
-                    setSelectedSide2(data.idLado2 !== undefined && data.idLado2 !== null ? data.idLado2 : 'Sin lado 2'); // Si no existe idLado2, usa 'Sin lado 2'
+                    setSelectedSide2(data.idLado2 !== undefined && data.idLado2 !== null ? data.idLado2 : null);
                 } catch (error) {
                     notify('error', 'Error al cargar los datos del pasillo');
                 }
@@ -156,7 +156,11 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
             onAisleUpdated();
             onClose();
         } catch (error) {
-            notify('error', 'Error al actualizar el pasillo');
+            if (error.response && error.response.data && error.response.data.error) {
+                notify('error', error.response.data.error)
+            } else {
+                notify('error', 'Error al actualizar el pasillo');
+            }
         }
     };
 
@@ -214,52 +218,92 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="deposit" className="text-sm font-medium">Depósito</Label>
-                            <Select value={selectedDeposit} onValueChange={setSelectedDeposit}>
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Seleccionar depósito" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-sipe-blue-light">
-                                    {deposits.map((deposit) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposit.id} value={deposit.id}>
-                                            {deposit.nombre}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="side1" className="text-sm font-medium">Lado 1</Label>
-                            <Select value={selectedSide1} onValueChange={setSelectedSide1}>
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Seleccionar lado 1" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-sipe-blue-light">
-                                    {sides.map((side) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={side.id} value={side.id}>
-                                            {side.descripcion}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="side2" className="text-sm font-medium">Lado 2 (Opcional)</Label>
-                            <Select value={selectedSide2 !== null ? selectedSide2 : "null"} onValueChange={(value) => setSelectedSide2(value === "null" ? null : value)}>
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue>{selectedSide2 === null ? "Sin Lado" : sides.find(side => side.id === selectedSide2)?.descripcion || "Seleccionar lado 2"}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent className="bg-sipe-blue-light">
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key="null" value="null">Sin Lado</SelectItem>
-                                    {sides
-                                        .filter((side) => side.id !== selectedSide1)
-                                        .map((side) => (
-                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={side.id} value={side.id}>
-                                                {side.descripcion}
+                            {deposits.length > 0 ? (
+                                <Select value={selectedDeposit} onValueChange={setSelectedDeposit}>
+                                    <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                        <SelectValue placeholder="Seleccionar depósito" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-sipe-blue-light">
+                                        {deposits.map((deposit) => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                key={deposit.id}
+                                                value={deposit.id}
+                                            >
+                                                {deposit.nombre}
                                             </SelectItem>
-                                        ))}
+                                          ))}
                                 </SelectContent>
                             </Select>
                         </div>
+                            ) : (
+                                <div className="text-sipe-gray">No hay depósitos disponibles</div>
+                            )}
+                        </div>
+                        {deposits.length === 0 ? (
+                            <div className="text-sipe-gray">No hay lados disponibles</div>
+                        ) : (
+                            <>
+                                {/* Select de Lado 1 */}
+                                <div className="grid gap-2">
+                                    <Label htmlFor="side1" className="text-sm font-medium">Lado 1</Label>
+                                    <Select value={selectedSide1} onValueChange={setSelectedSide1}>
+                                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                            <SelectValue placeholder="Seleccionar lado 1" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-sipe-blue-light">
+                                            {sides.map((side) => (
+                                                <SelectItem
+                                                    className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                    key={side.id}
+                                                    value={side.id}
+                                                >
+                                                    {side.descripcion}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Select de Lado 2 */}
+                                <div className="grid gap-2">
+                                    <Label htmlFor="side2" className="text-sm font-medium">Lado 2 (Opcional)</Label>
+                                    <Select
+                                        value={selectedSide2 || null} // Aquí establecemos "null" si el valor es null
+                                        onValueChange={(value) => setSelectedSide2(value === "null" ? null : value)}
+                                    >
+                                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                            <SelectValue>
+                                                {selectedSide2 === null
+                                                    ? "Sin Lado" // Muestra "Sin Lado" si el valor es null
+                                                    : sides.find((side) => side.id === selectedSide2)?.descripcion || "Seleccionar lado 2"}
+                                            </SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-sipe-blue-light">
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                key="null"
+                                                value="null"
+                                            >
+                                                Sin Lado
+                                            </SelectItem>
+                                            {sides
+                                                .filter((side) => side.id !== selectedSide1) // Evitar duplicados con lado 1
+                                                .map((side) => (
+                                                    <SelectItem
+                                                        className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                        key={side.id}
+                                                        value={side.id}
+                                                    >
+                                                        {side.descripcion}
+                                                    </SelectItem>
+                                                ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </>
+                        )}
+
                     </CardContent>
                     <CardFooter className="flex justify-end gap-4">
                         <Button variant="sipebuttonalt" size="sipebutton" onClick={onClose}>CANCELAR</Button>

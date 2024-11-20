@@ -10,6 +10,25 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
     const [chartData, setChartData] = useState([]);
     const [materialDetails, setMaterialDetails] = useState([]); // Para los detalles de materiales en los informes de salida de material y movimientos
 
+
+    function generateRandomColor() {
+        const isBlue = Math.random() > 0.5; // 50% probabilidad de azul o naranja
+    
+        if (isBlue) {
+            // Generar un color azul (R y G bajos, B alto)
+            const r = Math.floor(Math.random() * 50); // Bajo R
+            const g = Math.floor(Math.random() * 50); // Bajo G
+            const b = Math.floor(Math.random() * 206) + 50; // Alto B
+            return `rgb(${r}, ${g}, ${b})`;
+        } else {
+            // Generar un color naranja (R y G altos, B bajo)
+            const r = Math.floor(Math.random() * 156) + 100; // Alto R
+            const g = Math.floor(Math.random() * 156) + 100; // Alto G
+            const b = Math.floor(Math.random() * 50); // Bajo B
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+    }
+    
     useEffect(() => {
         if (reportData) {
             let formattedData = [];
@@ -20,11 +39,10 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                 const materials = splitField(reportData.nombre_material);
                 const quantities = splitField(reportData.cantidad);
                 const deposits = splitField(reportData.nombre_deposito);
-
                 formattedData = materials.map((material, index) => ({
                     name: `${material} - Depósito ${deposits[index] || "N/A"}`,
                     value: parseInt(quantities[index], 10) || 0,
-                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+                    color: generateRandomColor()
                 }));
             } else if (reportType === "Informe de material por estado") {
                 const materials = splitField(reportData.nombre_material);
@@ -36,7 +54,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                     name: `${material} - Depósito ${deposits[index] || "N/A"}`,
                     value: parseInt(quantities[index], 10) || 0,
                     estado: states[index] || "Sin estado",
-                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+                    color: generateRandomColor()
                 }));
             } else if (reportType === "Informe de material por movimiento entre deposito") {
                 const materials = splitField(reportData.nombre_material);
@@ -44,7 +62,6 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                 const origins = splitField(reportData.deposito_origen);
                 const destinations = splitField(reportData.deposito_destino);
                 const dates = splitField(reportData.fecha_movimiento);
-                const users = splitField(reportData.usuario);
 
                 formattedData = materials.map((material, index) => ({
                     name: `Origen: ${origins[index] || "N/A"} -> Destino: ${destinations[index] || "N/A"}`,
@@ -53,24 +70,21 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                     depositoDestino: destinations[index],
                     nombreMaterial: material,
                     fechaMovimiento: dates[index] || "N/A",
-                    usuario: users[index] || "Desconocido",
-                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+                    color: generateRandomColor()
                 }));
                 setMaterialDetails(formattedData);
             } else if (reportType === "Informe de salida de material") {
                 const materials = splitField(reportData.nombre_material);
                 const quantities = splitField(reportData.cantidad);
                 const dates = splitField(reportData.fecha_salida);
-                const users = splitField(reportData.usuario);
                 const reasons = splitField(reportData.motivo_salida);
 
                 formattedData = materials.map((material, index) => ({
                     name: material,
                     value: parseInt(quantities[index], 10) || 0,
                     fecha: dates[index] || "Sin fecha",
-                    usuario: users[index] || "Desconocido",
                     motivo: reasons[index] || "Sin motivo",
-                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+                    color: generateRandomColor()
                 }));
                 setMaterialDetails(formattedData);
             }
@@ -86,9 +100,11 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
     const [startDate, endDate] = dateRange.split(' - '); // Dividimos las dos fechas
     const formattedStartDate = startDate ? format(new Date(startDate), 'dd/MM/yyyy') : 'N/A';
     const formattedEndDate = endDate ? format(new Date(endDate), 'dd/MM/yyyy') : 'N/A';
+    
     // Obtener valores únicos de `selectedOption` y `selectedOption1`
     const uniqueSelectedOption = Array.from(new Set(selectedOption.split(', '))).join(', ');
     const uniqueSelectedOption1 = Array.from(new Set(selectedOption1.split(', '))).join(', ');
+    const uniqueSelectedMaterial = Array.from(new Set(selectedMaterial.split(', '))).join(', ');
 
     useEffect(() => {
         const handleEscape = (event) => {
@@ -166,7 +182,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
 
                         {reportType === "Informe de salida de material" && (
                             <h3 className="text-center text-lg font-medium text-sipe-white mb-4">
-                                Material: {selectedMaterial} <br />
+                                Material: {uniqueSelectedMaterial} <br />
                                 {formattedStartDate} - {formattedEndDate}
                             </h3>
                         )}
@@ -339,7 +355,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                     <ul className="list-disc pl-5">
                                         {materialDetails.map((item, index) => (
                                             <li key={index} className="text-sipe-white">
-                                                Material: {item.name}, Cantidad: {item.value}, Fecha: {item.fecha}, Usuario: {item.usuario}, Motivo: {item.motivo}
+                                                Material: {item.name}, Cantidad: {item.value}, Fecha: {item.fecha}, Motivo: {item.motivo}
                                             </li>
                                         ))}
                                     </ul>
@@ -352,7 +368,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                     <ul className="list-disc pl-5">
                                         {materialDetails.map((item, index) => (
                                             <li key={index} className="text-sipe-white">
-                                                Material: {item.nombreMaterial}, Cantidad: {item.value}, Origen: {item.depositoOrigen}, Destino: {item.depositoDestino}, Fecha: {item.fechaMovimiento}, Usuario: {item.usuario}
+                                                Material: {item.nombreMaterial}, Cantidad: {item.value}, Origen: {item.depositoOrigen}, Destino: {item.depositoDestino}, Fecha: {item.fechaMovimiento}
                                             </li>
                                         ))}
                                     </ul>

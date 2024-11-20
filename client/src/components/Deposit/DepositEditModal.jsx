@@ -89,7 +89,11 @@ const DepositEditModal = ({ onClose, onDepositUpdated, notify }) => {
             onDepositUpdated(); // Recargar lista de depósitos en el componente padre
             onClose();
         } catch (error) {
-            notify('error', 'Error al actualizar el depósito');
+            if (error.response && error.response.data && error.response.data.error) {
+                notify('error', error.response.data.error)
+            } else {
+                notify('error', 'Error al actualizar el depósito');
+            }
         }
     };
 

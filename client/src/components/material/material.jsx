@@ -35,7 +35,7 @@ function Material({ notify }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
 
-    useEffect(() => {
+    const loadMaterials = () => {
         axios.get('http://localhost:8081/materials')
             .then(response => {
                 setMaterials(response.data);
@@ -44,6 +44,12 @@ function Material({ notify }) {
             .catch(error => {
                 console.error('Error fetching materials:', error);
             });
+    }
+
+
+    useEffect(() => {
+
+        loadMaterials();
 
         axios.get('http://localhost:8081/deposit-locations')
             .then(response => setAvailableLocations(response.data))
@@ -123,6 +129,7 @@ function Material({ notify }) {
     const closeDetailModal = () => {
         setIsDetailModalOpen(false);
         setMaterialDetail(null);
+        loadMaterials();
     };
 
     const handleFilterChange = (e) => {
@@ -195,8 +202,9 @@ function Material({ notify }) {
                             </>
                     </div>
                 </div>
-                <MaterialList 
+                <MaterialList
                     materials={currentMaterials}
+                    loadMaterials={loadMaterials}
                     notify={notify}
                 />
 
@@ -277,7 +285,7 @@ function Material({ notify }) {
                                 exit={{ scale: 0.95, opacity: 0 }}
                                 transition={{ duration: 0.3 }}
                             >
-                                <MaterialForm onClose={closeFormModal} notify={notify} />
+                                <MaterialForm onClose={closeFormModal} notify={notify} loadMaterials={loadMaterials} />
                             </motion.div>
                         </motion.div>
                     )}
@@ -287,6 +295,7 @@ function Material({ notify }) {
                     {isDetailModalOpen && materialDetail && (
                         <MaterialDetailModal
                             isOpen={isDetailModalOpen}
+                            loadMaterials={loadMaterials}
                             onClose={closeDetailModal}
                             selectedMaterial={materialDetail}
                             notify={notify}

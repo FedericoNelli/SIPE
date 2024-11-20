@@ -3,10 +3,9 @@ import UserEditModal from "@/components/User/UserEditModal"; // Asegúrate de te
 import { Button } from "@/components/Common/Button/Button";
 import { X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { toast } from "react-hot-toast";
 import axios from "axios";
 
-function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
+function UserDetailModal({ isOpen, onClose, selectedUser, notify, onUserUpdated }) {
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isEditModalClosing, setIsEditModalClosing] = useState(false);
@@ -16,16 +15,19 @@ function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
 
     useEffect(() => {
         const handleEscape = (event) => {
-            if (event.key === 'Escape' && !isEditModalOpen) {
-                onClose();
+            if (event.key === 'Escape') {
+                if (!isEditModalOpen) {
+                    onUserUpdated(); // Actualiza la lista de usuarios
+                    onClose(); // Cierra el modal
+                }
             }
         };
-
         document.addEventListener('keydown', handleEscape);
         return () => {
             document.removeEventListener('keydown', handleEscape);
         };
-    }, [onClose, isEditModalOpen]);
+    }, [onClose, isEditModalOpen, onUserUpdated]);
+
 
     const openConfirmDeleteModal = useCallback(() => {
         setIsConfirmDeleteOpen(true);
@@ -43,7 +45,7 @@ function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
             const response = await axios.delete(`http://localhost:8081/users/delete/${selectedUser.id}`);
             onClose();
             notify('success', "Usuario eliminado con éxito!");
-            window.location.reload();
+            onUserUpdated();
         } catch (error) {
             console.error('Error al eliminar el usuario:', error);
             notify('error', "Error al eliminar el usuario");
@@ -60,12 +62,9 @@ function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
         setIsEditModalClosing(false);
     };
 
-    const closeEditModal = () => {
-        setIsEditModalClosing(true);
-    };
-
     const handleEditModalClosed = () => {
         setIsEditModalOpen(false);
+        onUserUpdated();
     };
 
     return (
@@ -162,6 +161,7 @@ function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
                                 onClose={handleEditModalClosed}
                                 user={selectedUser}
                                 notify={notify}
+                                onUserUpdated={onUserUpdated}
                             />
                         )}
                     </AnimatePresence>
