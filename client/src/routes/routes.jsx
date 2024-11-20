@@ -13,9 +13,7 @@ export const PrivateRoute = ({ children }) => {
     useEffect(() => {
         const checkTutorialStatus = async () => {
             try {
-                console.log('Checking tutorial status for user:', userId);
                 const response = await axios.get(`http://localhost:8081/check-tutorial-status/${userId}`);
-                console.log('Tutorial status response:', response.data);
                 if (response.data.redirectToChangePassword) {
                     setRedirectPath('/rPsw');
                 } else if (response.data.showTutorial) {
