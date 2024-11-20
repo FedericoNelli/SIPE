@@ -1,32 +1,31 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import axios from 'axios';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 import { Label } from "@/components/Common/Label/Label";
 import { Button } from "@/components/Common/Button/Button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/Common/Select/Select";
 import { Input } from "@/components/Common/Input/Input";
-import ReportModalDetail from './ReportModalDetail';
+import axios from 'axios';
 
-const ReportForm = ({ onClose, notify }) => {
+const ReportForm = ({ onClose, notify, onReportUpdated }) => {
     const [formData, setFormData] = useState({
         tipo: '',
         fechaInicio: '',
         fechaFin: '',
         deposito: '',
         estadoMaterial: '',
-        idMaterial: '', // Añadir material al formulario
-        tipoGrafico: '', // Añadir tipo de gráfico
+        idMaterial: '',
+        tipoGrafico: '',
+        idSalida: '',
+        idDetalleSalida: '',
+        idMovimiento: ''
     });
-
     const [depositos, setDepositos] = useState([]);
     const [estadosMaterial, setEstadosMaterial] = useState([]);
     const [materiales, setMateriales] = useState([]);
+    const [materialesConMovimientos, setMaterialesConMovimientos] = useState([]);
+    const [materialesConSalidas, setMaterialesConSalidas] = useState([]);
     const [loading, setLoading] = useState(false);
-
-    const [reportData, setReportData] = useState([]);
-    const [showReportModal, setShowReportModal] = useState(false);
-    const [reportType, setReportType] = useState("");
 
     useEffect(() => {
         axios.get('http://localhost:8081/depo-names')
@@ -40,7 +39,24 @@ const ReportForm = ({ onClose, notify }) => {
         axios.get('http://localhost:8081/materials')
             .then(response => setMateriales(response.data))
             .catch(error => console.error('Error fetching materials:', error));
-    }, []);
+
+        if (formData.tipo === 'Informe de salida de material') {
+            axios.get('http://localhost:8081/materials-with-exits')
+                .then(response => {
+                    setMaterialesConSalidas(response.data.materiales)
+                })
+                .catch(error => console.error('Error fetching materials with exits:', error));
+        }
+
+        // Obtener materiales con movimientos si el tipo de informe es "Informe de material por movimiento entre deposito"
+        if (formData.tipo === 'Informe de material por movimiento entre deposito') {
+            axios.get('http://localhost:8081/materials-with-movements')
+                .then(response => {
+                    setMaterialesConMovimientos(response.data.materiales);
+                })
+                .catch(error => console.error('Error fetching materials with movements:', error));
+        }
+    }, [formData.tipo]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -49,6 +65,20 @@ const ReportForm = ({ onClose, notify }) => {
             [name]: value
         }));
     };
+
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === "Escape") {
+                onClose();
+                onReportUpdated();
+            }
+        };
+
+        window.addEventListener("keydown", handleEscape);
+        return () => {
+            window.removeEventListener("keydown", handleEscape);
+        };
+    }, [onClose]);
 
     const handleSelectChange = (name, value) => {
         setFormData((prevData) => ({
@@ -61,15 +91,19 @@ const ReportForm = ({ onClose, notify }) => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-
             // Formatear las fechas a 'yyyy-MM-dd' si están presentes
-            const formattedStartDate = formData.fechaInicio ? format(new Date(formData.fechaInicio), 'yyyy-MM-dd') : null;
-            const formattedEndDate = formData.fechaFin ? format(new Date(formData.fechaFin), 'yyyy-MM-dd') : null;
+            const formattedStartDate = formData.fechaInicio ? format(new Date(formData.fechaInicio + 'T00:00:00'), 'yyyy-MM-dd') : null;
+            const formattedEndDate = formData.fechaFin ? format(new Date(formData.fechaFin + 'T00:00:00'), 'yyyy-MM-dd') : null;
 
             const reportDataToSend = {
                 ...formData,
                 fechaInicio: formattedStartDate,
                 fechaFin: formattedEndDate,
+                deposito: formData.deposito,
+                estadoMaterial: formData.estadoMaterial,
+                /* idMaterial: formData.idMaterial, */
+                /* idDetalleSalida: formData.tipo === 'Informe de salida de material' ? formData.idDetalleSalida : null, */
+                idMaterial: formData.tipo === 'Informe de material por movimiento entre deposito' || formData.tipo === 'Informe de salida de material' ? formData.idMaterial : null
             };
 
             const response = await axios.post('http://localhost:8081/addReport', reportDataToSend, {
@@ -81,13 +115,8 @@ const ReportForm = ({ onClose, notify }) => {
 
             if (response.status === 200) {
                 notify('success', "¡Informe generado con éxito!");
-                setReportData(response.data.datos);
-                setReportType(formData.tipo);
-                setShowReportModal(true);
-
-                if (window.fetchReports) {
-                    window.fetchReports();
-                }
+                onClose();
+                onReportUpdated();
             } else {
                 throw new Error(response.data.mensaje || "Error al generar informe");
             }
@@ -99,14 +128,11 @@ const ReportForm = ({ onClose, notify }) => {
         }
     };
 
-
+    // Obtener la fecha actual y formatearla para el atributo max
+    const today = new Date();
+    const formattedToday = format(today, 'yyyy-MM-dd');
 
     const handleCancel = () => {
-        if (onClose) onClose();
-    };
-
-    const handleCloseReportModal = () => {
-        setShowReportModal(false);
         if (onClose) onClose();
     };
 
@@ -127,11 +153,12 @@ const ReportForm = ({ onClose, notify }) => {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona el tipo de informe" />
                             </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Informe de inventario general">Informe de inventario general</SelectItem>
-                                <SelectItem value="Informe de material por depósito">Informe de material por depósito</SelectItem>
-                                <SelectItem value="Informe de material por estado">Informe de material por estado</SelectItem>
-                                <SelectItem value="Informe de material por movimiento entre depósito">Informe de material por movimiento entre depósito</SelectItem>
+                            <SelectContent className="bg-sipe-blue-light">
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de inventario general">Informe de inventario general</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de material por deposito">Informe de material por depósito</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de material por estado">Informe de material por estado</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de material por movimiento entre deposito">Informe de material por movimiento entre depósito</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de salida de material">Informe de salida de material</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -146,33 +173,37 @@ const ReportForm = ({ onClose, notify }) => {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona el tipo de gráfico" />
                             </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Area">Área</SelectItem>
-                                <SelectItem value="Barra">Barra</SelectItem>
-                                <SelectItem value="Torta">Torta</SelectItem>
+                            <SelectContent className="bg-sipe-blue-light">
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Area">Área</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Barra">Barra</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Torta">Torta</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
                     {/* Select de depósito si el informe es por depósito */}
-                    {formData.tipo === 'Informe de material por depósito' && (
+                    {formData.tipo === 'Informe de material por deposito' && (
                         <div className="flex flex-col gap-4">
                             <Label className="text-sm font-medium">Depósito</Label>
-                            <Select
-                                value={formData.deposito}
-                                onValueChange={(value) => handleSelectChange('deposito', value)}
-                            >
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Selecciona un depósito" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {depositos.map(deposito => (
-                                        <SelectItem key={deposito.id} value={deposito.id}>
-                                            {deposito.nombre}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            {depositos.length === 0 ? (
+                                <div className="text-sipe-gray">No hay depósitos para seleccionar</div>
+                            ) : (
+                                <Select
+                                    value={formData.deposito}
+                                    onValueChange={(value) => handleSelectChange('deposito', value)}
+                                >
+                                    <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                        <SelectValue placeholder="Selecciona un depósito" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-sipe-blue-light">
+                                        {depositos.map(deposito => (
+                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposito.id} value={deposito.id}>
+                                                {deposito.nombre}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
                     )}
 
@@ -187,76 +218,97 @@ const ReportForm = ({ onClose, notify }) => {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Selecciona un estado" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Todos">Todos</SelectItem>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {estadosMaterial.map(estado => (
-                                        <SelectItem key={estado.id} value={estado.id}>{estado.descripcion}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={estado.id} value={estado.id}>{estado.descripcion}</SelectItem>
                                     ))}
                                 </SelectContent>
-
                             </Select>
                         </div>
                     )}
 
-                    {/* Selects de material y rango de fechas si el informe es por movimiento entre depósito */}
-                    {formData.tipo === 'Informe de material por movimiento entre depósito' && (
+                    {/* Selects de material si el informe es por salida de material */}
+                    {formData.tipo === 'Informe de salida de material' && (
                         <div className="flex flex-col gap-4">
                             <Label className="text-sm font-medium">Material</Label>
-                            <Select
-                                value={formData.idMaterial}
-                                onValueChange={(value) => handleSelectChange('idMaterial', value)}
-                            >
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Selecciona un material" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Todos">Todos</SelectItem>
-                                    {materiales.map(material => (
-                                        <SelectItem key={material.id} value={material.id}>{material.nombre}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <Label className="text-sm font-medium">Fecha de inicio</Label>
-                            <Input
-                                type="date"
-                                name="fechaInicio"
-                                value={formData.fechaInicio}
-                                onChange={handleInputChange}
-                                className="border-b bg-sipe-blue-dark text-white"
-                            />
-                            <Label className="text-sm font-medium">Fecha de fin</Label>
-                            <Input
-                                type="date"
-                                name="fechaFin"
-                                value={formData.fechaFin}
-                                onChange={handleInputChange}
-                                className="border-b bg-sipe-blue-dark text-white"
-                            />
+                            {materialesConSalidas.length === 0 ? (
+                                <div className="text-sipe-gray text-sm">No hay salidas para seleccionar</div>
+                            ) : (
+                                <Select
+                                    value={formData.idMaterial}
+                                    onValueChange={(value) => handleSelectChange('idMaterial', value)}
+                                >
+                                    <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                        <SelectValue placeholder="Selecciona un material" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-sipe-blue-light">
+                                        {materialesConSalidas.map((material, index) => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                key={`${material.idMaterial}-${index}`}
+                                                value={material.idMaterial}
+                                            >
+                                                {material.nombreMaterial} - {material.depositoNombre} - {material.ubicacionNombre}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
                     )}
 
-                    {/* Selección de fechas para todos los tipos de informes */}
-                    {(formData.tipo !== 'Informe de material por movimiento entre depósito') && (
-                        <>
-                            <Label className="text-sm font-medium">Fecha de inicio</Label>
-                            <Input
-                                type="date"
-                                name="fechaInicio"
-                                value={formData.fechaInicio}
-                                onChange={handleInputChange}
-                                className="border-b bg-sipe-blue-dark text-white"
-                            />
-                            <Label className="text-sm font-medium">Fecha de fin</Label>
-                            <Input
-                                type="date"
-                                name="fechaFin"
-                                value={formData.fechaFin}
-                                onChange={handleInputChange}
-                                className="border-b bg-sipe-blue-dark text-white"
-                            />
-                        </>
+                    {/* Selects de material y rango de fechas si el informe es por movimiento entre depósitos */}
+                    {formData.tipo === 'Informe de material por movimiento entre deposito' && (
+                        <div className="flex flex-col gap-4">
+                            <Label className="text-sm font-medium">Material</Label>
+                            {materialesConMovimientos.length === 0 ? (
+                                <div className="text-sipe-gray text-sm">No hay movimientos para seleccionar</div>
+                            ) : (
+                                <Select
+                                    value={formData.idMaterial}
+                                    onValueChange={(value) => handleSelectChange('idMaterial', value)}
+                                >
+                                    <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                        <SelectValue placeholder="Selecciona un material" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-sipe-blue-light">
+                                        {materialesConMovimientos.map(material => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                key={material.idMaterial}
+                                                value={material.idMaterial}
+                                            >
+                                                {material.nombreMaterial} - {material.depositoNombre} - {material.ubicacionNombre}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        </div>
                     )}
+
+
+                    {/* Selección de fechas (siempre presente para todos los tipos de informes) */}
+                    <div className="flex flex-col gap-4">
+                        <Label className="text-sm font-medium">Fecha de inicio</Label>
+                        <Input
+                            type="date"
+                            name="fechaInicio"
+                            value={formData.fechaInicio}
+                            onChange={handleInputChange}
+                            className="border-b bg-sipe-blue-dark text-white"
+                            max={formattedToday}
+                        />
+                        <Label className="text-sm font-medium">Fecha de fin</Label>
+                        <Input
+                            type="date"
+                            name="fechaFin"
+                            value={formData.fechaFin}
+                            onChange={handleInputChange}
+                            className="border-b bg-sipe-blue-dark text-white"
+                            max={formattedToday}
+                        />
+                    </div>
                 </CardContent>
                 <CardFooter className="flex justify-end gap-4">
                     <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
@@ -267,22 +319,6 @@ const ReportForm = ({ onClose, notify }) => {
                     </Button>
                 </CardFooter>
             </Card>
-
-            <ReportModalDetail
-                isOpen={showReportModal}
-                onClose={handleCloseReportModal}
-                reportData={reportData}
-                reportType={reportType}
-                tipoGrafico={formData.tipoGrafico}
-                selectedMaterial={formData.idMaterial === 'Todos' ? 'Todos los materiales' : materiales.find(material => material.id === formData.idMaterial)?.nombre}
-                // Ahora la fecha ya está formateada en handleSubmit, por lo que no necesitas formatearla aquí
-                dateRange={`${formData.fechaInicio || 'N/A'} - ${formData.fechaFin || 'N/A'}`}
-                selectedOption={formData.tipo === 'Informe de material por depósito' ? depositos.find(depo => depo.id === formData.deposito)?.nombre :
-                    formData.tipo === 'Informe de material por estado' ? estadosMaterial.find(estado => estado.id === parseInt(formData.estadoMaterial))?.descripcion :
-                        formData.tipo === 'Informe de material por movimiento entre depósito' ?
-                            `Material: ${formData.idMaterial === 'Todos' ? 'Todos' : materiales.find(material => material.id === formData.idMaterial)?.nombre} | Fechas: ${formData.fechaInicio || 'N/A'} a ${formData.fechaFin || 'N/A'}` : 'No especificado'}
-            />
-
         </>
     );
 };

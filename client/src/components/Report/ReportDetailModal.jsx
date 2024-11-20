@@ -1,59 +1,108 @@
 import React, { useEffect, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, Bar, BarChart, Cell, LabelList, Pie, PieChart, Label } from "recharts";
-import { X } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/Common/Chart/Chart";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/Common/Button/Button";
+import { format } from "date-fns";
 
-function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafico, selectedMaterial, dateRange, selectedOption, selectedDeposito, selectedEstado }) {
+function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafico, selectedMaterial, dateRange, selectedOption, selectedOption1 }) {
     const [chartData, setChartData] = useState([]);
+    const [materialDetails, setMaterialDetails] = useState([]);
 
+    function generateRandomColor() {
+        const isBlue = Math.random() > 0.5;
+    
+        if (isBlue) {
+            // Generar un color azul (R y G bajos, B alto)
+            const r = Math.floor(Math.random() * 50); 
+            const g = Math.floor(Math.random() * 50); 
+            const b = Math.floor(Math.random() * 206) + 50; 
+            return `rgb(${r}, ${g}, ${b})`;
+        } else {
+            // Generar un color naranja (R y G altos, B bajo)
+            const r = Math.floor(Math.random() * 156) + 100; 
+            const g = Math.floor(Math.random() * 156) + 100; 
+            const b = Math.floor(Math.random() * 50); 
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+    }
+    
     useEffect(() => {
-        if (Array.isArray(reportData) && reportData.length > 0) {
+        if (reportData) {
             let formattedData = [];
 
-            if (reportType === "Informe de inventario general") {
-                // Mapeo de datos para el Informe de inventario general
-                formattedData = reportData.map((item) => ({
-                    name: item.nombre || "Sin nombre",
-                    value: item.cantidad || 0,
-                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`, // Genera un color aleatorio
-                }));
-            } else if (reportType === "Informe de material por depósito") {
-                formattedData = reportData.map((item) => ({
-                    name: item.nombre || "Sin nombre",
-                    value: item.cantidad || 0,
-                    color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
+            const splitField = (field) => field ? field.split(', ') : [];
+
+            if (reportType === "Informe de inventario general" || reportType === "Informe de material por deposito") {
+                const materials = splitField(reportData.nombre_material);
+                const quantities = splitField(reportData.cantidad);
+                const deposits = splitField(reportData.nombre_deposito);
+                formattedData = materials.map((material, index) => ({
+                    name: `${material} - Depósito ${deposits[index] || "N/A"}`,
+                    value: parseInt(quantities[index], 10) || 0,
+                    color: generateRandomColor()
                 }));
             } else if (reportType === "Informe de material por estado") {
-                const groupedData = reportData.reduce((acc, item) => {
-                    const estado = item.estadoDescripcion || "Sin estado";
-                    const existing = acc.find((data) => data.name === estado);
+                const materials = splitField(reportData.nombre_material);
+                const quantities = splitField(reportData.cantidad);
+                const deposits = splitField(reportData.nombre_deposito);
+                const states = splitField(reportData.estado_material);
 
-                    if (existing) {
-                        existing.value += item.cantidad;
-                        existing.materials += `, ${item.nombre} (${item.cantidad})`; // Agrega el nombre del material y la cantidad
-                    } else {
-                        acc.push({
-                            name: estado,
-                            value: item.cantidad || 0,
-                            materials: `${item.nombre} (${item.cantidad})`, // Agrega el nombre del material y la cantidad
-                            color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
-                        });
-                    }
-                    return acc;
-                }, []);
-                formattedData = groupedData;
+                formattedData = materials.map((material, index) => ({
+                    name: `${material} - Depósito ${deposits[index] || "N/A"}`,
+                    value: parseInt(quantities[index], 10) || 0,
+                    estado: states[index] || "Sin estado",
+                    color: generateRandomColor()
+                }));
+            } else if (reportType === "Informe de material por movimiento entre deposito") {
+                const materials = splitField(reportData.nombre_material);
+                const quantities = splitField(reportData.cantidad_movimiento);
+                const origins = splitField(reportData.deposito_origen);
+                const destinations = splitField(reportData.deposito_destino);
+                const dates = splitField(reportData.fecha_movimiento);
+
+                formattedData = materials.map((material, index) => ({
+                    name: `Origen: ${origins[index] || "N/A"} -> Destino: ${destinations[index] || "N/A"}`,
+                    value: parseInt(quantities[index], 10) || 0,
+                    depositoOrigen: origins[index],
+                    depositoDestino: destinations[index],
+                    nombreMaterial: material,
+                    fechaMovimiento: dates[index] || "N/A",
+                    color: generateRandomColor()
+                }));
+                setMaterialDetails(formattedData);
+            } else if (reportType === "Informe de salida de material") {
+                const materials = splitField(reportData.nombre_material);
+                const quantities = splitField(reportData.cantidad);
+                const dates = splitField(reportData.fecha_salida);
+                const reasons = splitField(reportData.motivo_salida);
+
+                formattedData = materials.map((material, index) => ({
+                    name: material,
+                    value: parseInt(quantities[index], 10) || 0,
+                    fecha: dates[index] || "Sin fecha",
+                    motivo: reasons[index] || "Sin motivo",
+                    color: generateRandomColor()
+                }));
+                setMaterialDetails(formattedData);
             }
 
-            console.log('Datos formateados para el gráfico (después de formatear):', formattedData);
             setChartData(formattedData);
         } else {
-            console.log('reportData no es un array o está vacío:', reportData);
             setChartData([]);
         }
     }, [reportData, reportType]);
 
+
+
+    const [startDate, endDate] = dateRange.split(' - '); // Dividimos las dos fechas
+    const formattedStartDate = startDate ? format(new Date(startDate), 'dd/MM/yyyy') : 'N/A';
+    const formattedEndDate = endDate ? format(new Date(endDate), 'dd/MM/yyyy') : 'N/A';
+    
+    // Obtener valores únicos de `selectedOption` y `selectedOption1`
+    const uniqueSelectedOption = Array.from(new Set(selectedOption.split(', '))).join(', ');
+    const uniqueSelectedOption1 = Array.from(new Set(selectedOption1.split(', '))).join(', ');
+    const uniqueSelectedMaterial = Array.from(new Set(selectedMaterial.split(', '))).join(', ');
 
     useEffect(() => {
         const handleEscape = (event) => {
@@ -62,10 +111,7 @@ function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafic
             }
         };
 
-        // Agregar el evento de tecla al montar el componente
         window.addEventListener("keydown", handleEscape);
-
-        // Limpiar el evento al desmontar el componente
         return () => {
             window.removeEventListener("keydown", handleEscape);
         };
@@ -100,16 +146,13 @@ function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafic
                 >
                     <motion.div
                         key="modal-content"
-                        className="flex flex-col w-full max-w-4xl h-auto shadow-xl relative bg-sipe-blue-dark rounded-3xl p-10"
+                        className="flex flex-col w-max max-w-xl 2xl:max-w-4xl h-auto shadow-xl relative bg-sipe-blue-dark rounded-3xl p-10"
                         onClick={(e) => e.stopPropagation()}
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.8, opacity: 0 }}
                         transition={{ duration: 0.3 }}
                     >
-                        <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
-                            <X size={20} strokeWidth={4} onClick={onClose} />
-                        </div>
 
                         {/* Título del Informe */}
                         <h1 className="text-center text-4xl font-bold text-sipe-white mb-4">{reportType}</h1>
@@ -117,32 +160,37 @@ function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafic
                         {/* Mostrar subtítulos según el tipo de informe */}
                         {reportType === "Informe de inventario general" && (
                             <h3 className="text-center text-lg font-medium text-sipe-white mb-4">
-                                {dateRange}
+                                {formattedStartDate} - {formattedEndDate}
                             </h3>
                         )}
 
                         {reportType === "Informe de material por estado" && (
                             <h3 className="text-center text-lg font-medium text-sipe-white mb-4">
-                                Estado: {selectedEstado} <br />
-                                {dateRange}
+                                Estado: {uniqueSelectedOption1} <br />
+                                {formattedStartDate} - {formattedEndDate}
                             </h3>
                         )}
 
-                        {reportType === "Informe de material por movimiento entre depósito" && (
+                        {reportType === "Informe de material por movimiento entre deposito" && (
                             <h3 className="text-center text-lg font-medium text-sipe-white mb-4">
                                 Material: {selectedMaterial} <br />
-                                {dateRange}
+                                {formattedStartDate} - {formattedEndDate}
                             </h3>
                         )}
 
-                        {reportType === "Informe de material por depósito" && (
+                        {reportType === "Informe de salida de material" && (
                             <h3 className="text-center text-lg font-medium text-sipe-white mb-4">
-                                Depósito: {selectedDeposito} <br /> {/* Mostrar el depósito seleccionado */}
-                                {dateRange}
+                                Material: {uniqueSelectedMaterial} <br />
+                                {formattedStartDate} - {formattedEndDate}
                             </h3>
                         )}
 
-
+                        {reportType === "Informe de material por deposito" && (
+                            <h3 className="text-center text-lg font-medium text-sipe-white mb-4">
+                                Depósito: {uniqueSelectedOption} <br /> {/* Mostrar el depósito seleccionado */}
+                                {formattedStartDate} - {formattedEndDate}
+                            </h3>
+                        )}
 
                         {/* Contenedor del gráfico */}
                         <div className="w-full flex justify-center items-center">
@@ -176,17 +224,17 @@ function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafic
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                             ))}
                                             <LabelList
-                                                dataKey="name" // Mostrar el nombre del estado
+                                                dataKey="value"
                                                 position="top"
                                                 offset={10}
-                                                className="fill-foreground text-sipe-white"
+                                                className="fill-sipe-white"
                                                 fontSize={12}
                                                 fontWeight="bold"
                                             />
                                         </Bar>
-
                                     </BarChart>
                                 )}
+
                                 {tipoGrafico === "Torta" && (
                                     <PieChart width={500} height={500}>
                                         <ChartTooltip
@@ -196,12 +244,27 @@ function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafic
                                         <Pie
                                             data={chartData}
                                             dataKey="value"
-                                            nameKey="name" // Utilizar "name" para mostrar el estado
-                                            innerRadius={100}
-                                            outerRadius={200}
+                                            nameKey="name"
+                                            innerRadius={75}
+                                            outerRadius={125}
                                             strokeWidth={5}
                                             isAnimationActive={true}
-                                            label={({ name, value }) => `${name}: ${value}`} // Mostrar el nombre del estado y la cantidad total
+                                            label={({ name, value, cx, cy, midAngle, outerRadius }) => {
+                                                const RADIAN = Math.PI / 180;
+                                                const x = cx + (outerRadius + 20) * Math.cos(-midAngle * RADIAN);
+                                                const y = cy + (outerRadius + 20) * Math.sin(-midAngle * RADIAN);
+                                                return (
+                                                    <text
+                                                        x={x}
+                                                        y={y}
+                                                        textAnchor={x > cx ? 'start' : 'end'}
+                                                        dominantBaseline="central"
+                                                        className="font-bold fill-sipe-white"
+                                                    >
+                                                        {`${name} Cantidad:${value}`}
+                                                    </text>
+                                                );
+                                            }}
                                         >
                                             {chartData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
@@ -220,16 +283,16 @@ function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafic
                                                                 <tspan
                                                                     x={viewBox.cx}
                                                                     y={viewBox.cy}
-                                                                    className="fill-foreground text-3xl font-bold"
+                                                                    className="fill-sipe-white text-3xl font-bold"
                                                                 >
                                                                     {totalMaterials} {/* Mostrar la cantidad total de materiales */}
                                                                 </tspan>
                                                                 <tspan
                                                                     x={viewBox.cx}
                                                                     y={(viewBox.cy || 0) + 24}
-                                                                    className="fill-muted-foreground"
+                                                                    className="fill-sipe-white font-bold"
                                                                 >
-                                                                    Materiales {/* Texto debajo del número */}
+                                                                    Materiales
                                                                 </tspan>
                                                             </text>
                                                         );
@@ -240,6 +303,8 @@ function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafic
                                         </Pie>
                                     </PieChart>
                                 )}
+
+
                                 {tipoGrafico === "Area" && (
                                     <AreaChart
                                         data={chartData}
@@ -263,7 +328,7 @@ function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafic
                                             content={<ChartTooltipContent indicator="dot" />}
                                         />
                                         <Area
-                                            dataKey="value" // Cambiado de 'value1' a 'value'
+                                            dataKey="value"
                                             name="Cantidad Material"
                                             type="natural"
                                             fill="var(--color-value1)"
@@ -273,7 +338,6 @@ function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafic
                                         />
                                     </AreaChart>
                                 )}
-
                             </ChartContainer>
                         </div>
 
@@ -281,6 +345,34 @@ function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafic
                         <div className="bg-sipe-orange-dark rounded-xl mt-8 p-4 flex flex-col justify-center items-center w-full text-sipe-white">
                             <h2 className="text-center text-2xl font-bold mb-2">Detalle del Informe</h2>
                             <p className="font-bold">Total de registros: {reportData.length}</p>
+
+                            {/* Detalles adicionales para los informes de salida de material y movimientos */}
+                            {reportType === "Informe de salida de material" && (
+                                <div className="mt-4 w-full">
+                                    <h3 className="text-center font-bold">Detalles de Salidas:</h3>
+                                    <ul className="list-disc pl-5">
+                                        {materialDetails.map((item, index) => (
+                                            <li key={index} className="text-sipe-white">
+                                                Material: {item.name}, Cantidad: {item.value}, Fecha: {item.fecha}, Motivo: {item.motivo}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {reportType === "Informe de material por movimiento entre deposito" && (
+                                <div className="mt-4 w-full">
+                                    <h3 className="text-center font-bold">Detalles de Movimientos:</h3>
+                                    <ul className="list-disc pl-5">
+                                        {materialDetails.map((item, index) => (
+                                            <li key={index} className="text-sipe-white">
+                                                Material: {item.nombreMaterial}, Cantidad: {item.value}, Origen: {item.depositoOrigen}, Destino: {item.depositoDestino}, Fecha: {item.fechaMovimiento}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
                             <p className="text-center">El gráfico muestra la cantidad de datos relacionados con el informe seleccionado.</p>
                         </div>
 
@@ -297,4 +389,4 @@ function ReportModalDetail({ isOpen, onClose, reportData, reportType, tipoGrafic
     );
 }
 
-export default ReportModalDetail;
+export default ReportDetailModal;

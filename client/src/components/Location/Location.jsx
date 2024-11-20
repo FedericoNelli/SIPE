@@ -1,38 +1,38 @@
 import { useEffect, useState } from 'react';
-import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import axios from 'axios';
-import LocationForm from '@/components/Location/LocationForm';
 import LocationList from './LocationList';
 
 function Location({ notify }) {
-    const [locations, setlocations] = useState([]);
+    const [locations, setLocations] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
-    const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 
-    useEffect(() => {
+
+    const loadLocations = () => {
         axios.get('http://localhost:8081/deposit-locations')
             .then(response => {
-                setlocations(response.data);
+                setLocations(response.data);
             })
             .catch(error => {
                 console.error('Error fetching locations:', error);
             });
+    };
+
+    useEffect(() => {
+        loadLocations();
     }, []);
 
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentlocations = locations.slice(indexOfFirstItem, indexOfLastItem);
+    const currentLocations = locations.slice(indexOfFirstItem, indexOfLastItem);
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    const totalPages = Math.ceil(locations.length / itemsPerPage);
 
-    const openFormModal = () => {
-        setIsFormModalOpen(true);
-    };
-
-    const closeFormModal = () => {
-        setIsFormModalOpen(false);
+    const paginate = (pageNumber) => {
+        if (pageNumber >= 1 && pageNumber <= totalPages) {
+            setCurrentPage(pageNumber);
+        }
     };
 
     return (
@@ -44,15 +44,15 @@ function Location({ notify }) {
                         <h1 className="text-3xl font-bold">Ubicaciones</h1>
                         <h3 className="text-md font-thin">Listado completo de ubicaciones</h3>
                     </div>
-                    <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">NUEVA UBICACIÓN</Button>
-                    </div>
                 </div>
-                <LocationList locations={currentlocations} />
+                <LocationList
+                    locations={currentLocations}
+                    notify={notify}
+                />
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
-                            {[...Array(Math.ceil(locations.length / itemsPerPage)).keys()].map(page => (
+                            {[...Array(totalPages).keys()].map(page => (
                                 <PaginationItem key={page + 1}>
                                     <PaginationLink href="#" onClick={() => paginate(page + 1)} isActive={currentPage === page + 1}>
                                         {page + 1}
@@ -62,11 +62,6 @@ function Location({ notify }) {
                         </PaginationContent>
                     </Pagination>
                 </div>
-                {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <LocationForm onClose={closeFormModal} notify={notify} />
-                    </div>
-                )}
             </div>
         </div>
     );

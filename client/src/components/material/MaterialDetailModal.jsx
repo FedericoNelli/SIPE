@@ -1,32 +1,33 @@
 import React, { useEffect, useCallback, useState } from "react";
 import Map from "@/components/Common/Map/Map";
-import ModalEditMaterial from "@/components/Material/ModalEditMaterial";
-import { toast } from "react-hot-toast";
+import MaterialEditModal from "@/components/Material/MaterialEditModal";
 import axios from "axios";
 import { Button } from "@/components/Common/Button/Button";
 import { X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
-function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
+function MaterialDetailModal({ isOpen, onClose, selectedMaterial, notify, loadMaterials }) {
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isEditModalClosing, setIsEditModalClosing] = useState(false);
 
-    const rol = localStorage.getItem('rol'); // Obtenemos el rol del usuario
+    const rol = localStorage.getItem('rol');
 
-    // Manejo del evento 'Escape' pero solo si el ModalEditMaterial NO está abierto
     useEffect(() => {
         const handleEscape = (event) => {
-            if (event.key === 'Escape' && !isEditModalOpen) {
-                onClose(); // Cierra ModalDetailMaterial solo si ModalEditMaterial no está abierto
+            if (event.key === 'Escape') {
+                if (!isEditModalOpen) {
+                    onClose();
+                }
+                loadMaterials();
             }
         };
-
         document.addEventListener('keydown', handleEscape);
         return () => {
             document.removeEventListener('keydown', handleEscape);
         };
-    }, [onClose, isEditModalOpen]);
+    }, [onClose, isEditModalOpen, loadMaterials]);
+
 
     const openConfirmDeleteModal = useCallback(() => {
         setIsConfirmDeleteOpen(true);
@@ -43,11 +44,11 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
         try {
             const response = await axios.delete(`http://localhost:8081/materials/delete/${selectedMaterial.id}`);
             onClose();
-            toast.success("Material eliminado con éxito!");
-            window.location.reload();
+            notify('success', 'Material eliminado con éxito!');
+            loadMaterials();
         } catch (error) {
             console.error('Error al eliminar el material:', error);
-            toast.error("Error al eliminar el material");
+            notify('error', 'Error al eliminar el material');
         }
     }, [selectedMaterial, onClose]);
 
@@ -61,12 +62,9 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
         setIsEditModalClosing(false);
     };
 
-    const closeEditModal = () => {
-        setIsEditModalClosing(true);
-    };
-
     const handleEditModalClosed = () => {
         setIsEditModalOpen(false);
+        loadMaterials();
     };
 
     return (
@@ -101,7 +99,7 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
                                         />
                                     </div>
                                 ) : (
-                                    <div className="w-[20vw] h-[40vh] border rounded-2xl flex justify-center items-center">
+                                    <div className="w-[25vw] h-[40vh] border rounded-2xl flex justify-center items-center">
                                         <p>No hay imagen disponible</p>
                                     </div>
                                 )}
@@ -128,19 +126,27 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
                             </div>
 
                             <h1 className="text-center text-4xl font-bold text-sipe-white">Mapa</h1>
-                            <div className="bg-sipe-blue-dark rounded-xl flex flex-col justify-center items-center w-auto p-4">
-                                <p className="text-sipe-white font-light py-2">Pasillo {selectedMaterial.pasilloNumero} | Estantería {selectedMaterial.estanteriaNumero}</p>
-                                <div className="flex justify-center items-center">
-                                    <Map
-                                        pasillo={selectedMaterial.pasilloNumero}
-                                        estanteria={selectedMaterial.estanteriaNumero}
-                                        estantes={selectedMaterial.cantidadEstante}
-                                        divisiones={selectedMaterial.cantidadDivision}
-                                        objetoEstante={selectedMaterial.estanteEstanteria}
-                                        objetoDivision={selectedMaterial.divisionEstanteria}
-                                    />
+
+                            {selectedMaterial.idEspacio ? (
+                                <div className="bg-sipe-blue-dark rounded-xl flex flex-col justify-center items-center w-auto p-4">
+                                    <p className="text-sipe-white font-light py-2">Pasillo {selectedMaterial.pasilloNumero} | Estantería {selectedMaterial.estanteriaNumero}</p>
+                                    <div className="flex justify-center items-center">
+                                        <Map
+                                            pasillo={selectedMaterial.pasilloNumero}
+                                            estanteria={selectedMaterial.estanteriaNumero}
+                                            estantes={selectedMaterial.cantidadEstante}
+                                            divisiones={selectedMaterial.cantidadDivision}
+                                            objetoEstante={selectedMaterial.estanteEstanteria}
+                                            objetoDivision={selectedMaterial.divisionEstanteria}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="bg-sipe-blue-dark rounded-xl flex flex-col justify-center items-center w-auto p-4">
+                                    <p className="text-sipe-white font-light py-2">No existe ubicación del material en ninguna estantería.</p>
+                                </div>
+                            )}
+
                             <hr />
                             <div className="flex flex-col justify-center items-center gap-4 max-w-sm mx-auto">
                                 <p className="text-sipe-white text-center">El mapa ayuda a tener una mejor noción de donde se encuentra el material. El círculo denota su posición dentro de la estantería.</p>
@@ -171,12 +177,11 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
                     <AnimatePresence>
                         {isConfirmDeleteOpen && (
                             <motion.div
-                                className="fixed inset-0 flex items-center justify-center z-50"
-                                onClick={closeConfirmDeleteModal}
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.8, opacity: 0 }}
-                                transition={{ duration: 0.15 }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 backdrop-blur-sm"
                             >
                                 <div className="bg-sipe-blue-light flex flex-col justify-center w-350 rounded-xl gap-6 p-4" onClick={(e) => e.stopPropagation()}>
                                     <p className="font-bold text-2xl text-center text-sipe-white">¿Estás seguro que querés borrar este material?</p>
@@ -191,10 +196,11 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
 
                     <AnimatePresence>
                         {isEditModalOpen && (
-                            <ModalEditMaterial
+                            <MaterialEditModal
                                 isOpen={!isEditModalClosing}
                                 onClose={handleEditModalClosed}
-                                notify={toast}
+                                loadMaterials={loadMaterials}
+                                notify={notify}
                                 material={selectedMaterial}
                             />
                         )}
@@ -205,4 +211,4 @@ function ModalDetailMaterial({ isOpen, onClose, selectedMaterial }) {
     );
 }
 
-export default ModalDetailMaterial;
+export default MaterialDetailModal;

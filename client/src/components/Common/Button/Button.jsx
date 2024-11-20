@@ -18,13 +18,19 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/10",
         ghost: "bg-sipe-orange-light hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        sipebutton: "w-full text-sipe-white bg-sipe-orange-light text-4xl font-bold p-9 hover:bg-sipe-orange-light-variant",
-        sipebuttonalt: "w-full text-sipe-white bg-sipe-orange-dark text-4xl font-bold p-9 hover:bg-sipe-orange-dark-variant",
+        sipebutton: "w-full text-sipe-white bg-sipe-orange-light text-4xl font-bold p-9 hover:bg-sipe-orange-light-variant gap-2",
+        sipebuttonalt: "w-full text-sipe-white bg-sipe-orange-dark text-4xl font-bold p-9 hover:bg-sipe-orange-dark-variant gap-2",
+        sipebuttonalt2: "w-full text-sipe-white bg-sipe-orange-super-light text-2xl font-bold p-9 hover:bg-sipe-orange-super-light-variant gap-2",
+        sipebuttonalt3: "w-full text-sipe-white bg-sipe-gray text-xl font-bold p-9 hover:bg-sipe-gray gap-2",
+        sipebuttonalt4: "w-full text-sipe-white bg-sipe-orange-dark text-xl font-bold p-9 hover:bg-sipe-orange-dark-variant gap-2",
+        sipebuttonalt5: "w-full text-sipe-white bg-sipe-orange-super-light text-4xl font-bold p-9 hover:bg-sipe-orange-super-light-variant gap-2",
         sipehover:"hover:bg-sipe-orange-light hover:text-accent-foreground",
         sipepagination: "bg-sipe-orange-light hover:bg-sipe-orange-light-variant hover:text-accent-foreground",
         sipepaginationalt: "bg-sipe-orange-dark hover:bg-sipe-orange-dark-variant hover:text-accent-foreground",
-        sipemodal: "w-30 text-sipe-white bg-sipe-orange-light text-xl font-bold hover:bg-sipe-orange-light-variant",
-        sipemodalalt: "w-30 text-sipe-white bg-sipe-orange-dark text-xl font-bold hover:bg-sipe-orange-dark-variant"
+        sipemodal: "w-30 text-sipe-white bg-sipe-orange-light text-xl font-bold hover:bg-sipe-orange-light-variant gap-2",
+        sipemodalalt: "w-30 text-sipe-white bg-sipe-orange-dark text-xl font-bold hover:bg-sipe-orange-dark-variant gap-2",
+        sipemodalalt2: "w-30 text-sipe-white bg-sipe-orange-super-light text-xl font-bold hover:bg-sipe-orange-super-light-variant gap-2",
+        sipemodalalt3: "w-30 text-sipe-white bg-sipe-orange-dark-2 text-xl font-bold hover:bg-sipe-orange-super-light-variant gap-2"
       },
       size: {
         default: "h-10 px-4 py-2",

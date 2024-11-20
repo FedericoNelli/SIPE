@@ -12,11 +12,12 @@ function RecoveryCode() {
     const location = useLocation();
     const navigate = useNavigate();
     const email = location.state.email;
+    const { state } = useLocation();
 
     useEffect(() => {
         let timer;
         if (resendTimeout > 0) {
-            timer = setTimeout(() => setResendTimeout(resendTimeout - 1), 1000);
+            timer = setTimeout(() => setResendTimeout(resendTimeout - 1), 500);
         }
         return () => clearTimeout(timer);
     }, [resendTimeout]);
@@ -25,6 +26,7 @@ function RecoveryCode() {
         event.preventDefault();
         try {
             await axios.post('http://localhost:8081/verifyRecoveryCode', { email, recoveryCode: code });
+            localStorage.setItem('firstLogin', '0');
             navigate('/chPsw', { state: { email } });
         } catch (err) {
             setMessage('Código incorrecto');
@@ -41,6 +43,9 @@ function RecoveryCode() {
         }
     };
 
+    const messageTitle = "Validación de código"
+
+
     return (
         <>
             <section className='flex justify-start items-center'>
@@ -50,7 +55,7 @@ function RecoveryCode() {
                 <div className="flex items-center min-h-screen px-4 w-2/6 bg-sipe-blue-dark">
                     <div className="mx-auto w-full max-w-md space-y-4">
                         <div className="space-y-2">
-                            <h1 className="font-bold text-sipe-white text-4xl">Recuperá tu contraseña</h1>
+                            <h1 className="font-bold text-sipe-white text-4xl">{messageTitle}</h1>
                             <p className="font-thin text-sipe-white">Ingresá el código que enviamos a tu email</p>
                         </div>
                         <div className="space-y-4">
@@ -61,14 +66,14 @@ function RecoveryCode() {
                             </div>
                             <div>
                                 <Button className="mb-5" variant="sipebutton" size="sipebutton" type="submit" onClick={handleSubmit}>
-                                    Confirmar
+                                    CONFIRMAR
                                 </Button>
-                                <Button className="mb-5" variant="sipebutton" size="sipebutton" type="button" onClick={handleResendCode} disabled={resendTimeout > 0}>
-                                    {resendTimeout > 0 ? `Reenviar código (${resendTimeout})` : 'Reenviar código'}
+                                <Button className="mb-5" variant="sipebuttonalt2" size="sipebutton" type="button" onClick={handleResendCode} disabled={resendTimeout > 0}>
+                                    {resendTimeout > 0 ? `REENVIAR CÓDIGO (${resendTimeout})` : 'REENVIAR CÓDIGO'}
                                 </Button>
                                 <Link to="/rPsw">
                                     <Button variant="sipebuttonalt" size="sipebutton" type="submit">
-                                        Cancelar
+                                        CANCELAR
                                     </Button>
                                 </Link>
                             </div>

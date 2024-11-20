@@ -7,15 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import { X } from "lucide-react";
 
-function MaterialForm({ onClose, notify }) {
+function MaterialForm({ onClose, notify, loadMaterials }) {
     const [depositLocations, setDepositLocations] = useState([]);
     const [depositNames, setDepositNames] = useState([]);
-    const [locationId, setLocationId] = useState(null);
-    const [categories, setCategories] = useState([]);
-    const [statuses, setStatuses] = useState([]);
+    const [aisles, setAisles] = useState([]);
     const [shelves, setShelves] = useState([]);
     const [spaces, setSpaces] = useState([]);
-    const [selectedShelf, setSelectedShelf] = useState(null);
+    const [locationId, setLocationId] = useState(null);
+    const [selectedAisle, setSelectedAisle] = useState(null);
+    const [categories, setCategories] = useState([]);
+    const [statuses, setStatuses] = useState([]);
     const [formData, setFormData] = useState({
         nombre: '',
         cantidad: '',
@@ -59,11 +60,6 @@ function MaterialForm({ onClose, notify }) {
             .then(response => response.json())
             .then(data => setStatuses(data))
             .catch(error => console.error('Error fetching statuses:', error));
-
-        fetch('http://localhost:8081/shelves')
-            .then(response => response.json())
-            .then(data => setShelves(data))
-            .catch(error => console.error('Error fetching shelves:', error));
     }, []);
 
     useEffect(() => {
@@ -81,22 +77,46 @@ function MaterialForm({ onClose, notify }) {
     }, [locationId]);
 
     useEffect(() => {
-        if (selectedShelf) {
-            fetch(`http://localhost:8081/spaces/${selectedShelf}`)
-                .then(response => response.json())
-                .then(data => setSpaces(data))
-                .catch(error => console.error('Error fetching spaces:', error));
+        if (formData.deposito) {
+            // Obtener pasillos según el depósito seleccionado
+            axios.get(`http://localhost:8081/aisles/${formData.deposito}`)
+                .then(response => setAisles(response.data))
+                .catch(error => console.error('Error fetching aisles:', error));
+        } else {
+            setAisles([]);
         }
-    }, [selectedShelf]);
+    }, [formData.deposito]);
+
+    useEffect(() => {
+        if (selectedAisle) {
+            // Obtener estanterías según el pasillo seleccionado
+            axios.get(`http://localhost:8081/shelves/${selectedAisle}`)
+                .then(response => setShelves(response.data))
+                .catch(error => console.error('Error fetching shelves:', error));
+        } else {
+            setShelves([]);
+        }
+    }, [selectedAisle]);
+
+    useEffect(() => {
+        if (formData.shelf) {
+            // Obtener espacios según la estantería seleccionada
+            axios.get(`http://localhost:8081/spaces/${formData.shelf}`)
+                .then(response => setSpaces(response.data))
+                .catch(error => console.error('Error fetching spaces:', error));
+        } else {
+            setSpaces([]);
+        }
+    }, [formData.shelf]);
 
     const handleInputChange = (e) => {
         const { id, value } = e.target;
-
-        if (id === 'cantidad' && value < 0) {
+        if ((id === 'cantidad' || id === 'bajoStock') && value < 0) {
             setFormData((prevData) => ({
                 ...prevData,
                 [id]: 0,
             }));
+            notify('error', 'El valor no puede ser negativo');
         } else {
             setFormData((prevData) => ({
                 ...prevData,
@@ -104,6 +124,7 @@ function MaterialForm({ onClose, notify }) {
             }));
         }
     };
+
 
     const handleSelectChange = (id, value) => {
         setFormData(prevState => ({
@@ -113,6 +134,14 @@ function MaterialForm({ onClose, notify }) {
 
         if (id === 'depositLocation') {
             setLocationId(value);
+        } else if (id === 'deposito') {
+            setAisles([]);
+            setShelves([]);
+            setSpaces([]);
+        } else if (id === 'aisle') {
+            setSelectedAisle(value);
+            setShelves([]);
+            setSpaces([]);
         }
     };
 
@@ -133,27 +162,21 @@ function MaterialForm({ onClose, notify }) {
 
     const handleSave = async () => {
         const { nombre, cantidad, matricula, bajoStock, espacio, categoria, deposito, imagen, ocupado } = formData;
-
         if (!nombre || !cantidad || !matricula || !bajoStock || !espacio || !categoria || !deposito) {
             notify('error', 'Por favor completa todos los campos');
             return;
         }
-
         const fechaAlta = new Date();
         fechaAlta.setHours(fechaAlta.getHours() - 3);
         const fechaAltaFormatoISO = fechaAlta.toISOString().slice(0, 19).replace('T', ' ');
-
         const fechaUltimoEstado = new Date();
         fechaUltimoEstado.setHours(fechaUltimoEstado.getHours() - 3);
         const fechaFormatoISO = fechaUltimoEstado.toISOString().slice(0, 19).replace('T', ' ');
-
         const ultimoUsuarioId = localStorage.getItem('id');
-
         if (!ultimoUsuarioId) {
             notify('error', 'Usuario no encontrado en localStorage');
             return;
         }
-
         const formDataToSend = new FormData();
         formDataToSend.append('nombre', nombre);
         formDataToSend.append('cantidad', cantidad);
@@ -169,7 +192,6 @@ function MaterialForm({ onClose, notify }) {
         if (imagen) {
             formDataToSend.append('imagen', imagen);
         }
-
         try {
             const response = await axios.post('http://localhost:8081/addMaterial', formDataToSend, {
                 headers: {
@@ -177,23 +199,25 @@ function MaterialForm({ onClose, notify }) {
                 }
             });
             const data = response.data;
-
             if (response.status !== 200) {
                 throw new Error(data.error || "Error al agregar Material");
             }
-
             notify('success', "Material agregado correctamente!");
-
             if (onClose) onClose();
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        
+            loadMaterials();
+
         } catch (error) {
             console.error('Error al agregar el material:', error);
-            notify('error', error.message || "Error al agregar el material");
-        }
-    };
+            // Verificar si el error tiene una respuesta del servidor con un mensaje de error específico
+            if (error.response && error.response.data && error.response.data.mensaje) {
+                // Mostrar el mensaje de error específico del servidor
+                notify('error', error.response.data.mensaje);
+            } else {
+                // Mostrar un mensaje de error genérico si no existe un mensaje específico
+                notify('error', error.message || "Error al agregar el material");
+            }
+        };
+    }
 
     const handleCancel = () => {
         if (onClose) onClose();
@@ -202,9 +226,6 @@ function MaterialForm({ onClose, notify }) {
     return (
         <>
             <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl relative">
-                <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
-                    <X size={14} strokeWidth={4} onClick={onClose} /> {/* Icono de cierre */}
-                </div>
                 <CardHeader>
                     <CardTitle className="text-3xl font-bold mb-2 text-center">Agregar nuevo material</CardTitle>
                     <hr />
@@ -213,17 +234,17 @@ function MaterialForm({ onClose, notify }) {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="nombre" className="text-sm font-medium">Nombre del material</Label>
-                            <Input className="border-b" id="nombre" placeholder="Ingresa el nombre del material" value={formData.nombre} onChange={handleInputChange} />
+                            <Input className="border-b text-sm focus:outline-none" id="nombre" placeholder="Ingresa el nombre del material" value={formData.nombre} onChange={handleInputChange} />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="depositLocation" className="text-sm font-medium">Ubicación del depósito</Label>
                             <Select id="depositLocation" onValueChange={(value) => handleSelectChange('depositLocation', value)}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Selecciona la ubicación" />
+                                    <SelectValue className="bg-sipe-blue-light text-sipe-white border-sipe-white" placeholder="Selecciona la ubicación" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {depositLocations.map(location => (
-                                        <SelectItem key={location.id} value={location.id}>{location.nombre}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={location.id} value={location.id}>{location.nombre}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -232,92 +253,125 @@ function MaterialForm({ onClose, notify }) {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="deposito" className="text-sm font-medium">Nombre del depósito</Label>
-                            <Select id="deposito" onValueChange={(value) => handleSelectChange('deposito', value)}>
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Selecciona el depósito" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {depositNames.map(deposit => (
-                                        <SelectItem key={deposit.id} value={deposit.id}>{deposit.nombre}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            {depositNames.length === 0 ? (
+                                <p className="text-sipe-gray ">No hay depósitos disponibles</p>
+                            ) : (
+                                <Select id="deposito" onValueChange={(value) => handleSelectChange('deposito', value)}>
+                                    <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                        <SelectValue placeholder="Selecciona el depósito" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-sipe-blue-light">
+                                        {depositNames.map(deposit => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                key={deposit.id}
+                                                value={deposit.id}
+                                            >
+                                                {deposit.nombre}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
+
                         <div className="grid gap-2">
                             <Label htmlFor="categoria" className="text-sm font-medium">Categoría</Label>
                             <Select id="categoria" onValueChange={(value) => handleSelectChange('categoria', value)}>
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-sm">
                                     <SelectValue placeholder="Selecciona la categoría" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {categories.map(category => (
-                                        <SelectItem key={category.id} value={category.id}>{category.descripcion}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={category.id} value={category.id}>{category.descripcion}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                        {/* <div className="grid gap-2">
-                            <Label htmlFor="estado" className="text-sm font-medium">Estado</Label>
-                            <Select id="estado" onValueChange={(value) => handleSelectChange('estado', value)}>
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Selecciona el estado" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {statuses.map(status => (
-                                        <SelectItem key={status.id} value={status.id}>{status.descripcion}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div> */}
                         <div className="grid gap-2">
                             <Label htmlFor="cantidad" className="text-sm font-medium">Cantidad</Label>
-                            <Input className="border-b" id="cantidad" type="number" placeholder="Ingresa la cantidad" value={formData.cantidad} onChange={handleInputChange} min="0" />
+                            <Input className="border-b text-sm" id="cantidad" type="number" placeholder="Ingresa la cantidad" value={formData.cantidad} onChange={handleInputChange} min="0" />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="bajoStock" className="text-sm font-medium">Bajo stock</Label>
-                            <Input className="border-b" id="bajoStock" type="number" placeholder="Ingresa el umbral de bajo stock" value={formData.bajoStock} onChange={handleInputChange} min="0" />
+                            <Input className="border-b text-sm" id="bajoStock" type="number" placeholder="Ingresa el umbral de bajo stock" value={formData.bajoStock} onChange={handleInputChange} min="0" />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="matricula" className="text-sm font-medium">Matrícula</Label>
-                            <Input className="border-b" id="matricula" placeholder="Ingresa la matrícula" value={formData.matricula} onChange={handleInputChange} />
+                            <Input className="border-b text-sm" id="matricula" type="text" placeholder="Ingresa la matrícula" value={formData.matricula} onChange={handleInputChange} />
                         </div>
                     </div>
                     <div className="grid gap-4">
-                        <Label className="text-sm font-medium">Ubicación</Label>
-                        <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
-                            <Select id="shelf" onValueChange={(value) => {
-                                handleSelectChange('shelf', value);
-                                setSelectedShelf(value);
-                            }}>
+                        <Label className="text-sm font-medium">Ubicación del material</Label>
+                        <div className="grid grid-cols-3 sm:grid-cols-3 gap-4">
+                            <Select id="aisle" onValueChange={(value) => {
+                                handleSelectChange('aisle', value);
+                            }} disabled={!formData.deposito || depositNames.length === 0}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Estantería" />
+                                    <SelectValue placeholder="Pasillo" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    {shelves.map(shelf => (
-                                        <SelectItem key={shelf.id} value={shelf.id}>Estantería {shelf.numero}</SelectItem>
+                                <SelectContent className="bg-sipe-blue-light">
+                                    {aisles.map(aisle => (
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={aisle.id} value={aisle.id}>Pasillo {aisle.numero}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Select id="espacio" onValueChange={(value) => handleSelectChange('espacio', value)}>
+                            <Select id="shelf" onValueChange={(value) => {
+                                handleSelectChange('shelf', value);
+                            }} disabled={!formData.aisle || depositNames.length === 0}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Espacio" />
+                                    <SelectValue placeholder="Estantería" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    {spaces.map(space => (
-                                        <SelectItem key={space.numeroEspacio} value={space.id} disabled={space.ocupado}>
-                                            {`Espacio ${space.numeroEspacio}`}
-                                        </SelectItem>
+                                <SelectContent className="bg-sipe-blue-light">
+                                    {shelves.map(shelf => (
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={shelf.id} value={shelf.id}>Estantería {shelf.numero}</SelectItem>
                                     ))}
                                 </SelectContent>
+                            </Select>
+                            <Select
+                                id="espacio"
+                                onValueChange={(value) => handleSelectChange('espacio', value)}
+                                disabled={!formData.shelf || spaces.length === 0 || depositNames.length === 0}
+                            >
+                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                    {formData.shelf ? (
+                                        spaces.length > 0 ? (
+                                            <SelectValue placeholder="Espacio" />
+                                        ) : (
+                                            <p className="text-xs text-sipe-white">Sin espacios generados en la estantería</p>
+                                        )
+                                    ) : (
+                                        <SelectValue placeholder="Espacio" />
+                                    )}
+                                </SelectTrigger>
+                                {spaces.length > 0 && (
+                                    <SelectContent className="bg-sipe-blue-light">
+                                        {spaces.map((space) => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                key={space.id}
+                                                value={space.id}
+                                                disabled={space.ocupado}
+                                            >
+                                                {`Espacio ${space.numeroEspacio}`}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                )}
                             </Select>
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="image" className="text-sm font-medium">Imagen</Label>
-                            <Input className="text-white font-thin px-10 file:text-white pb-10 bg-sipe-blue-light border rounded-xl" id="image" type="file" accept="image/*" onChange={handleFileChange} />
+                            <Input
+                                className="text-white font-thin file:text-white pb-8 bg-sipe-blue-light border rounded-xl text-sm"
+                                id="image"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange} />
                         </div>
                     </div>
                 </CardContent>

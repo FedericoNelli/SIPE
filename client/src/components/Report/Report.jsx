@@ -1,27 +1,84 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import { Plus, Trash2 } from 'lucide-react';
 import ReportList from './ReportList';
 import ReportForm from './ReportForm';
-import axios from 'axios';
+import ReportDetailModal from './ReportDetailModal';
 
 function Report({ notify }) {
+    const [reports, setReports] = useState([]); // Lista de informes
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [isDeleteMode, setIsDeleteMode] = useState(false); // Estado para activar el modo de eliminación
-    
+    const [isDeleteMode, setIsDeleteMode] = useState(false);
+    const [selectedReport, setSelectedReport] = useState(null); // Reporte seleccionado
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false); // Estado del modal de detalles
+    const [loading, setLoading] = useState(true);
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    const loadReports = async () => {
+        try {
+            const response = await axios.get('http://localhost:8081/reports');
+            setReports(response.data);
+        } catch (error) {
+            console.error('Error fetching reports:', error);
+            notify('error', 'Error al cargar los informes');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Cargar los informes al montar
+    useEffect(() => {
+        loadReports();
+    }, [notify]);
+
+    // Lógica para obtener los detalles de un informe
+    const fetchReportDetails = async (reportId) => {
+        try {
+            const response = await axios.get(`http://localhost:8081/reports/${reportId}`);
+            setSelectedReport(response.data);
+            setIsDetailModalOpen(true); // Abrir el modal
+        } catch (error) {
+            console.error('Error fetching report details:', error);
+            notify('error', 'Error al obtener detalles del informe');
+        }
+    };
+
+    useEffect(() => {
+        if (selectedReport) {
+        }
+    }, [selectedReport]);
+
+
+    // Cerrar el modal de detalles
+    const closeDetailModal = () => {
+        setIsDetailModalOpen(false);
+        setSelectedReport(null); // Limpiar el estado del reporte seleccionado
+    };
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
+        setIsDeleteMode(false);
     };
 
     const closeFormModal = () => {
         setIsFormModalOpen(false);
     };
-    
+
+    // Lógica para manejar la paginación
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentReports = reports.slice(indexOfFirstItem, indexOfLastItem);
+
+    const totalPages = Math.ceil(reports.length / itemsPerPage);
+
+    const paginate = (pageNumber) => {
+        if (pageNumber >= 1 && pageNumber <= totalPages) {
+            setCurrentPage(pageNumber);
+        }
+    };
 
     return (
         <div className="relative">
@@ -33,19 +90,26 @@ function Report({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de informes</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} className="bg-sipe-orange-light font-semibold px-4 py-2 rounded hover:bg-sipe-orange-light-variant">Generar Informe</Button>
-                        <Button onClick={() => setIsDeleteMode(!isDeleteMode)} className="bg-red-500 font-semibold px-4 py-2 rounded hover:bg-red-600">{isDeleteMode ? "Cancelar" : "Eliminar Informe"}</Button>
+                        <Button onClick={openFormModal} variant="sipemodal"> <Plus /> GENERAR </Button>
+                        <Button onClick={() => setIsDeleteMode(!isDeleteMode)} variant="sipemodalalt"> <Trash2 /> {isDeleteMode ? "CANCELAR ELIMINACIÓN" : "ELIMINAR"}</Button>
                     </div>
                 </div>
+
+                {/* Componente de listado */}
                 <ReportList
                     isDeleteMode={isDeleteMode}
                     notify={notify}
-                    setIsDeleteMode={setIsDeleteMode}
+                    onReportUpdated={loadReports}
+                    fetchReportDetails={fetchReportDetails}
+                    setReports={setReports}
+                    reports={currentReports} // Pasamos solo los informes de la página actual
                 />
+
+                {/* Paginación */}
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
-                            {[...Array(Math.ceil(10 / itemsPerPage)).keys()].map(page => ( // Ajustar este valor según el total real
+                            {[...Array(totalPages).keys()].map(page => (
                                 <PaginationItem key={page + 1}>
                                     <PaginationLink href="#" onClick={() => paginate(page + 1)} isActive={currentPage === page + 1}>
                                         {page + 1}
@@ -55,10 +119,30 @@ function Report({ notify }) {
                         </PaginationContent>
                     </Pagination>
                 </div>
+
+                {/* Modal de formulario de generación de informes */}
                 {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <ReportForm onClose={closeFormModal}  notify={notify} />
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                        <ReportForm 
+                        onClose={closeFormModal} 
+                        notify={notify} 
+                        onReportUpdated={loadReports} />
                     </div>
+                )}
+
+                {/* Modal de detalles de informes */}
+                {isDetailModalOpen && selectedReport && (
+                    <ReportDetailModal
+                        isOpen={isDetailModalOpen}
+                        onClose={closeDetailModal}
+                        reportData={selectedReport.detalles}
+                        reportType={selectedReport.tipo}
+                        tipoGrafico={selectedReport.tipoGrafico}
+                        selectedMaterial={selectedReport.detalles.nombre_material || 'Todos los materiales'}
+                        dateRange={`${selectedReport.fechaInicio || 'N/A'} - ${selectedReport.fechaFin || 'N/A'}`}
+                        selectedOption={selectedReport.detalles.nombre_deposito || 'N/A'}
+                        selectedOption1={selectedReport.detalles.estado_material || 'N/A'}
+                    />
                 )}
             </div>
         </div>

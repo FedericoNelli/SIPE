@@ -1,32 +1,13 @@
-import React, { useState } from 'react';
-import ModalEditMaterial from '@/components/Testing/CompTesting';
+import React from 'react'
+import CompTesting from '@/components/Testing/CompTesting'
 
-const MaterialPage = () => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedMaterial, setSelectedMaterial] = useState(null);
+function Testing() {
+  return (
+    <div>
+      <CompTesting/>
+    </div>
+  )
+}
 
-    const handleEditClick = (material) => {
-        setSelectedMaterial(material);
-        setIsModalOpen(true);
-    };
+export default Testing
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setSelectedMaterial(null);
-    };
-
-    return (
-        <div>
-            <button onClick={() => handleEditClick(material)}>Editar Material</button>
-            <ModalEditMaterial
-                isOpen={isModalOpen}
-                onClose={handleCloseModal}
-                // notify={notify}
-                material={selectedMaterial}
-            />
-        </div>
-    );
-};
-
-
-export default MaterialPage;
