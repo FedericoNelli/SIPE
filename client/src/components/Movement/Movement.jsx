@@ -208,7 +208,7 @@ function Movement({ notify }) {
                     <div className="flex flex-row gap-4 text-sipe-white">
                         <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR </Button>
                         <Button onClick={openEditModal} variant="sipemodalalt"> <PenLine /> EDITAR</Button>
-                        <Button onClick={openFilterModal} variant="secondary" className="bg-sipe-gray bg-opacity-50 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
+                        <Button onClick={openFilterModal} variant="sipebuttonalt3" className="bg-sipe-gray bg-opacity-50 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
                             <Filter /> FILTRAR
                         </Button>
                         <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
@@ -240,7 +240,7 @@ function Movement({ notify }) {
                     </Pagination>
                 </div>
                 {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <MovementForm
                             onClose={closeFormModal}
                             addPendingMovement={addPendingMovement}
@@ -250,7 +250,7 @@ function Movement({ notify }) {
                     </div>
                 )}
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <MovementEditModal
                             onClose={closeEditModal}
                             onMovementUpdated={handleMovementUpdated}
@@ -259,7 +259,7 @@ function Movement({ notify }) {
                     </div>
                 )}
                 {isConfirmModalOpen && selectedMovement && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <MovementConfirmModal
                             movement={selectedMovement}
                             onClose={closeConfirmModal}

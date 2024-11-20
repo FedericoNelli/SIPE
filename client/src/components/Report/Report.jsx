@@ -122,10 +122,10 @@ function Report({ notify }) {
 
                 {/* Modal de formulario de generación de informes */}
                 {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <ReportForm 
                         onClose={closeFormModal} 
-                        notify={notify}
+                        notify={notify} 
                         onReportUpdated={loadReports} />
                     </div>
                 )}

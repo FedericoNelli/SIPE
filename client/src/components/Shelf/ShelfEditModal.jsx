@@ -190,13 +190,9 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
 
 
     return (
-        <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="relative bg-sipe-blue-dark text-sipe-white p-4 rounded-xl w-full max-w-2xl">
-                <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
-                    <X size={14} strokeWidth={4} onClick={onClose} />
-                </div>
-
-                <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="relative bg-sipe-blue-dark text-sipe-white 2xl:p-4 rounded-xl w-full max-w-2xl">
+                <Card className="bg-sipe-blue-dark text-sipe-white 2xl:p-4 rounded-xl">
                     <CardHeader>
                         <CardTitle className="text-3xl font-bold mb-2 text-center">Editar estantería</CardTitle>
                         <hr />
@@ -208,9 +204,9 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Seleccionar estantería" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {shelves.map((shelf) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={shelf.id} value={shelf.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={shelf.id} value={shelf.id}>
                                             {shelf.numero}
                                         </SelectItem>
                                     ))}
@@ -261,9 +257,9 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Seleccionar pasillo" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {aisles.map((aisle) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={aisle.id} value={aisle.id}>
                                             {`Pasillo ${aisle.numero} - Ubicación: ${aisle.ubicacionDeposito} - Depósito: ${aisle.nombreDeposito}`}
                                         </SelectItem>
                                     ))}
@@ -277,11 +273,11 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Seleccionar lado" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {filteredSides.length > 0 ? (
                                         filteredSides.map((side) => (
                                             <SelectItem
-                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
                                                 key={side.id}
                                                 value={side.id}
                                             >

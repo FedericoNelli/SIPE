@@ -130,8 +130,8 @@ function MainDashboard() {
                     totalElement={`${totalMaterials} materiales`}
                     buttonText={buttonSection[2].label}
                     buttonDisabled={buttonSection[2].disabled}
-                    additionalDescription="Ésta es la cantidad de materiales en los depósitos. Es importante estar al tanto de estos valores para mejorar la gestión de recursos."
-                    onButtonClick={() => handleButtonClick(buttonSection[2].path)}
+                    additionalDescription="Materiales en depósitos: datos clave para optimizar la gestión de recursos"
+                    onButtonClick={() => handleButtonClick(buttonSection[2].path)} 
                 />
                 <CustomCard
                     Icon={TriangleAlert}
@@ -140,8 +140,8 @@ function MainDashboard() {
                     totalElement={lowStockMaterials}
                     buttonText={buttonSection[2].label}
                     buttonDisabled={buttonSection[2].disabled}
-                    additionalDescription="Cantidad de materiales que están por debajo del nivel mínimo de stock. Es importante mantener estos materiales en un nivel óptimo para evitar retrasos en los trabajos."
-                    onButtonClick={() => handleButtonClick(buttonSection[2].path)}
+                    additionalDescription="Cantidad de materiales que están por debajo del nivel mínimo de stock"
+                    onButtonClick={() => handleButtonClick(buttonSection[2].path)} 
                 />
                 <CustomCard
                     Icon={AlignStartVertical}

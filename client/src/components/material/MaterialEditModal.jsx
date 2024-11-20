@@ -341,7 +341,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials })
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.8, opacity: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="relative bg-sipe-blue-dark text-sipe-white p-4 rounded-xl w-full max-w-4xl"
+                        className="relative bg-sipe-blue-dark text-sipe-white 2xl:p-4 rounded-xl w-full max-w-2xl"
                         onClick={(e) => e.stopPropagation()}
                     >
 
@@ -358,7 +358,20 @@ function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials })
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="nombre" className="text-sm font-medium">Nombre del material</Label>
-                                        <Input className="border-b" id="nombre" placeholder="Ingresa el nombre del material" value={formData.nombre} onChange={handleInputChange} />
+                                        <div className="grid grid-col-2 grid-flow-col gap-3">
+                                            <Input className="border-b" id="nombre" placeholder="Ingresa el nombre del material" value={formData.nombre} onChange={handleInputChange} />
+                                            <Label className={`text-sm font-medium place-self-end mb-4 ${statuses.find(status => status.id === formData.estado)?.descripcion === "En stock"
+                                                    ? "text-green-500"
+                                                    : statuses.find(status => status.id === formData.estado)?.descripcion === "Bajo stock"
+                                                        ? "text-yellow-500"
+                                                        : statuses.find(status => status.id === formData.estado)?.descripcion === "Sin stock"
+                                                            ? "text-red-500"
+                                                            : ""
+                                                }`}>
+                                                {statuses.find(status => status.id === formData.estado)?.descripcion || "Estado no disponible"}
+                                            </Label>
+                                        </div>
+
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="depositLocation" className="text-sm font-medium">Ubicación del depósito</Label>
@@ -370,9 +383,9 @@ function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials })
                                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                                 <SelectValue>{locationId ? depositLocations.find(location => location.id === locationId)?.nombre : "Selecciona la ubicación"}</SelectValue>
                                             </SelectTrigger>
-                                            <SelectContent>
+                                            <SelectContent className="bg-sipe-blue-light">
                                                 {depositLocations.map(location => (
-                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={location.id} value={location.id}>{location.nombre}</SelectItem>
+                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={location.id} value={location.id}>{location.nombre}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -392,10 +405,10 @@ function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials })
                                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                                     <SelectValue placeholder="Selecciona el depósito" />
                                                 </SelectTrigger>
-                                                <SelectContent>
+                                                <SelectContent className="bg-sipe-blue-light">
                                                     {depositNames.map((deposit) => (
                                                         <SelectItem
-                                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
                                                             key={deposit.id}
                                                             value={deposit.id}
                                                         >
@@ -412,9 +425,9 @@ function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials })
                                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                                 <SelectValue placeholder="Selecciona la categoría" />
                                             </SelectTrigger>
-                                            <SelectContent>
+                                            <SelectContent className="bg-sipe-blue-light">
                                                 {categories.map(category => (
-                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={category.id} value={category.id}>{category.descripcion}</SelectItem>
+                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={category.id} value={category.id}>{category.descripcion}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -430,7 +443,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials })
                                         <Input className="border-b" id="bajoStock" type="number" placeholder="Ingresa el valor de bajo stock" value={formData.bajoStock} onChange={handleInputChange} min="0" />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-3 gap-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="aisle" className="text-sm font-medium">Pasillo</Label>
                                         {depositNames.length === 0 ? (
@@ -448,10 +461,10 @@ function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials })
                                                             : "Pasillo no seleccionado"}
                                                     </SelectValue>
                                                 </SelectTrigger>
-                                                <SelectContent>
+                                                <SelectContent className="bg-sipe-blue-light">
                                                     {aisles.map(aisle => (
                                                         <SelectItem
-                                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
                                                             key={aisle.id}
                                                             value={aisle.id}
                                                         >
@@ -479,10 +492,10 @@ function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials })
                                                             : "Estantería no seleccionada"}
                                                     </SelectValue>
                                                 </SelectTrigger>
-                                                <SelectContent>
+                                                <SelectContent className="bg-sipe-blue-light">
                                                     {shelves.map(shelf => (
                                                         <SelectItem
-                                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
                                                             key={shelf.id}
                                                             value={shelf.id}
                                                         >
@@ -493,8 +506,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials })
                                             </Select>
                                         )}
                                     </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4">
                                         <div className="grid gap-2">
                                             <Label htmlFor="space" className="text-sm font-medium">Espacio</Label>
                                             {spaces.length > 0 && depositNames.length > 0 ? (
@@ -506,7 +518,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials })
                                                     <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                                         <SelectValue>{selectedSpace ? spaces.find(space => space.id === selectedSpace)?.numeroEspacio : "Selecciona el espacio"}</SelectValue>
                                                     </SelectTrigger>
-                                                    <SelectContent>
+                                                    <SelectContent className="bg-sipe-blue-light">
                                                         {spaces.map(space => (
                                                             <SelectItem
                                                                 className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
@@ -524,11 +536,6 @@ function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials })
                                             )}
                                         </div>
                                     </div>
-                                    <div className="grid gap-2">
-                                        <div className="grid gap-2">
-                                            <Label className="text-sm font-medium">Estado actual: {statuses.find(status => status.id === formData.estado)?.descripcion || "Estado no disponible"}</Label>
-                                        </div>
-                                    </div>
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="image" className="text-sm font-medium">Imagen</Label>
@@ -543,7 +550,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials })
                                                 style={{ aspectRatio: "64/64", objectFit: "cover" }}
                                             />
                                         ) : (
-                                            <div className="w-[4vw] h-[8vh] border rounded-2xl flex justify-center items-center">
+                                            <div className="w-20 h-20 border rounded-2xl flex justify-center items-center">
                                                 <p className="text-sm text-center font-thin">No hay imagen disponible</p>
                                             </div>
                                         )}

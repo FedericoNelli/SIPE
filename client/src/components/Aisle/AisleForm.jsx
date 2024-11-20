@@ -180,7 +180,7 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
             <Card className="bg-sipe-blue-dark text-sipe-white p-4 shadow-2xl">
                 <CardHeader>
                     <CardTitle className="text-3xl text-center font-bold mb-2">
-                        {isTutorial ? "Por favor, creá el primer pasillo" : "Agregar nuevo Pasillo"}
+                        {isTutorial ? "Por favor, creá el primer pasillo" : "Agregar nuevo pasillo"}
                     </CardTitle>
                     {isTutorial ? "" : <hr className="text-sipe-gray" />}
                 </CardHeader>
@@ -214,9 +214,9 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                         <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                             <SelectValue placeholder="Seleccione la ubicación" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent className="bg-sipe-blue-light">
                                             {locations.map((location) => (
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={location.id} value={location.id}>{location.nombre}</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={location.id} value={location.id}>{location.nombre}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -230,14 +230,15 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                             <div className="flex items-center gap-4">
                                 <Label className="text-sm font-medium">Depósito</Label>
                                 <div className="flex w-full gap-4">
+
                                     {depositNames.length > 0 ? (
                                         <Select id="aisle" onValueChange={(value) => handleSelectChange('idDeposito', value)}>
                                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                                 <SelectValue placeholder="Seleccione el depósito" />
                                             </SelectTrigger>
-                                            <SelectContent>
+                                            <SelectContent className="bg-sipe-blue-light">
                                                 {depositNames.map((deposit) => (
-                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposit.id} value={deposit.id}>
+                                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposit.id} value={deposit.id}>
                                                         {deposit.nombre}
                                                     </SelectItem>
                                                 ))}
@@ -248,7 +249,6 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                     )}
                                 </div>
                             </div>
-
                         )}
 
                     {/* Select de lado 1 */}
@@ -261,10 +261,10 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                     <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                         <SelectValue placeholder="Seleccione el lado" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-sipe-blue-light">
                                         {sides.map((side) => (
                                             <SelectItem
-                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
                                                 key={side.id}
                                                 value={side.id}
                                             >
@@ -307,7 +307,7 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                             {/* Botón para agregar otro lado */}
                             {!showSecondSide && (
                                 <div className="flex justify-start">
-                                    <Button variant="sipebuttonalt2" size="sipebutton" onClick={() => setShowSecondSide(true)}>
+                                    <Button variant="sipebuttonalt5" size="sipebutton" onClick={() => setShowSecondSide(true)}>
                                         AGREGAR LADO NUEVO
                                     </Button>
                                 </div>
@@ -328,7 +328,6 @@ function AisleForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                         </>
                     )}
                 </CardContent>
-
                 <CardFooter className="flex justify-end gap-2">
                     <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>
                         {isTutorial ? "VOLVER" : "CANCELAR"}

@@ -148,16 +148,13 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                 >
                     <motion.div
                         key="modal-content"
-                        className="flex flex-col w-full max-w-4xl h-auto shadow-xl relative bg-sipe-blue-dark rounded-3xl p-10"
+                        className="flex flex-col w-max max-w-xl 2xl:max-w-4xl h-auto shadow-xl relative bg-sipe-blue-dark rounded-3xl p-10"
                         onClick={(e) => e.stopPropagation()}
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.8, opacity: 0 }}
                         transition={{ duration: 0.3 }}
                     >
-                        <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
-                            <X size={20} strokeWidth={4} onClick={onClose} />
-                        </div>
 
                         {/* Título del Informe */}
                         <h1 className="text-center text-4xl font-bold text-sipe-white mb-4">{reportType}</h1>

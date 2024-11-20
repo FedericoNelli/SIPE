@@ -3,7 +3,8 @@ import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import UserForm from '@/components/User/UserForm';
 import UserList from '@/components/User/UserList';
-import UserDetailModal from '@/components/User/UserDetailModal'; 
+import UserDetailModal from '@/components/User/UserDetailModal';
+import { Plus } from 'lucide-react';
 import axios from 'axios';
 
 function User({ notify }) {
@@ -11,8 +12,8 @@ function User({ notify }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false); // Nuevo estado para controlar el modal de detalles
-    const [selectedUser, setSelectedUser] = useState(null); // Estado para almacenar el usuario seleccionado
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState(null); 
 
 
     useEffect(() => {
@@ -70,7 +71,7 @@ function User({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de usuarios</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} variant="sipemodal">NUEVO USUARIO</Button>
+                        <Button onClick={openFormModal} variant="sipemodal"><Plus /> NUEVO USUARIO</Button>
                     </div>
                 </div>
                 <UserList users={currentUsers} onUserClick={openDetailModal} notify={notify} />
@@ -88,10 +89,10 @@ function User({ notify }) {
                     </Pagination>
                 </div>
                 {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <UserForm 
                         onClose={closeFormModal} 
-                        notify={notify}
+                        notify={notify} 
                         onUserUpdated={loadUsers} />
                     </div>
                 )}

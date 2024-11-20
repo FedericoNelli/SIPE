@@ -68,12 +68,9 @@ const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="relative bg-sipe-blue-dark text-sipe-white p-4 rounded-xl w-full max-w-2xl">
-                <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
-                    <X size={14} strokeWidth={4} onClick={onClose} />
-                </div>
-                <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="relative bg-sipe-blue-dark text-sipe-white 2xl:p-4 rounded-xl w-full max-w-2xl">
+                <Card className="bg-sipe-blue-dark text-sipe-white 2xl:p-4 rounded-xl">
                     <CardHeader>
                         <CardTitle className="text-3xl font-bold mb-2 text-center">Editar categoría</CardTitle>
                         <hr />
@@ -86,9 +83,9 @@ const CategoryEditModal = ({ onClose, onCategoryUpdated, notify }) => {
                                     <SelectTrigger className="bg-sipe-blue-dark text-sipe-white/60 border-sipe-white rounded-lg font-light">
                                         <SelectValue placeholder="Categorías disponibles" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-sipe-blue-light">
                                         {categories.map((category) => (
-                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={category.id} value={category.id}>
+                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={category.id} value={category.id}>
                                                 {category.descripcion}
                                             </SelectItem>
                                         ))}

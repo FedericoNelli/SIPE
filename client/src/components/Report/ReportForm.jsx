@@ -153,12 +153,12 @@ const ReportForm = ({ onClose, notify, onReportUpdated }) => {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona el tipo de informe" />
                             </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de inventario general">Informe de inventario general</SelectItem>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de material por deposito">Informe de material por depósito</SelectItem>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de material por estado">Informe de material por estado</SelectItem>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de material por movimiento entre deposito">Informe de material por movimiento entre depósito</SelectItem>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de salida de material">Informe de salida de material</SelectItem>
+                            <SelectContent className="bg-sipe-blue-light">
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de inventario general">Informe de inventario general</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de material por deposito">Informe de material por depósito</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de material por estado">Informe de material por estado</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de material por movimiento entre deposito">Informe de material por movimiento entre depósito</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de salida de material">Informe de salida de material</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -173,10 +173,10 @@ const ReportForm = ({ onClose, notify, onReportUpdated }) => {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona el tipo de gráfico" />
                             </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Area">Área</SelectItem>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Barra">Barra</SelectItem>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Torta">Torta</SelectItem>
+                            <SelectContent className="bg-sipe-blue-light">
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Area">Área</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Barra">Barra</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Torta">Torta</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -195,9 +195,9 @@ const ReportForm = ({ onClose, notify, onReportUpdated }) => {
                                     <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                         <SelectValue placeholder="Selecciona un depósito" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-sipe-blue-light">
                                         {depositos.map(deposito => (
-                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
+                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposito.id} value={deposito.id}>
                                                 {deposito.nombre}
                                             </SelectItem>
                                         ))}
@@ -218,9 +218,9 @@ const ReportForm = ({ onClose, notify, onReportUpdated }) => {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Selecciona un estado" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {estadosMaterial.map(estado => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={estado.id} value={estado.id}>{estado.descripcion}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={estado.id} value={estado.id}>{estado.descripcion}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -241,10 +241,10 @@ const ReportForm = ({ onClose, notify, onReportUpdated }) => {
                                     <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                         <SelectValue placeholder="Selecciona un material" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-sipe-blue-light">
                                         {materialesConSalidas.map((material, index) => (
                                             <SelectItem
-                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
                                                 key={`${material.idMaterial}-${index}`}
                                                 value={material.idMaterial}
                                             >
@@ -271,10 +271,10 @@ const ReportForm = ({ onClose, notify, onReportUpdated }) => {
                                     <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                         <SelectValue placeholder="Selecciona un material" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="bg-sipe-blue-light">
                                         {materialesConMovimientos.map(material => (
                                             <SelectItem
-                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
                                                 key={material.idMaterial}
                                                 value={material.idMaterial}
                                             >
