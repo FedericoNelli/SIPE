@@ -66,7 +66,7 @@ function MaterialEditModal({ isOpen, onClose, notify, material, loadMaterials })
                         ubicacion: data.ubicacionId,
                         espacio: data.idEspacio,
                         pasillo: data.idPasillo,
-                        estanteria: data.estanteriaId,
+                        estanteria: data.estanteriaNumero,
                         imagen: null,
                         imagenPreview: data.imagen ? `http://localhost:8081${data.imagen}` : ''
                     });

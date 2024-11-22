@@ -40,13 +40,14 @@ function Movement({ notify }) {
     const loadMovements = () => {
         axios.get('http://localhost:8081/movements')
             .then(response => {
-                setMovements(response.data);
-                setFilteredMovements(response.data);
+                setMovements(response.data); // Usar los movimientos directamente
+                setFilteredMovements(response.data); // Filtrar movimientos actualizados
             })
             .catch(error => {
                 notify('error', 'Error al cargar movimientos', error);
             });
     };
+
 
     const loadMaterialsWithMovements = () => {
         axios.get('http://localhost:8081/materials-with-movements')
@@ -156,8 +157,39 @@ function Movement({ notify }) {
 
     // Función para remover un movimiento pendiente
     const removePendingMovement = (movementToRemove) => {
+        const token = localStorage.getItem('token'); // Obtener el token del usuario logueado
+        const comentario = `Movimiento ${movementToRemove.numero} no fue confirmado`;
+
+        // Llamar al endpoint de auditoría
+        axios.post(
+            'http://localhost:8081/addAuditoria',
+            {
+                tipo_accion: 'Movimiento no confirmado',
+                comentario,
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`, // Pasar el token en los headers
+                    'Content-Type': 'application/json',
+                },
+            }
+        )
+            .then(() => {
+                notify('success', error.response.data.message);
+            })
+            .catch(error => {
+                console.error('Error al registrar auditoría:', error);
+                if (error.response && error.response.data && error.response.data.error) {
+                    notify('error', error.response.data.error)
+                } else {
+                    notify('error', `Error al registrar auditoría para el movimiento ${movementToRemove.numero}`);
+                }
+            });
+
+        // Remover el movimiento de los movimientos pendientes
         setPendingMovements(pendingMovements.filter(movement => movement !== movementToRemove));
     };
+
 
     const closeConfirmModal = () => {
         setIsConfirmModalOpen(false);
@@ -264,6 +296,7 @@ function Movement({ notify }) {
                             movement={selectedMovement}
                             onClose={closeConfirmModal}
                             notify={notify}
+                            onMovementUpdated={loadMovements}
                             onMovementConfirmed={() => {
                                 closeConfirmModal();
                                 setPendingMovements(pendingMovements.filter(m => m !== selectedMovement));
