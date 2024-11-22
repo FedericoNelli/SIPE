@@ -92,6 +92,8 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
     const handleSubmit = (e) => {
         e.preventDefault();
 
+
+        const token = localStorage.getItem('token');
         const formattedDateForMySQL = format(new Date(selectedDate), 'yyyy-MM-dd');
         const salidas = selectedMaterials.map(material => ({
             idMaterial: material.id,
@@ -101,8 +103,12 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
             fecha: formattedDateForMySQL,
             idUsuario: selectedUser,
         }));
-
-        axios.post('http://localhost:8081/materials/exits', salidas)
+        axios.post('http://localhost:8081/materials/exits', salidas, {
+            headers: {
+                'Authorization': `Bearer ${token}`, // Agrega el token al encabezado
+                'Content-Type': 'application/json',
+            },
+        })
             .then(response => {
                 notify('success', 'Salida registrada con éxito');
                 setTimeout(() => {

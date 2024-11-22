@@ -55,6 +55,7 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Número de Salida</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Fecha</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Motivo</TableHead>
+                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Usuario que sacó los materiales</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Material</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito</TableHead>
@@ -76,6 +77,7 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                                 <TableCell className="text-center font-light">{salida.numero}</TableCell>
                                 <TableCell className="text-center font-light">{salida.fechaSalida}</TableCell>
                                 <TableCell className="text-center font-light">{salida.motivo}</TableCell>
+                                <TableCell className="text-center font-light">{salida.usuario}</TableCell>
                                 <TableCell className="text-center font-light">
                                     <div className="flex flex-col items-center">
                                         {(salida.nombresMateriales || 'Sin Material').split(', ').map((material, index, array) => (

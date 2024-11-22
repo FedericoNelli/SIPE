@@ -171,8 +171,14 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
         cantidad: material.cantidadSalida
       }))
     };
+    const token = localStorage.getItem('token');
     try {
-      await axios.put(`http://localhost:8081/materials/exits/${selectedExitId}`, updatedData);
+      await axios.put(`http://localhost:8081/materials/exits/${selectedExitId}`, updatedData, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // Agrega el token al encabezado
+          'Content-Type': 'application/json',
+        },
+      });
       notify('success', 'Salida actualizada con éxito');
       onExitUpdated();
       onClose();
