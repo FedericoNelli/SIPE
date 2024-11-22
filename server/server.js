@@ -384,6 +384,8 @@ app.get('/materials', (req, res) => {
         Lado l ON et.idLado = l.id
     LEFT JOIN 
         Usuario uu ON m.ultimoUsuarioId = uu.id
+    ORDER BY
+        m.nombre ASC;
     `;
 
     const filters = [];
@@ -821,7 +823,7 @@ app.get('/exits', (req, res) => {
         GROUP BY 
             s.id, s.fecha
         ORDER BY 
-            s.fecha DESC;
+            numero ASC;
     `;
     db.query(query, (error, results) => {
         if (error) {
@@ -881,11 +883,30 @@ app.post('/materials/exits', authenticateToken, async (req, res) => {
     const nombreUsuario = req.user.id
 
     try {
-        let { motivo, fecha, idUsuario, numero } = salidas[0]; // Tomamos el motivo, fecha, y usuario del primer material (asumimos que es el mismo para todos)
+        let { motivo, fecha, idUsuario } = salidas[0]; // Tomamos el motivo, fecha, y usuario del primer material (asumimos que es el mismo para todos)
         fecha = addDays(new Date(fecha), 2); // Ajuste de día
         const formattedFecha = format(fecha, 'yyyy-MM-dd');
 
-        // 1. Registrar la salida principal en la tabla `salida_material`
+        // 1. Obtener el número de salida automáticamente
+        const numero = await new Promise((resolve, reject) => {
+            db.query('SELECT numero FROM salida_material ORDER BY numero ASC', (err, rows) => {
+                if (err) return reject(err);
+
+                if (rows.length === 0) {
+                    resolve(1); // Si no hay salidas, empezar con 1
+                } else {
+                    // Encontrar el número faltante más bajo
+                    for (let i = 1; i <= rows.length; i++) {
+                        if (rows[i - 1].numero !== i) {
+                            return resolve(i); // Retornar el primer número faltante
+                        }
+                    }
+                    resolve(rows.length + 1); // Si no faltan números, asignar el siguiente
+                }
+            });
+        });
+
+        // 2. Registrar la salida principal en la tabla `salida_material`
         const salidaId = await new Promise((resolve, reject) => {
             db.query('INSERT INTO salida_material (fecha, numero, motivo, idUsuario) VALUES (?, ?, ?, ?)',
                 [formattedFecha, numero, motivo, idUsuario], (err, result) => {
@@ -894,7 +915,7 @@ app.post('/materials/exits', authenticateToken, async (req, res) => {
                 });
         });
 
-        // 2. Para cada material, agregar su detalle a la tabla `detalle_salida_material`
+        // 3. Para cada material, agregar su detalle a la tabla `detalle_salida_material`
         for (const salida of salidas) {
             const { idMaterial, cantidad } = salida;
 
@@ -962,7 +983,7 @@ app.post('/materials/exits', authenticateToken, async (req, res) => {
             });
         }
 
-        // 3. Registrar la acción en la tabla de auditoría
+        // 4. Registrar la acción en la tabla de auditoría
         await new Promise((resolve, reject) => {
             const comentario = `Salida generada con número: ${numero}`;
             const tipoAccion = "Creación de Salida";
@@ -1481,8 +1502,6 @@ app.get('/check-tutorial-status/:id', (req, res) => {
 });
 
 
-
-// Cambiar de POST a PATCH, ya que estamos realizando una actualización
 app.patch('/complete-tutorial/:id', (req, res) => {
     const userId = req.params.id; // Obtén el userId del parámetro de la URL
 
@@ -2846,7 +2865,8 @@ app.get('/movements', (req, res) => {
             m.cantidad, 
             d1.nombre AS depositoOrigen, 
             d2.nombre AS depositoDestino,
-            ub.nombre AS ubicacionNombre
+            ub.nombre AS ubicacionNombre,
+            isCantidadMenor
         FROM 
             movimiento m
         LEFT JOIN 
@@ -2860,7 +2880,7 @@ app.get('/movements', (req, res) => {
         LEFT JOIN 
             Material mat ON m.idMaterial = mat.id
         ORDER BY
-            m.fechaMovimiento DESC;
+            numero ASC;
     `;
 
     db.query(query, (err, results) => {
@@ -2874,11 +2894,12 @@ app.get('/movements', (req, res) => {
 });
 
 
-app.post('/addMovements', (req, res) => {
-    let { idMaterial, idUsuario, idDepositoDestino, cantidadMovida, numero, fechaMovimiento } = req.body;
+app.post('/addMovements', authenticateToken, (req, res) => {
+    let { idMaterial, idUsuario, idDepositoDestino, cantidadMovida, cantidadRecibida, fechaMovimiento } = req.body;
     fechaMovimiento = new Date(fechaMovimiento);
     fechaMovimiento.setMinutes(fechaMovimiento.getMinutes() + fechaMovimiento.getTimezoneOffset());
-    fechaMovimiento = fechaMovimiento.toISOString().split('T')[0]; 
+    fechaMovimiento = fechaMovimiento.toISOString().split('T')[0];
+    const id_usuario = req.user.id
 
     const queryMaterialOrigen = `
         SELECT id, cantidad, matricula, fechaUltimoEstado, bajoStock, idEstado, idEspacio, ultimoUsuarioId, idCategoria, nombre, ocupado, idDeposito 
@@ -2903,6 +2924,7 @@ app.post('/addMovements', (req, res) => {
         const idDepositoOrigen = materialOrigen.idDeposito;
 
         const cantidadMovidaNumero = Number(cantidadMovida);
+        const cantidadRecibidaNumero = Number(cantidadRecibida);
         const cantidadNumero = Number(cantidad);
 
         if (cantidadMovidaNumero > cantidadNumero) {
@@ -2910,7 +2932,7 @@ app.post('/addMovements', (req, res) => {
             return;
         }
 
-        const nuevaCantidadOrigen = cantidadNumero - cantidadMovidaNumero;
+        const nuevaCantidadOrigen = cantidadNumero - cantidadRecibidaNumero;
         const nuevoEstadoOrigen = assignStatus(nuevaCantidadOrigen, bajoStock);
 
         const updateMaterialOrigenQuery = `
@@ -2942,69 +2964,94 @@ app.post('/addMovements', (req, res) => {
                         return;
                     }
 
-                    const insertMovementAndAudit = (idMaterialMovimiento) => {
-                        const insertMovementQuery = `
-                            INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento, confirmado, numero) 
-                            VALUES (?, ?, ?, ?, ?, ?, TRUE, ?)
+                    // Calcular el número disponible
+                    const getNumeroDisponibleQuery = `
+                        SELECT COALESCE(
+                            (SELECT MIN(t1.numero + 1)
+                            FROM movimiento t1
+                            LEFT JOIN movimiento t2 ON t1.numero + 1 = t2.numero
+                            WHERE t2.numero IS NULL),
+                            (SELECT MAX(numero) + 1 FROM movimiento)
+                        ) AS numeroDisponible;
+                    `;
+
+                    db.query(getNumeroDisponibleQuery, (err, numeroResult) => {
+                        if (err) {
+                            console.error('Error al obtener el número disponible:', err);
+                            res.status(500).json({ error: 'Error al obtener el número disponible' });
+                            return;
+                        }
+
+                        const numero = numeroResult[0].numeroDisponible;
+
+                        const insertMovementAndAudit = (idMaterialMovimiento) => {
+                            const isCantidadMenor = cantidadRecibidaNumero < cantidadMovidaNumero;
+                            const insertMovementQuery = `
+                            INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento, confirmado, numero, isCantidadMenor) 
+                            VALUES (?, ?, ?, ?, ?, ?, TRUE, ?, ?)
                         `;
 
-                        db.query(insertMovementQuery, [idUsuario, idMaterialMovimiento, cantidadMovida, idDepositoOrigen, idDepositoDestino, fechaMovimiento, numero], (err) => {
-                            if (err) {
-                                if (err.code === 'ER_DUP_ENTRY') {
-                                    return res.status(400).json({ error: 'Ya existe un movimiento con el número de movimiento ingresado' });
-                                } else {
-                                    console.error('Error al agregar el movimiento:', err);
-                                    res.status(500).json({ error: 'Error al agregar el movimiento' });
-                                    return;
-                                }
-                            }
-                            // Registrar la confirmación del movimiento en la tabla de auditoría
-                            const comentario = `Movimiento confirmado con número: ${numero}`;
-                            db.query('INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)',
-                                [idUsuario, 'Confirmación de Movimiento', comentario], (err) => {
-                                    if (err) {
-                                        console.error('Error al registrar en auditoría:', err);
-                                        res.status(500).json({ error: 'Error al registrar en auditoría' });
+                            db.query(insertMovementQuery, [idUsuario, idMaterialMovimiento, cantidadRecibida, idDepositoOrigen, idDepositoDestino, fechaMovimiento, numero, isCantidadMenor], (err) => {
+                                if (err) {
+                                    if (err.code === 'ER_DUP_ENTRY') {
+                                        return res.status(400).json({ error: 'Ya existe un movimiento con el número de movimiento ingresado' });
+                                    } else {
+                                        console.error('Error al agregar el movimiento:', err);
+                                        res.status(500).json({ error: 'Error al agregar el movimiento' });
                                         return;
                                     }
-                                    res.status(200).json({ message: 'Movimiento registrado y material actualizado correctamente, auditoría registrada' });
-                                });
-                        });
-                    };
+                                }
+                                // Registrar la confirmación del movimiento en la tabla de auditoría
+                                const comentario = `Movimiento recibido con número: ${numero}, Material Movido: ${materialOrigen.nombre},Cantidad Movida: ${cantidadMovida}, Cantidad Recibida: ${cantidadRecibida}`;
+                                db.query('INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)',
+                                    [id_usuario, 'Recepción de Movimiento', comentario], (err) => {
+                                        if (err) {
+                                            console.error('Error al registrar en auditoría:', err);
+                                            res.status(500).json({ error: 'Error al registrar en auditoría' });
+                                            return;
+                                        }
+                                        // Enviar respuesta final con notificación adicional si la cantidad recibida es menor
+                                        const responseMessage = isCantidadMenor
+                                            ? 'Movimiento registrado con advertencia: Cantidad recibida menor a la cantidad movida'
+                                            : 'Movimiento registrado y material actualizado correctamente, auditoría registrada';
+                                        res.status(200).json({ message: responseMessage });
+                                    });
+                            });
+                        };
 
-                    if (materialDestinoResult.length > 0) {
-                        const { id: idMaterialDestino, cantidad: cantidadDestino } = materialDestinoResult[0];
-                        const nuevaCantidadDestino = Number(cantidadDestino) + cantidadMovidaNumero;
-                        const nuevoEstadoDestino = assignStatus(nuevaCantidadDestino, bajoStock);
+                        if (materialDestinoResult.length > 0) {
+                            const { id: idMaterialDestino, cantidad: cantidadDestino } = materialDestinoResult[0];
+                            const nuevaCantidadDestino = Number(cantidadDestino) + cantidadMovidaNumero;
+                            const nuevoEstadoDestino = assignStatus(nuevaCantidadDestino, bajoStock);
 
-                        const updateMaterialDestinoQuery = `
+                            const updateMaterialDestinoQuery = `
                             UPDATE Material 
                             SET cantidad = ?, idEstado = ? 
                             WHERE id = ?
                         `;
 
-                        db.query(updateMaterialDestinoQuery, [nuevaCantidadDestino, nuevoEstadoDestino, idMaterialDestino], (err) => {
-                            if (err) {
-                                console.error('Error al actualizar el material en el depósito de destino:', err);
-                                res.status(500).json({ error: 'Error al actualizar el material en el depósito de destino' });
-                                return;
-                            }
-
-                            handleStockNotifications(nombre, nuevaCantidadDestino, bajoStock, (error) => {
-                                if (error) {
-                                    console.error('Error al manejar notificaciones de stock en destino:', error);
-                                    res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
+                            db.query(updateMaterialDestinoQuery, [nuevaCantidadDestino, nuevoEstadoDestino, idMaterialDestino], (err) => {
+                                if (err) {
+                                    console.error('Error al actualizar el material en el depósito de destino:', err);
+                                    res.status(500).json({ error: 'Error al actualizar el material en el depósito de destino' });
                                     return;
                                 }
 
-                                insertMovementAndAudit(idMaterialDestino);
+                                handleStockNotifications(nombre, nuevaCantidadDestino, bajoStock, (error) => {
+                                    if (error) {
+                                        console.error('Error al manejar notificaciones de stock en destino:', error);
+                                        res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
+                                        return;
+                                    }
+
+                                    insertMovementAndAudit(idMaterialDestino);
+                                });
                             });
-                        });
 
-                    } else {
-                        const nuevoEstadoDestino = assignStatus(cantidadMovidaNumero, bajoStock);
+                        } else {
+                            const nuevoEstadoDestino = assignStatus(cantidadRecibidaNumero, bajoStock);
 
-                        const insertMaterialDestinoQuery = `
+                            const insertMaterialDestinoQuery = `
                             INSERT INTO Material (
                                 cantidad, matricula, fechaUltimoEstado, bajoStock, idEstado, idEspacio, 
                                 ultimoUsuarioId, idCategoria, idDeposito, nombre, ocupado, fechaAlta
@@ -3012,38 +3059,39 @@ app.post('/addMovements', (req, res) => {
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
                         `;
 
-                        const valoresInsertMaterial = [
-                            cantidadMovidaNumero, matricula, fechaUltimoEstado, bajoStock,
-                            nuevoEstadoDestino, null, ultimoUsuarioId, idCategoria, idDepositoDestino, nombre, ocupado
-                        ];
+                            const valoresInsertMaterial = [
+                                cantidadRecibidaNumero, matricula, fechaUltimoEstado, bajoStock,
+                                nuevoEstadoDestino, null, ultimoUsuarioId, idCategoria, idDepositoDestino, nombre, ocupado
+                            ];
 
-                        db.query(insertMaterialDestinoQuery, valoresInsertMaterial, (err, result) => {
-                            if (err) {
-                                console.error('Error al crear el material en el depósito de destino:', err);
-                                res.status(500).json({ error: 'Error al crear el material en el depósito de destino' });
-                                return;
-                            }
-
-                            const idMaterialDestino = result.insertId;
-
-                            notifyNewMaterialCreation(nombre, idDepositoDestino, (error) => {
-                                if (error) {
-                                    console.error('Error al notificar la creación de nuevo material:', error);
-                                    res.status(500).json({ error: 'Error al notificar la creación de nuevo material' });
+                            db.query(insertMaterialDestinoQuery, valoresInsertMaterial, (err, result) => {
+                                if (err) {
+                                    console.error('Error al crear el material en el depósito de destino:', err);
+                                    res.status(500).json({ error: 'Error al crear el material en el depósito de destino' });
                                     return;
                                 }
 
-                                handleStockNotifications(nombre, cantidadMovidaNumero, bajoStock, (error) => {
+                                const idMaterialDestino = result.insertId;
+
+                                notifyNewMaterialCreation(nombre, idDepositoDestino, (error) => {
                                     if (error) {
-                                        console.error('Error al manejar notificaciones de stock en destino:', error);
-                                        res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
+                                        console.error('Error al notificar la creación de nuevo material:', error);
+                                        res.status(500).json({ error: 'Error al notificar la creación de nuevo material' });
                                         return;
                                     }
-                                    insertMovementAndAudit(idMaterialDestino);
+
+                                    handleStockNotifications(nombre, cantidadRecibidaNumero, bajoStock, (error) => {
+                                        if (error) {
+                                            console.error('Error al manejar notificaciones de stock en destino:', error);
+                                            res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
+                                            return;
+                                        }
+                                        insertMovementAndAudit(idMaterialDestino);
+                                    });
                                 });
                             });
-                        });
-                    }
+                        }
+                    });
                 });
             });
         });
@@ -3088,7 +3136,7 @@ app.put('/edit-movements/:id', async (req, res) => {
     const id = req.params.id;
     const { fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino, cantidad, numero } = req.body;
 
-    const cantidadNueva = Number(cantidad);  // La nueva cantidad movida
+    const cantidadNueva = Number(cantidad);
 
     try {
         // Iniciar la transacción
@@ -3711,7 +3759,7 @@ app.get('/audits', (req, res) => {
     const query = `
         SELECT Auditoria.id, Auditoria.fecha, Usuario.nombre AS nombre_usuario, Auditoria.tipo_accion, Auditoria.comentario
         FROM Auditoria
-        JOIN Usuario ON Auditoria.id_usuario = Usuario.id
+        LEFT JOIN Usuario ON Auditoria.id_usuario = Usuario.id
         ORDER BY Auditoria.fecha DESC
     `;
 
@@ -3839,6 +3887,23 @@ app.get('/shelves/:idPasillo', (req, res) => {
         res.json(results);
     });
 });
+
+app.post('/addAuditoria', authenticateToken, async (req, res) => {
+    const { tipo_accion, comentario } = req.body;
+    const id_usuario = req.user.id;
+
+    try {
+        await db.query(
+            'INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)',
+            [id_usuario, tipo_accion, comentario]
+        );
+        res.status(201).json({ message: 'Auditoría registrada con éxito' });
+    } catch (error) {
+        console.error('Error al registrar auditoría:', error);
+        res.status(500).json({ error: 'Error al registrar auditoría' });
+    }
+});
+
 
 
 app.listen(8081, () => {

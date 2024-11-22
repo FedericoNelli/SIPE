@@ -82,7 +82,9 @@ function MovementList({ movements, pendingMovements, isDeleteMode, selectedMovem
                     </TableHeader>
                     <TableBody>
                         {movements.map(movement => (
-                            <TableRow key={movement.id}>
+                            <TableRow 
+                            key={movement.id}
+                            className={movement.isCantidadMenor ? 'bg-red-400' : ''}>
                                 {isDeleteMode && (
                                     <TableCell className="text-center">
                                         <input

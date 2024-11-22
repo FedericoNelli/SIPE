@@ -13,8 +13,7 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
         idUsuario: '',
         idDepositoOrigen: '',
         idDepositoDestino: '',
-        cantidadMovida: '',
-        numero: ''
+        cantidadMovida: ''
     });
     const [materiales, setMateriales] = useState([]);
     const [usuarios, setUsuarios] = useState([]);
@@ -127,8 +126,18 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
         const depositoOrigen = depositos.find(dep => dep.id === formData.idDepositoOrigen);
         const depositoDestino = depositos.find(dep => dep.id === formData.idDepositoDestino);
 
+        // Generar el número de movimiento pendiente localmente
+        let numeroPendiente = localStorage.getItem('pendingMovementCounter');
+        if (!numeroPendiente) {
+            numeroPendiente = 1; // Si no existe, comienza desde 1
+        } else {
+            numeroPendiente = parseInt(numeroPendiente, 10) + 1; // Incrementar el contador
+        }
+        localStorage.setItem('pendingMovementCounter', numeroPendiente); // Guardar el nuevo valor
+
         const movementWithDetails = {
             ...formData,
+            numero: numeroPendiente, // Asignar el número generado
             fechaMovimiento: new Date(formData.fechaMovimiento).toISOString().split('T')[0],
             materialNombre: material ? material.nombre : '',
             usuarioNombre: usuario ? usuario.nombre : '',
@@ -137,10 +146,39 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
             expiry: new Date().getTime() + 7 * 24 * 60 * 60 * 1000
         };
 
+        // Guardar el movimiento pendiente
         addPendingMovement(movementWithDetails);
+
+        // Datos para la auditoría
+        const auditData = {
+            tipo_accion: 'Alta de movimiento',
+            comentario: `Número de movimiento: ${numeroPendiente}, Material movido: ${material ? material.nombre : 'Desconocido'}, 
+                        Cantidad de inicio: ${formData.cantidadMovida}, 
+                        Depósito Origen: ${depositoOrigen ? depositoOrigen.nombre : 'Desconocido'}, 
+                        Depósito Destino: ${depositoDestino ? depositoDestino.nombre : 'Desconocido'}`
+        };
+
+        const token = localStorage.getItem('token');
+        // Llamar al endpoint de auditoría
+        axios.post('http://localhost:8081/addAuditoria', auditData, {
+            headers: {
+                'Authorization': `Bearer ${token}`, // Agrega el token al encabezado
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(() => {
+                notify('success', 'Auditoría registrada correctamente');
+            })
+            .catch(error => {
+                notify('error', 'Error al registrar auditoría', error);
+            });
+
+        // Actualizar movimientos y cerrar el modal
         onMovementUpdated();
         onClose();
     };
+
+
 
     const handleCancel = () => {
         if (onClose) onClose();
@@ -154,18 +192,6 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
             </CardHeader>
             <CardContent className="flex flex-col space-y-10">
                 <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-2">
-                        <Label htmlFor="numero" className="text-sm font-medium">Número de movimiento</Label>
-                        <Input
-                            className="border-b"
-                            id="numero"
-                            name="numero"
-                            type="number"
-                            value={formData.numero}
-                            onChange={handleInputChange}
-                            max={1}
-                        />
-                    </div>
                     <div className="flex items-center gap-2">
                         <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha de movimiento</Label>
                         <Input

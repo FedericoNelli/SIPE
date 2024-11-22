@@ -5,8 +5,9 @@ import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
 import { Button } from "@/components/Common/Button/Button";
 
-function MovementConfirmModal({ movement, onClose, notify, onMovementConfirmed, onRemovePendingMovement }) {
+function MovementConfirmModal({ movement, onClose, notify, onMovementConfirmed, onRemovePendingMovement, onMovementUpdated }) {
     const [cantidadRecibida, setCantidadRecibida] = useState(movement.cantidad);
+    const [cantidadMovida, setCantidadMovida] = useState(movement.cantidadMovida);
 
     useEffect(() => {
         const handleKeyDown = (event) => {
@@ -33,19 +34,31 @@ function MovementConfirmModal({ movement, onClose, notify, onMovementConfirmed, 
     };
 
     const handleConfirmMovement = async () => {
+        const token = localStorage.getItem('token');
         try {
-            const response = await axios.post('http://localhost:8081/addMovements', {
-                ...movement,
-                cantidadMovida: cantidadRecibida || 0,
-            });
+            const response = await axios.post(
+                'http://localhost:8081/addMovements',
+                {
+                    ...movement,
+                    cantidadMovida: cantidadMovida,
+                    cantidadRecibida: cantidadRecibida || 0,
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json', 
+                    },
+                }
+            );
+
             if (response.status !== 200) {
                 throw new Error(response.data.error || 'Error al confirmar el movimiento');
             }
+
             notify('success', '¡Movimiento confirmado exitosamente!');
             if (onClose) onClose();
             if (onMovementConfirmed) onMovementConfirmed();
-            window.location.reload();
-
+            onMovementUpdated();
         } catch (error) {
             console.error('Error al confirmar el movimiento:', error);
             if (error.response && error.response.data && error.response.data.error) {
@@ -53,9 +66,9 @@ function MovementConfirmModal({ movement, onClose, notify, onMovementConfirmed, 
             } else {
                 notify('error', error.message || 'Error al confirmar el movimiento');
             }
-            
         }
     };
+
 
     const handleCancelMovement = () => {
         if (onRemovePendingMovement) {
@@ -77,7 +90,7 @@ function MovementConfirmModal({ movement, onClose, notify, onMovementConfirmed, 
                         <p className="text-lg font-semibold">{movement.materialNombre}</p>
                         <p className="text-lg text-sipe-gray">Cantidad movida al inicio: {movement.cantidadMovida}</p>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                         <Label htmlFor="cantidadRecibida" className="text-sm font-medium">Cantidad Recibida</Label>
                         <Input
