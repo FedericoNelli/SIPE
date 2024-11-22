@@ -19,6 +19,8 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
     const [divisionQuantity, setDivisionQuantity] = useState('');
     const [selectedAisle, setSelectedAisle] = useState('');
     const [selectedSide, setSelectedSide] = useState('');
+    const filteredSides = sides.filter((side) => side.idPasillo === selectedAisle?.id);
+
 
     // Cerrar modal al presionar la tecla Escape
     useEffect(() => {
@@ -55,12 +57,20 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                 try {
                     const response = await axios.get(`http://localhost:8081/shelf/${selectedShelfId}`);
                     const data = response.data;
+
+                    // Establecer los datos de la estantería
                     setShelfData(data);
                     setShelfNumber(data.numero);
                     setShelfQuantity(data.cantidad_estante);
                     setDivisionQuantity(data.cantidad_division);
-                    setSelectedAisle(data.idPasillo);
-                    setSelectedSide(data.idLado);
+
+                    // Configurar el pasillo seleccionado
+                    const aisle = aisles.find((a) => a.id === data.idPasillo);
+                    setSelectedAisle(aisle || '');
+
+                    // Configurar el lado seleccionado
+                    const side = sides.find((s) => s.id === data.idLado);
+                    setSelectedSide(side ? side.id : '');
                 } catch (error) {
                     notify('error', 'Error al cargar los datos de la estantería');
                 }
@@ -68,7 +78,9 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
 
             fetchShelfData();
         }
-    }, [selectedShelfId]);
+    }, [selectedShelfId, aisles, sides]);
+
+
 
     // Cargar pasillos
     useEffect(() => {
@@ -84,31 +96,58 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
         fetchAisles();
     }, []);
 
-    // Cargar lados
     useEffect(() => {
-        const fetchSides = async () => {
+        const fetchSidesForAisle = async () => {
             try {
-                const response = await axios.get('http://localhost:8081/sides');
-                setSides(response.data);
+                const response = await axios.get('http://localhost:8081/aisles-shelves');
+
+                const transformedSides = response.data.flatMap((aisle) => {
+                    const sides = [];
+                    if (aisle.idLado1 && aisle.lado1Descripcion !== 'Sin lado') {
+                        sides.push({
+                            id: aisle.idLado1, // ID del lado 1
+                            descripcion: aisle.lado1Descripcion, // Descripción del lado 1
+                            idPasillo: aisle.id, // ID del pasillo
+                        });
+                    }
+                    if (aisle.idLado2 && aisle.lado2Descripcion !== 'Sin lado') {
+                        sides.push({
+                            id: aisle.idLado2, // ID del lado 2
+                            descripcion: aisle.lado2Descripcion, // Descripción del lado 2
+                            idPasillo: aisle.id, // ID del pasillo
+                        });
+                    }
+                    return sides;
+                });
+
+                setSides(transformedSides);
             } catch (error) {
-                notify('error', 'Error al cargar los lados');
+                console.error('Error al cargar los lados relacionados con los pasillos:', error);
+                notify('error', 'Error al cargar los lados relacionados con los pasillos');
             }
         };
-
-        fetchSides();
+        fetchSidesForAisle();
     }, []);
 
+
     const handleUpdateShelf = async () => {
-        setLoading(true); // Mostrar estado de carga
+        setLoading(true);
+        console.log({
+            numero: shelfNumber,
+            cantidad_estante: shelfQuantity,
+            cantidad_division: divisionQuantity,
+            idPasillo: selectedAisle?.id,
+            idLado: selectedSide, // Verifica que este valor sea 1 o 2
+        });
+
         try {
             const response = await axios.put(`http://localhost:8081/edit-shelf/${selectedShelfId}`, {
                 numero: shelfNumber,
                 cantidad_estante: shelfQuantity,
                 cantidad_division: divisionQuantity,
-                idPasillo: selectedAisle,
+                idPasillo: selectedAisle?.id,
                 idLado: selectedSide
             });
-            console.log('Response status:', response.status); // Agregar log para verificar el status
             if (response.status === 200 || response.status === 201) {
                 notify('success', 'Estantería actualizada correctamente');
                 onShelfUpdated();
@@ -118,11 +157,16 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
             }
         } catch (error) {
             console.error('Error actualizando la estantería:', error);
-            notify('error', 'Para modificar este campo debe vaciar la estantería');
+            if (error.response && error.response.data && error.response.data.error) {
+                notify('error', error.response.data.error);
+            } else {
+                notify('error', 'Para modificar este campo debe vaciar la estantería');
+            }
         } finally {
-            setLoading(false); // Detener estado de carga
+            setLoading(false);
         }
     };
+
 
     const handleChange = (e) => {
         const { id, value } = e.target;
@@ -142,17 +186,13 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
             notify('error', errorMessage[id] || "El valor debe ser mayor a 0");
         }
     };
-    
+
 
 
     return (
-        <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="relative bg-sipe-blue-dark text-sipe-white p-4 rounded-xl w-full max-w-2xl">
-                <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
-                    <X size={14} strokeWidth={4} onClick={onClose} />
-                </div>
-
-                <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl">
+        <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="relative bg-sipe-blue-dark text-sipe-white 2xl:p-4 rounded-xl w-full max-w-2xl">
+                <Card className="bg-sipe-blue-dark text-sipe-white 2xl:p-4 rounded-xl">
                     <CardHeader>
                         <CardTitle className="text-3xl font-bold mb-2 text-center">Editar estantería</CardTitle>
                         <hr />
@@ -164,9 +204,9 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Seleccionar estantería" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {shelves.map((shelf) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={shelf.id} value={shelf.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={shelf.id} value={shelf.id}>
                                             {shelf.numero}
                                         </SelectItem>
                                     ))}
@@ -210,31 +250,43 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="aisle" className="text-sm font-medium">Pasillo</Label>
-                            <Select value={selectedAisle} onValueChange={setSelectedAisle}>
+                            <Select value={selectedAisle?.id} onValueChange={(aisleId) => {
+                                const aisle = aisles.find((a) => a.id === aisleId);
+                                setSelectedAisle(aisle || '');
+                            }}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Seleccionar pasillo" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {aisles.map((aisle) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={aisle.id} value={aisle.id}>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={aisle.id} value={aisle.id}>
                                             {`Pasillo ${aisle.numero} - Ubicación: ${aisle.ubicacionDeposito} - Depósito: ${aisle.nombreDeposito}`}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
+
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="side" className="text-sm font-medium">Lado</Label>
-                            <Select value={selectedSide} onValueChange={setSelectedSide}>
+                            <Select value={selectedSide || ''} onValueChange={(value) => setSelectedSide(parseInt(value, 10))}>
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Seleccionar lado" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    {sides.map((side) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>
-                                            {side.descripcion}
-                                        </SelectItem>
-                                    ))}
+                                <SelectContent className="bg-sipe-blue-light">
+                                    {filteredSides.length > 0 ? (
+                                        filteredSides.map((side) => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                key={side.id}
+                                                value={side.id}
+                                            >
+                                                {side.descripcion}
+                                            </SelectItem>
+                                        ))
+                                    ) : (
+                                        <p className="text-sipe-gray text-sm p-2">No hay lados disponibles para este pasillo</p>
+                                    )}
                                 </SelectContent>
                             </Select>
                         </div>

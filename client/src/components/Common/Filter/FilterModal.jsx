@@ -3,20 +3,21 @@ import { Button } from "@/components/Common/Button/Button";
 import { AnimatePresence, motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 import { X } from "lucide-react";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/Common/Select/Select";
 
-const FilterModal = ({ 
-    isOpen, 
-    onClose, 
-    onApply, 
-    onReset, 
-    filters, 
-    onFilterChange, 
+const FilterModal = ({
+    isOpen,
+    onClose,
+    onApply,
+    onReset,
+    filters,
+    onFilterChange,
     mode,
-    availableMaterials, 
-    availableLocations, 
-    availableDeposits, 
-    availableCategories, 
-    availableStatuses 
+    availableMaterials,
+    availableLocations,
+    availableDeposits,
+    availableCategories,
+    availableStatuses
 }) => {
     const modalContentRef = useRef(null);
     const [isVisible, setIsVisible] = useState(isOpen);
@@ -48,7 +49,10 @@ const FilterModal = ({
     }, [onClose]);
 
     const handleClickOutside = (event) => {
-        if (modalContentRef.current && !modalContentRef.current.contains(event.target)) {
+        const isClickInsideModal = modalContentRef.current && modalContentRef.current.contains(event.target);
+        const isClickInsideSelect = event.target.closest(".select-content"); // Verifica si el clic está en el Select
+
+        if (!isClickInsideModal && !isClickInsideSelect) {
             handleClose();
         }
     };
@@ -72,7 +76,7 @@ const FilterModal = ({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }} 
+                    transition={{ duration: 0.3 }}
                     className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 backdrop-blur-sm"
                 >
                     <motion.div
@@ -90,7 +94,7 @@ const FilterModal = ({
                             </div>
                             <CardHeader>
                                 <CardTitle className="text-3xl text-center font-bold text-sipe-white mb-4">
-                                    {mode === 'MaterialExit' ? 'Filtrar Salidas de Materiales' : mode === 'Movement' ? 'Filtrar Movimientos de Materiales' : 'Filtrar Materiales'}
+                                    {mode === 'MaterialExit' ? 'Filtrar salidas de materiales' : mode === 'Movement' ? 'Filtrar movimientos de materiales' : 'Filtrar materiales'}
                                 </CardTitle>
                                 <hr />
                             </CardHeader>
@@ -100,82 +104,102 @@ const FilterModal = ({
                                         <>
                                             {/* Filtro por Ubicación */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="ubicacion">
+                                                <label className="block text-sipe-white text-sm font-bold mb-2">
                                                     Ubicación
                                                 </label>
-                                                <select
-                                                    name="ubicacion"
-                                                    value={filters.ubicacion}
-                                                    onChange={onFilterChange}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                                                <Select
+                                                    value={filters.ubicacion || ""}
+                                                    onValueChange={(value) => onFilterChange({ target: { name: "ubicacion", value } })}
                                                 >
-                                                    <option value="">Seleccione una ubicación</option>
-                                                    {availableLocations.map(location => (
-                                                        <option key={location.id} value={location.nombre}>
-                                                            {location.nombre}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    <SelectTrigger className="w-full bg-sipe-blue-dark text-sipe-white">
+                                                        <SelectValue placeholder="Seleccione una ubicación" />
+                                                    </SelectTrigger>
+                                                    <SelectContent
+                                                        className="bg-sipe-blue-light select-content text-sipe-white"
+                                                        onClick={(e) => e.stopPropagation()} // Evitar propagación
+                                                    >
+                                                        {availableLocations.map((location) => (
+                                                            <SelectItem key={location.id} value={location.nombre}>
+                                                                {location.nombre}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
 
                                             {/* Filtro por Depósito */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="deposito">
+                                                <label className="block text-sipe-white text-sm font-bold mb-2">
                                                     Depósito
                                                 </label>
-                                                <select
-                                                    name="deposito"
-                                                    value={filters.deposito}
-                                                    onChange={onFilterChange}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                                                <Select
+                                                    value={filters.deposito || ""}
+                                                    onValueChange={(value) => onFilterChange({ target: { name: "deposito", value } })}
                                                 >
-                                                    <option value="">Seleccione un depósito</option>
-                                                    {availableDeposits.map(deposit => (
-                                                        <option key={deposit.id} value={deposit.nombre}>
-                                                            {deposit.nombre}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    <SelectTrigger className="w-full bg-sipe-blue-dark text-sipe-white">
+                                                        <SelectValue placeholder="Seleccione un depósito" />
+                                                    </SelectTrigger>
+                                                    <SelectContent
+                                                        className="bg-sipe-blue-light select-content text-sipe-white"
+                                                        onClick={(e) => e.stopPropagation()} // Evitar propagación
+                                                    >
+                                                        {availableDeposits.map((deposit) => (
+                                                            <SelectItem key={deposit.id} value={deposit.nombre}>
+                                                                {deposit.nombre}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
 
                                             {/* Filtro por Categoría */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="categoria">
+                                                <label className="block text-sipe-white text-sm font-bold mb-2">
                                                     Categoría
                                                 </label>
-                                                <select
-                                                    name="categoria"
-                                                    value={filters.categoria}
-                                                    onChange={onFilterChange}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                                                <Select
+                                                    value={filters.categoria || ""}
+                                                    onValueChange={(value) => onFilterChange({ target: { name: "categoria", value } })}
                                                 >
-                                                    <option value="">Seleccione una categoría</option>
-                                                    {availableCategories.map(category => (
-                                                        <option key={category.id} value={category.descripcion}>
-                                                            {category.descripcion}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    <SelectTrigger className="w-full bg-sipe-blue-dark text-sipe-white">
+                                                        <SelectValue placeholder="Seleccione una categoría" />
+                                                    </SelectTrigger>
+                                                    <SelectContent
+                                                        className="bg-sipe-blue-light select-content text-sipe-white"
+                                                        onClick={(e) => e.stopPropagation()} // Evitar propagación
+                                                    >
+                                                        {availableCategories.map((category) => (
+                                                            <SelectItem key={category.id} value={category.descripcion}>
+                                                                {category.descripcion}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
 
                                             {/* Filtro por Estado */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="estado">
+                                                <label className="block text-sipe-white text-sm font-bold mb-2">
                                                     Estado
                                                 </label>
-                                                <select
-                                                    name="estado"
-                                                    value={filters.estado}
-                                                    onChange={onFilterChange}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                                                <Select
+                                                    value={filters.estado || ""}
+                                                    onValueChange={(value) => onFilterChange({ target: { name: "estado", value } })}
                                                 >
-                                                    <option value="">Seleccione un estado</option>
-                                                    {availableStatuses.map(status => (
-                                                        <option key={status.id} value={status.descripcion}>
-                                                            {status.descripcion}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    <SelectTrigger className="w-full bg-sipe-blue-dark text-sipe-white">
+                                                        <SelectValue placeholder="Seleccione un estado" />
+                                                    </SelectTrigger>
+                                                    <SelectContent
+                                                        className="bg-sipe-blue-light select-content text-sipe-white"
+                                                        onClick={(e) => e.stopPropagation()} // Evitar propagación
+                                                    >
+                                                        {availableStatuses.map((status) => (
+                                                            <SelectItem key={status.id} value={status.descripcion}>
+                                                                {status.descripcion}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         </>
                                     )}
@@ -187,19 +211,21 @@ const FilterModal = ({
                                                 <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="material">
                                                     Material
                                                 </label>
-                                                <select
-                                                    name="material"
-                                                    value={filters.material}
-                                                    onChange={onFilterChange}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+                                                <Select
+                                                    value={filters.material || ""}
+                                                    onValueChange={(value) => onFilterChange({ target: { name: "material", value } })}
                                                 >
-                                                    <option value="">Seleccione un material</option>
-                                                    {availableMaterials.map(material => (
-                                                        <option key={material.idMaterial} value={`${material.nombreMaterial} - ${material.depositoNombre} - ${material.ubicacionNombre}`}>
-                                                            {material.nombreMaterial} - {material.depositoNombre} - {material.ubicacionNombre}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    <SelectTrigger className="w-full bg-sipe-blue-dark text-sipe-white">
+                                                        <SelectValue placeholder="Seleccione un material" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-sipe-blue-light select-content text-sipe-white">
+                                                        {availableMaterials.map(material => (
+                                                            <SelectItem key={material.idMaterial} value={`${material.nombreMaterial} - ${material.depositoNombre} - ${material.ubicacionNombre}`}>
+                                                                {material.nombreMaterial} - {material.depositoNombre} - {material.ubicacionNombre}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
 
                                             {/* Filtro por Fecha de Inicio */}
@@ -207,14 +233,25 @@ const FilterModal = ({
                                                 <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="startDate">
                                                     Fecha de Inicio
                                                 </label>
-                                                <input
-                                                    type="date"
-                                                    name="startDate"
-                                                    value={filters.startDate}
-                                                    onChange={onFilterChange}
-                                                    max={today}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-black"
-                                                />
+                                                <Select
+                                                    value={filters.startDate || ""}
+                                                    onValueChange={(value) => onFilterChange({ target: { name: "startDate", value } })}
+                                                >
+                                                    <SelectTrigger className="w-full bg-sipe-blue-dark text-sipe-white">
+                                                        <SelectValue placeholder="Seleccione una fecha de inicio" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-sipe-blue-light select-content text-sipe-white">
+                                                        {Array.from({ length: 31 }, (_, i) => {
+                                                            const date = new Date(today);
+                                                            date.setDate(i + 1);
+                                                            return (
+                                                                <SelectItem key={i} value={date.toISOString().split("T")[0]}>
+                                                                    {date.toISOString().split("T")[0]}
+                                                                </SelectItem>
+                                                            );
+                                                        })}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
 
                                             {/* Filtro por Fecha de Fin */}
@@ -222,17 +259,29 @@ const FilterModal = ({
                                                 <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="endDate">
                                                     Fecha de Fin
                                                 </label>
-                                                <input
-                                                    type="date"
-                                                    name="endDate"
-                                                    value={filters.endDate}
-                                                    onChange={onFilterChange}
-                                                    max={today}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-black"
-                                                />
+                                                <Select
+                                                    value={filters.endDate || ""}
+                                                    onValueChange={(value) => onFilterChange({ target: { name: "endDate", value } })}
+                                                >
+                                                    <SelectTrigger className="w-full bg-sipe-blue-dark text-sipe-white">
+                                                        <SelectValue placeholder="Seleccione una fecha de fin" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-sipe-blue-light select-content text-sipe-white">
+                                                        {Array.from({ length: 31 }, (_, i) => {
+                                                            const date = new Date(today);
+                                                            date.setDate(i + 1);
+                                                            return (
+                                                                <SelectItem key={i} value={date.toISOString().split("T")[0]}>
+                                                                    {date.toISOString().split("T")[0]}
+                                                                </SelectItem>
+                                                            );
+                                                        })}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                         </>
                                     )}
+
                                 </form>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-4">

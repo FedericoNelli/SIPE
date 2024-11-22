@@ -3,10 +3,9 @@ import UserEditModal from "@/components/User/UserEditModal"; // Asegúrate de te
 import { Button } from "@/components/Common/Button/Button";
 import { X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { toast } from "react-hot-toast";
 import axios from "axios";
 
-function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
+function UserDetailModal({ isOpen, onClose, selectedUser, notify, onUserUpdated }) {
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isEditModalClosing, setIsEditModalClosing] = useState(false);
@@ -16,16 +15,19 @@ function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
 
     useEffect(() => {
         const handleEscape = (event) => {
-            if (event.key === 'Escape' && !isEditModalOpen) {
-                onClose();
+            if (event.key === 'Escape') {
+                if (!isEditModalOpen) {
+                    onUserUpdated(); // Actualiza la lista de usuarios
+                    onClose(); // Cierra el modal
+                }
             }
         };
-
         document.addEventListener('keydown', handleEscape);
         return () => {
             document.removeEventListener('keydown', handleEscape);
         };
-    }, [onClose, isEditModalOpen]);
+    }, [onClose, isEditModalOpen, onUserUpdated]);
+
 
     const openConfirmDeleteModal = useCallback(() => {
         setIsConfirmDeleteOpen(true);
@@ -43,7 +45,7 @@ function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
             const response = await axios.delete(`http://localhost:8081/users/delete/${selectedUser.id}`);
             onClose();
             notify('success', "Usuario eliminado con éxito!");
-            window.location.reload();
+            onUserUpdated();
         } catch (error) {
             console.error('Error al eliminar el usuario:', error);
             notify('error', "Error al eliminar el usuario");
@@ -60,12 +62,9 @@ function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
         setIsEditModalClosing(false);
     };
 
-    const closeEditModal = () => {
-        setIsEditModalClosing(true);
-    };
-
     const handleEditModalClosed = () => {
         setIsEditModalOpen(false);
+        onUserUpdated();
     };
 
     return (
@@ -79,7 +78,7 @@ function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
                     className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 backdrop-blur-sm"
                 >
                     <motion.div
-                        className="bg-sipe-blue-dark rounded-xl p-6 w-[600px] max-w-full shadow-xl relative"
+                        className="bg-sipe-blue-dark rounded-xl p-6 w-[550px] max-w-full shadow-xl relative flex flex-col items-center justify-center"
                         onClick={(e) => e.stopPropagation()}
                         initial={{ scale: 0.95, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
@@ -89,35 +88,33 @@ function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
                         <div className="absolute top-4 right-4 text-sipe-white cursor-pointer">
                             <X size={20} strokeWidth={3} onClick={onClose} />
                         </div>
-                        <h2 className="text-2xl font-bold text-center text-sipe-white mb-4">
-                            {selectedUser.nombre} {selectedUser.apellido}
-                        </h2>
-                        <div className="flex justify-center items-center h-64 mb-4 bg-sipe-blue-dark rounded-lg border border-sipe-white">
-                            {imageUrl ? (
-                                <img
-                                    src={imageUrl}
-                                    alt={`${selectedUser.nombre} ${selectedUser.apellido}`}
-                                    className="h-full w-auto object-contain rounded-md"
-                                    onError={(e) => { e.target.onerror = null; e.target.src = ''; }}
-                                />
-                            ) : (
-                                <p className="text-sipe-white">No hay imagen disponible</p>
-                            )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-sipe-white text-sm">
-                            <div>
-                                <p><strong>ID:</strong> {selectedUser.id}</p>
-                                <p><strong>Legajo:</strong> {selectedUser.legajo}</p>
-                                <p><strong>Rol:</strong> {selectedUser.rol}</p>
+                        <div className="flex items-center justify-center gap-8">
+                            <div className="flex justify-center items-center h-48 w-48 bg-sipe-blue-dark rounded-lg border border-sipe-white">
+                                {imageUrl ? (
+                                    <img
+                                        src={imageUrl}
+                                        alt={`${selectedUser.nombre} ${selectedUser.apellido}`}
+                                        className="h-full w-auto object-cover rounded-md"
+                                        onError={(e) => { e.target.onerror = null; e.target.src = ''; }}
+                                    />
+                                ) : (
+                                    <p className="text-sipe-white">No hay imagen disponible</p>
+                                )}
                             </div>
-                            <div>
-                                <p><strong>Nombre de usuario:</strong> {selectedUser.nombre_usuario}</p>
-                                <p><strong>Email:</strong> {selectedUser.email}</p>
+                            <div className="text-sipe-white text-md">
+                                <div className="space-y-4">
+                                    <p><strong>Nombre: </strong> {selectedUser.nombre} {selectedUser.apellido}</p>
+                                    <p><strong>Usuario:</strong> {selectedUser.nombre_usuario}</p>
+                                    <p><strong>Legajo:</strong> {selectedUser.legajo}</p>
+                                    <p><strong>Rol:</strong> {selectedUser.rol}</p>
+                                    <p><strong>Email:</strong> {selectedUser.email}</p>
+                                </div>
                             </div>
                         </div>
+
                         <div className="flex justify-center gap-10 mt-6">
                             <Button
-                                variant="sipebutton"
+                                variant="sipebuttonalt"
                                 size="sipebutton"
                                 onClick={openEditModal}
                                 disabled={rol !== 'Administrador'}
@@ -140,12 +137,11 @@ function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
                     <AnimatePresence>
                         {isConfirmDeleteOpen && (
                             <motion.div
-                                className="fixed inset-0 flex items-center justify-center z-50"
-                                onClick={closeConfirmDeleteModal}
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.8, opacity: 0 }}
-                                transition={{ duration: 0.15 }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 backdrop-blur-sm"
                             >
                                 <div className="bg-sipe-blue-light flex flex-col justify-center w-350 rounded-xl gap-6 p-4" onClick={(e) => e.stopPropagation()}>
                                     <p className="font-bold text-2xl text-center text-sipe-white">¿Estás seguro que querés borrar este usuario?</p>
@@ -165,6 +161,7 @@ function UserDetailModal({ isOpen, onClose, selectedUser, notify }) {
                                 onClose={handleEditModalClosed}
                                 user={selectedUser}
                                 notify={notify}
+                                onUserUpdated={onUserUpdated}
                             />
                         )}
                     </AnimatePresence>

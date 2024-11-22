@@ -6,28 +6,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function MovementForm({ onClose, addPendingMovement, notify }) {
+function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }) {
     const [formData, setFormData] = useState({
         fechaMovimiento: '',
         idMaterial: '',
         idUsuario: '',
         idDepositoOrigen: '',
         idDepositoDestino: '',
-        cantidadMovida: '',
-        numero: ''
+        cantidadMovida: ''
     });
     const [materiales, setMateriales] = useState([]);
     const [usuarios, setUsuarios] = useState([]);
     const [depositos, setDepositos] = useState([]);
     const [cantidadDisponible, setCantidadDisponible] = useState('');
     const [maxDatetime, setMaxDatetime] = useState('');
-    
+
     // Cerrar modal al presionar la tecla Escape
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.key === 'Escape') {
                 onClose();
-            }
+            } onMovementUpdated();
         };
 
         window.addEventListener('keydown', handleKeyDown);
@@ -127,8 +126,18 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
         const depositoOrigen = depositos.find(dep => dep.id === formData.idDepositoOrigen);
         const depositoDestino = depositos.find(dep => dep.id === formData.idDepositoDestino);
 
+        // Generar el número de movimiento pendiente localmente
+        let numeroPendiente = localStorage.getItem('pendingMovementCounter');
+        if (!numeroPendiente) {
+            numeroPendiente = 1; // Si no existe, comienza desde 1
+        } else {
+            numeroPendiente = parseInt(numeroPendiente, 10) + 1; // Incrementar el contador
+        }
+        localStorage.setItem('pendingMovementCounter', numeroPendiente); // Guardar el nuevo valor
+
         const movementWithDetails = {
             ...formData,
+            numero: numeroPendiente, // Asignar el número generado
             fechaMovimiento: new Date(formData.fechaMovimiento).toISOString().split('T')[0],
             materialNombre: material ? material.nombre : '',
             usuarioNombre: usuario ? usuario.nombre : '',
@@ -137,9 +146,39 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
             expiry: new Date().getTime() + 7 * 24 * 60 * 60 * 1000
         };
 
+        // Guardar el movimiento pendiente
         addPendingMovement(movementWithDetails);
+
+        // Datos para la auditoría
+        const auditData = {
+            tipo_accion: 'Alta de movimiento',
+            comentario: `Número de movimiento: ${numeroPendiente}, Material movido: ${material ? material.nombre : 'Desconocido'}, 
+                        Cantidad de inicio: ${formData.cantidadMovida}, 
+                        Depósito Origen: ${depositoOrigen ? depositoOrigen.nombre : 'Desconocido'}, 
+                        Depósito Destino: ${depositoDestino ? depositoDestino.nombre : 'Desconocido'}`
+        };
+
+        const token = localStorage.getItem('token');
+        // Llamar al endpoint de auditoría
+        axios.post('http://localhost:8081/addAuditoria', auditData, {
+            headers: {
+                'Authorization': `Bearer ${token}`, // Agrega el token al encabezado
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(() => {
+                notify('success', 'Auditoría registrada correctamente');
+            })
+            .catch(error => {
+                notify('error', 'Error al registrar auditoría', error);
+            });
+
+        // Actualizar movimientos y cerrar el modal
+        onMovementUpdated();
         onClose();
     };
+
+
 
     const handleCancel = () => {
         if (onClose) onClose();
@@ -148,25 +187,13 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
     return (
         <Card className="bg-sipe-blue-dark text-sipe-white p-4">
             <CardHeader>
-                <CardTitle className="text-3xl text-center font-bold mb-2">Agregar nuevo Movimiento</CardTitle>
+                <CardTitle className="text-3xl text-center font-bold mb-2">Agregar nuevo movimiento</CardTitle>
                 <hr className="text-sipe-gray" />
             </CardHeader>
             <CardContent className="flex flex-col space-y-10">
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-2">
-                        <Label htmlFor="numero" className="text-sm font-medium">Número de movimiento</Label>
-                        <Input
-                            className="border-b"
-                            id="numero"
-                            name="numero"
-                            type="number"
-                            value={formData.numero}
-                            onChange={handleInputChange}
-                            max={1}
-                        />
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha de Movimiento</Label>
+                        <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha de movimiento</Label>
                         <Input
                             className="border-b"
                             id="fechaMovimiento"
@@ -179,22 +206,30 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
                     </div>
                     <div className="flex items-center gap-2">
                         <Label htmlFor="idMaterial" className="text-sm font-medium">Material</Label>
-                        <Select
-                            value={formData.idMaterial}
-                            onValueChange={handleSelectChange('idMaterial')}
-                            className="w-full"
-                        >
-                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                <SelectValue placeholder="Selecciona un material" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {materiales.map((material) => (
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id}>
-                                        {material.nombre} - {material.depositoNombre} - {material.ubicacionNombre}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        {materiales.length === 0 ? (
+                            <p className="text-sipe-gray">No hay materiales disponibles</p>
+                        ) : (
+                            <Select
+                                value={formData.idMaterial}
+                                onValueChange={handleSelectChange('idMaterial')}
+                                className="w-full"
+                            >
+                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                    <SelectValue placeholder="Selecciona un material" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-sipe-blue-light">
+                                    {materiales.map((material) => (
+                                        <SelectItem
+                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                            key={material.id}
+                                            value={material.id}
+                                        >
+                                            {material.nombre} - {material.depositoNombre} - {material.ubicacionNombre}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         <Label htmlFor="cantidadDisponible" className="text-sm font-medium">Cantidad Disponible</Label>
@@ -229,9 +264,9 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona un usuario" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-sipe-blue-light">
                                 {usuarios.map((usuario) => (
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={usuario.id} value={usuario.id}>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={usuario.id} value={usuario.id}>
                                         {usuario.nombre}
                                     </SelectItem>
                                 ))}
@@ -249,9 +284,9 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona un depósito origen" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-sipe-blue-light">
                                 {depositos.map((deposito) => (
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposito.id} value={deposito.id}>
                                         {deposito.nombre} - {deposito.ubicacion}
                                     </SelectItem>
                                 ))}
@@ -260,24 +295,32 @@ function MovementForm({ onClose, addPendingMovement, notify }) {
                     </div>
                     <div className="flex items-center gap-2">
                         <Label htmlFor="idDepositoDestino" className="text-sm font-medium">Depósito Destino</Label>
-                        <Select
-                            value={formData.idDepositoDestino}
-                            onValueChange={handleSelectChange('idDepositoDestino')}
-                            className="w-full"
-                        >
-                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                <SelectValue placeholder="Selecciona un depósito destino" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {depositos
-                                    .filter(deposito => deposito.id !== formData.idDepositoOrigen)
-                                    .map((deposito) => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
-                                            {deposito.nombre} - {deposito.ubicacion}
-                                        </SelectItem>
-                                    ))}
-                            </SelectContent>
-                        </Select>
+                        {depositos.length === 0 ? (
+                            <p className="text-sipe-gray text-sm">No hay depósitos disponibles</p>
+                        ) : (
+                            <Select
+                                value={formData.idDepositoDestino}
+                                onValueChange={handleSelectChange('idDepositoDestino')}
+                                className="w-full"
+                            >
+                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                    <SelectValue placeholder="Selecciona un depósito destino" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-sipe-blue-light">
+                                    {depositos
+                                        .filter(deposito => deposito.id !== formData.idDepositoOrigen)
+                                        .map((deposito) => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                key={deposito.id}
+                                                value={deposito.id}
+                                            >
+                                                {deposito.nombre} - {deposito.ubicacion}
+                                            </SelectItem>
+                                        ))}
+                                </SelectContent>
+                            </Select>
+                        )}
                     </div>
                 </div>
             </CardContent>

@@ -81,6 +81,7 @@ function Shelf({ notify }) {
                 setShelves(shelves.filter(shelf => !selectedShelves.includes(shelf.id)));
                 setSelectedShelves([]);
                 setIsDeleteMode(false);
+                loadShelves();
             })
             .catch(error => {
                 console.error('Error eliminando estanterías:', error);
@@ -99,14 +100,13 @@ function Shelf({ notify }) {
                 notify('success', 'Estanterías vaciadas correctamente');
                 setSelectedShelves([]);
                 setIsEmptyMode(false);
-                window.location.reload();
+                loadShelves();
             })
             .catch(error => {
                 notify('error', 'Error al vaciar estanterías');
             });
     };
 
-    // Función para manejar la actualización de estanterías
     const onShelfUpdated = () => {
         loadShelves(); // Recargar las estanterías
         setIsEditModalOpen(false); // Cerrar el modal después de actualizar
@@ -166,12 +166,15 @@ function Shelf({ notify }) {
                     </Pagination>
                 </div>
                 {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <ShelfForm onClose={closeFormModal} notify={notify} />
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                        <ShelfForm 
+                        onClose={closeFormModal} 
+                        notify={notify} 
+                        onShelfUpdated={loadShelves} />
                     </div>
                 )}
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <ShelfEditModal onClose={closeEditModal} onShelfUpdated={onShelfUpdated} notify={notify} />
                     </div>
                 )}

@@ -49,6 +49,7 @@ function Audit({ notify }) {
                 setAudits(audits.filter(audit => !selectedAudits.includes(audit.id)));
                 setSelectedAudits([]);
                 setIsDeleteMode(false);
+                loadAudits();
             })
             .catch(error => {
                 console.error('Error eliminando auditorías:', error);
@@ -65,11 +66,11 @@ function Audit({ notify }) {
                         <h1 className="text-3xl font-bold">Auditorías</h1>
                         <h3 className="text-md font-thin">Listado completo de auditorías</h3>
                     </div>
-                    <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
+                    {/* <div className="flex flex-row gap-4 text-sipe-white">
+                        <Button onClick={toggleDeleteMode} variant="sipebuttonalt4">
                             <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR'}
                         </Button>
-                    </div>
+                    </div> */}
                 </div>
                 <AuditList
                     audits={currentAudits}
