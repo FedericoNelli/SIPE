@@ -807,7 +807,8 @@ app.get('/exits', (req, res) => {
             COALESCE(GROUP_CONCAT(m.nombre ORDER BY ds.idMaterial ASC SEPARATOR ', '), 'Sin Material') AS nombresMateriales,
             COALESCE(GROUP_CONCAT(ds.cantidad ORDER BY ds.idMaterial ASC SEPARATOR ' , '), 'Sin Cantidad') AS cantidadesMateriales,
             COALESCE(GROUP_CONCAT(DISTINCT d.nombre ORDER BY d.nombre ASC SEPARATOR ', '), 'Sin Depósito') AS depositoNombre,
-            COALESCE(GROUP_CONCAT(DISTINCT u.nombre ORDER BY u.nombre ASC SEPARATOR ', '), 'Sin Ubicación') AS ubicacionNombre
+            COALESCE(GROUP_CONCAT(DISTINCT u.nombre ORDER BY u.nombre ASC SEPARATOR ', '), 'Sin Ubicación') AS ubicacionNombre,
+            anulado
         FROM 
             salida_material s
         LEFT JOIN 
@@ -1229,28 +1230,87 @@ app.get('/last-material-output', (req, res) => {
 });
 
 
+app.put('/canceled-exit/:id', authenticateToken, async (req, res) => {
+    const salidaId = req.params.id;
+    const userId = req.user.id;
 
+    try {
+        // Verificar si la salida ya está anulada
+        const checkAnuladoQuery = `SELECT anulado, numero FROM salida_material WHERE id = ?`;
+        const [checkResult] = await new Promise((resolve, reject) => {
+            db.query(checkAnuladoQuery, [salidaId], (err, results) => {
+                if (err) return reject(err);
+                resolve(results);
+            });
+        });
 
-app.delete('/delete-exits', (req, res) => {
-    const { exitIds } = req.body;
-
-    if (!exitIds || exitIds.length === 0) {
-        return res.status(400).json({ message: 'No se proporcionaron salidas para eliminar' });
-    }
-
-    // Construimos la consulta para eliminar múltiples IDs
-    const placeholders = exitIds.map(() => '?').join(',');
-    const query = `DELETE FROM salida_material WHERE id IN (${placeholders})`;
-
-    db.query(query, exitIds, (err, result) => {
-        if (err) {
-            console.error('Error eliminando salidas:', err);
-            return res.status(500).json({ message: 'Error eliminando salidas' });
+        if (!checkResult) {
+            return res.status(404).json({ error: 'Salida no encontrada' });
         }
 
-        res.status(200).json({ message: 'Salidas eliminadas correctamente' });
-    });
+        if (checkResult.anulado) {
+            return res.status(400).json({ error: 'La salida ya está anulada' });
+        }
+
+        const salidaNumero = checkResult.numero;
+
+        // Marcar la salida como anulada
+        const updateSalidaQuery = `UPDATE salida_material SET anulado = TRUE WHERE id = ?`;
+        await new Promise((resolve, reject) => {
+            db.query(updateSalidaQuery, [salidaId], (err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
+
+        // Obtener los materiales de la salida
+        const getMaterialesQuery = `
+            SELECT idMaterial, cantidad
+            FROM detalle_salida_material
+            WHERE idSalida = ?
+        `;
+        const materiales = await new Promise((resolve, reject) => {
+            db.query(getMaterialesQuery, [salidaId], (err, results) => {
+                if (err) return reject(err);
+                resolve(results);
+            });
+        });
+
+        // Revertir las cantidades de los materiales
+        for (const material of materiales) {
+            const updateMaterialQuery = `
+                UPDATE Material
+                SET cantidad = cantidad + ?
+                WHERE id = ?
+            `;
+            await new Promise((resolve, reject) => {
+                db.query(updateMaterialQuery, [material.cantidad, material.idMaterial], (err) => {
+                    if (err) return reject(err);
+                    resolve();
+                });
+            });
+        }
+
+        // Registrar la acción en la tabla de auditoría
+        const comentario = `Salida número ${salidaNumero} anulada`;
+        const auditoriaQuery = `
+            INSERT INTO Auditoria (id_usuario, tipo_accion, comentario)
+            VALUES (?, 'Anulación de Salida', ?)
+        `;
+        await new Promise((resolve, reject) => {
+            db.query(auditoriaQuery, [userId, comentario], (err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
+
+        res.status(200).json({ message: 'Salida anulada exitosamente y cantidades revertidas' });
+    } catch (error) {
+        console.error('Error al anular salida:', error);
+        res.status(500).json({ error: 'Error al anular salida', details: error });
+    }
 });
+
 
 // Endpoint para obtener materiales por depósito
 app.get('/materials/deposit/:idDeposito', (req, res) => {
@@ -2539,45 +2599,67 @@ app.get('/shelves', (req, res) => {
 
 // Endpoint para agregar una nueva estantería
 app.post('/addShelf', (req, res) => {
-    const { numero, cantidad_estante, cantidad_division, idPasillo, idLado } = req.body;
+    const { cantidad_estante, cantidad_division, idPasillo, idLado } = req.body;
 
     // Validación de campos obligatorios
-    if (!numero || !cantidad_estante || !cantidad_division || !idPasillo || !idLado) {
+    if (!cantidad_estante || !cantidad_division || !idPasillo || !idLado) {
         return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
 
-    // Primero, verificar si ya existe una estantería idéntica
-    const checkQuery = `
-        SELECT * FROM Estanteria 
-        WHERE numero = ?
+    // Generar automáticamente el número de estantería
+    const findMissingNumberQuery = `
+        SELECT t1.numero + 1 AS missingNumber
+        FROM Estanteria t1
+        LEFT JOIN Estanteria t2 ON t1.numero + 1 = t2.numero
+        WHERE t2.numero IS NULL
+        ORDER BY t1.numero
+        LIMIT 1
     `;
-    db.query(checkQuery, [numero], (err, results) => {
+
+    db.query(findMissingNumberQuery, (err, results) => {
         if (err) {
-            console.error('Error al verificar estantería:', err);
-            return res.status(500).json({ error: 'Error al verificar estantería', details: err });
+            console.error('Error al buscar el número de estantería faltante:', err);
+            return res.status(500).json({ error: 'Error al generar número de estantería', details: err });
         }
 
+        let numero;
         if (results.length > 0) {
-            // La estantería ya existe
-            return res.status(400).json({ error: 'Ya existe una estantería con este número' });
+            // Si hay un número faltante, usarlo
+            numero = results[0].missingNumber;
         } else {
-            // Si no existe, proceder a insertar
-            const insertQuery = `
-                INSERT INTO Estanteria (numero, cantidad_estante, cantidad_division, idPasillo, idLado)
-                VALUES (?, ?, ?, ?, ?)
-            `;
-            const values = [numero, cantidad_estante, cantidad_division, idPasillo, idLado];
-
-            db.query(insertQuery, values, (err, result) => {
+            // Si no hay un número faltante, usar el siguiente en la secuencia
+            const maxNumberQuery = `SELECT IFNULL(MAX(numero), 0) + 1 AS nextNumber FROM Estanteria`;
+            db.query(maxNumberQuery, (err, results) => {
                 if (err) {
-                    console.error('Error al insertar estantería:', err);
-                    return res.status(500).json({ error: 'Error al agregar estantería', details: err });
+                    console.error('Error al obtener el siguiente número de estantería:', err);
+                    return res.status(500).json({ error: 'Error al generar número de estantería', details: err });
                 }
-                res.status(200).json({ message: 'Estantería agregada exitosamente', id: result.insertId });
+                numero = results[0].nextNumber;
+                insertShelf(numero);
             });
+            return;
         }
+        // Proceder a insertar la estantería con el número generado
+        insertShelf(numero);
     });
+
+    function insertShelf(numero) {
+        const insertQuery = `
+            INSERT INTO Estanteria (numero, cantidad_estante, cantidad_division, idPasillo, idLado)
+            VALUES (?, ?, ?, ?, ?)
+        `;
+        const values = [numero, cantidad_estante, cantidad_division, idPasillo, idLado];
+
+        db.query(insertQuery, values, (err, result) => {
+            if (err) {
+                console.error('Error al insertar estantería:', err);
+                return res.status(500).json({ error: 'Error al agregar estantería', details: err });
+            }
+            res.status(200).json({ message: 'Estantería agregada exitosamente', id: result.insertId, numero });
+        });
+    }
 });
+
 
 
 // Obtener una estantería por ID
@@ -2661,15 +2743,16 @@ app.put('/edit-shelf/:id', (req, res) => {
                     }
 
                     if (materials.length > 0) {
-                        return res.status(400).json({ error: 'No se pueden modificar cantidad_estante o cantidad_division si hay materiales en los espacios de la estantería' });
+                        return res.status(400).json({ error: 'No se pueden modificar estantes o divisiones si hay materiales en la estantería' });
                     }
                     // Si no hay materiales, procedemos con la actualización
                     updateShelf();
                 });
             } else {
-                // Si no cambian esos valores, procedemos directamente con la actualización
+                // Si no cambian esos valores, eliminamos los espacios asociados y luego actualizamos la estantería
                 updateShelf();
             }
+
         });
 
         function updateShelf() {

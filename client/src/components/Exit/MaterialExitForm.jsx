@@ -18,7 +18,6 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {
     const [selectedMaterials, setSelectedMaterials] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [reason, setReason] = useState('');
-    const [numero, setNumero] = useState('');
     const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [showMaterialSelect, setShowMaterialSelect] = useState(true);
     const [maxDate] = useState(format(new Date(), 'yyyy-MM-dd'));

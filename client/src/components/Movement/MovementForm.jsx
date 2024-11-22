@@ -20,6 +20,8 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
     const [depositos, setDepositos] = useState([]);
     const [cantidadDisponible, setCantidadDisponible] = useState('');
     const [maxDatetime, setMaxDatetime] = useState('');
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filteredMaterials, setFilteredMaterials] = useState(materiales);
 
     // Cerrar modal al presionar la tecla Escape
     useEffect(() => {
@@ -59,6 +61,10 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
     }, [notify]);
 
     useEffect(() => {
+        setFilteredMaterials(materiales); // Sincroniza los materiales filtrados con los materiales cargados
+    }, [materiales]);
+
+    useEffect(() => {
         if (formData.idMaterial) {
             const materialSeleccionado = materiales.find(material => material.id === formData.idMaterial);
             if (materialSeleccionado) {
@@ -91,21 +97,6 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
             notify('error', 'La cantidad a mover no puede ser mayor a la disponible');
             return;
         }
-        // Validación solo para el campo "numero"
-        if (name === "numero") {
-            if (value === "" || value === "-") {
-                setFormData((prevData) => ({
-                    ...prevData,
-                    [name]: value
-                }));
-                return;
-            }
-            const numero = Number(value);
-            if (numero <= 0) {
-                notify('error', 'El número de movimiento no puede ser 0 ni negativo');
-                return;
-            }
-        }
 
         setFormData((prevData) => ({
             ...prevData,
@@ -120,6 +111,19 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
         }));
     };
 
+    const handleSearchMaterials = (e) => {
+        const search = e.target.value.toLowerCase();
+        setSearchTerm(search); // Actualiza el texto de búsqueda
+        setFilteredMaterials(
+            materiales.filter(
+                (material) =>
+                    material.nombre.toLowerCase().includes(search) ||
+                    material.depositoNombre.toLowerCase().includes(search) ||
+                    material.ubicacionNombre.toLowerCase().includes(search)
+            )
+        );
+    };
+
     const handleAddPendingMovement = () => {
         const material = materiales.find(mat => mat.id === formData.idMaterial);
         const usuario = usuarios.find(user => user.id === formData.idUsuario);
@@ -129,11 +133,11 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
         // Generar el número de movimiento pendiente localmente
         let numeroPendiente = localStorage.getItem('pendingMovementCounter');
         if (!numeroPendiente) {
-            numeroPendiente = 1; // Si no existe, comienza desde 1
+            numeroPendiente = 1;
         } else {
-            numeroPendiente = parseInt(numeroPendiente, 10) + 1; // Incrementar el contador
+            numeroPendiente = parseInt(numeroPendiente, 10) + 1;
         }
-        localStorage.setItem('pendingMovementCounter', numeroPendiente); // Guardar el nuevo valor
+        localStorage.setItem('pendingMovementCounter', numeroPendiente);
 
         const movementWithDetails = {
             ...formData,
@@ -159,10 +163,10 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
         };
 
         const token = localStorage.getItem('token');
-        // Llamar al endpoint de auditoría
+
         axios.post('http://localhost:8081/addAuditoria', auditData, {
             headers: {
-                'Authorization': `Bearer ${token}`, // Agrega el token al encabezado
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
         })
@@ -210,23 +214,39 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
                             <p className="text-sipe-gray">No hay materiales disponibles</p>
                         ) : (
                             <Select
-                                value={formData.idMaterial}
-                                onValueChange={handleSelectChange('idMaterial')}
+                                value={formData.idMaterial || ""} // Solo se actualiza al seleccionar explícitamente
+                                onValueChange={(value) => setFormData({ ...formData, idMaterial: value })} // Manejar cambios explícitos
                                 className="w-full"
                             >
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Selecciona un material" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-sipe-blue-light">
-                                    {materiales.map((material) => (
-                                        <SelectItem
+                                    {/* Campo de búsqueda */}
+                                    <div className="p-2">
+                                        <Input
+                                            type="text"
+                                            value={searchTerm} // Estado independiente para la búsqueda
+                                            placeholder="Buscar material..."
+                                            onChange={handleSearchMaterials} 
+                                            onKeyDown={(e) => e.stopPropagation()}
                                             className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
-                                            key={material.id}
-                                            value={material.id}
-                                        >
-                                            {material.nombre} - {material.depositoNombre} - {material.ubicacionNombre}
-                                        </SelectItem>
-                                    ))}
+                                        />
+                                    </div>
+                                    {/* Lista de materiales filtrada */}
+                                    {filteredMaterials.length > 0 ? (
+                                        filteredMaterials.map((material) => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                key={material.id}
+                                                value={material.id} // Solo se selecciona al hacer clic explícito
+                                            >
+                                                {material.nombre} - {material.depositoNombre} - {material.ubicacionNombre}
+                                            </SelectItem>
+                                        ))
+                                    ) : (
+                                        <p className="p-2 text-sipe-gray">No se encontraron materiales</p>
+                                    )}
                                 </SelectContent>
                             </Select>
                         )}

@@ -9,7 +9,6 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
     const [movements, setMovements] = useState([]);
     const [selectedMovementId, setSelectedMovementId] = useState('');
-    const [movementNumber, setMovementNumber] = useState('');
     const [movementData, setMovementData] = useState(null);
     const [cantidad, setCantidad] = useState('');
     const [cantidadDisponible, setCantidadDisponible] = useState('');
@@ -99,7 +98,6 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                     const data = response.data;
                     setMovementData(data);
                     setCantidad(data.cantidad || '');
-                    setMovementNumber(data.numero) || '';
                     setIdMaterial(data.idMaterial || '');
                     setFechaMovimiento(data.fechaMovimiento ? data.fechaMovimiento.slice(0, 10) : '');
                     setSelectedDepositoOrigen(data.idDepositoOrigen || '');
@@ -133,7 +131,6 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
         }
         try {
             await axios.put(`http://localhost:8081/edit-movements/${selectedMovementId}`, {
-                numero: movementNumber,
                 cantidad,
                 fechaMovimiento,
                 idMaterial,
@@ -142,8 +139,8 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                 idUsuario: selectedUsuario // Mandar el usuario seleccionado
             });
             notify('success', 'Movimiento actualizado correctamente');
-            onMovementUpdated(); // Recargar lista de movimientos
-            onClose(); // Cerrar modal
+            onMovementUpdated();
+            onClose(); 
         } catch (error) {
             if (error.response && error.response.data && error.response.data.error) {
                 notify('error', error.response.data.error)
@@ -181,16 +178,6 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    {/* <div className="grid gap-2">
-                                        <Label htmlFor="numero" className="text-sm font-medium">Nuevo número de movimiento</Label>
-                                        <Input
-                                            id="numero"
-                                            value={movementNumber}
-                                            onChange={handleMovementNumberChange}
-                                            required
-                                            className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
-                                        />
-                                    </div> */}
                                     <div className="grid gap-2">
                                         <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha del movimiento</Label>
                                         <Input
