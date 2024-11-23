@@ -77,7 +77,7 @@ function AuditList({ audits, isDeleteMode, selectedAudits, setSelectedAudits, ha
                                 </TableCell>
                                 <TableCell className="text-center font-light">{audit.nombre_usuario}</TableCell>
                                 <TableCell className="text-center font-light">{audit.tipo_accion}</TableCell>
-                                <TableCell className="text-center font-light">{audit.comentario}</TableCell>
+                                <TableCell className="text-center font-bold">{audit.comentario}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

@@ -129,6 +129,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
             notify('error', 'La cantidad a mover no puede ser mayor a la cantidad disponible');
             return;
         }
+        const token = localStorage.getItem('token');
         try {
             await axios.put(`http://localhost:8081/edit-movements/${selectedMovementId}`, {
                 cantidad,
@@ -136,11 +137,17 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                 idMaterial,
                 idDepositoOrigen: selectedDepositoOrigen,
                 idDepositoDestino: selectedDepositoDestino,
-                idUsuario: selectedUsuario // Mandar el usuario seleccionado
-            });
+                idUsuario: selectedUsuario
+            },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
             notify('success', 'Movimiento actualizado correctamente');
             onMovementUpdated();
-            onClose(); 
+            onClose();
         } catch (error) {
             if (error.response && error.response.data && error.response.data.error) {
                 notify('error', error.response.data.error)

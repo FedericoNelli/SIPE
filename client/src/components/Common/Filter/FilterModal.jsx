@@ -4,6 +4,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 import { X } from "lucide-react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/Common/Select/Select";
+import { Label } from "@/components/Common/Label/Label";
+import { Input } from "@/components/Common/Input/Input";
+
 
 const FilterModal = ({
     isOpen,
@@ -48,27 +51,6 @@ const FilterModal = ({
         };
     }, [onClose]);
 
-    const handleClickOutside = (event) => {
-        const isClickInsideModal = modalContentRef.current && modalContentRef.current.contains(event.target);
-        const isClickInsideSelect = event.target.closest(".select-content"); // Verifica si el clic está en el Select
-
-        if (!isClickInsideModal && !isClickInsideSelect) {
-            handleClose();
-        }
-    };
-
-    useEffect(() => {
-        if (isVisible) {
-            document.addEventListener("mousedown", handleClickOutside);
-        } else {
-            document.removeEventListener("mousedown", handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [isVisible]);
-
     return (
         <AnimatePresence>
             {isVisible && (
@@ -104,9 +86,9 @@ const FilterModal = ({
                                         <>
                                             {/* Filtro por Ubicación */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2">
                                                     Ubicación
-                                                </label>
+                                                </Label>
                                                 <Select
                                                     value={filters.ubicacion || ""}
                                                     onValueChange={(value) => onFilterChange({ target: { name: "ubicacion", value } })}
@@ -129,9 +111,9 @@ const FilterModal = ({
 
                                             {/* Filtro por Depósito */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2">
                                                     Depósito
-                                                </label>
+                                                </Label>
                                                 <Select
                                                     value={filters.deposito || ""}
                                                     onValueChange={(value) => onFilterChange({ target: { name: "deposito", value } })}
@@ -154,9 +136,9 @@ const FilterModal = ({
 
                                             {/* Filtro por Categoría */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2">
                                                     Categoría
-                                                </label>
+                                                </Label>
                                                 <Select
                                                     value={filters.categoria || ""}
                                                     onValueChange={(value) => onFilterChange({ target: { name: "categoria", value } })}
@@ -179,9 +161,9 @@ const FilterModal = ({
 
                                             {/* Filtro por Estado */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2">
                                                     Estado
-                                                </label>
+                                                </Label>
                                                 <Select
                                                     value={filters.estado || ""}
                                                     onValueChange={(value) => onFilterChange({ target: { name: "estado", value } })}
@@ -208,9 +190,9 @@ const FilterModal = ({
                                         <>
                                             {/* Filtro por Material */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="material">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="material">
                                                     Material
-                                                </label>
+                                                </Label>
                                                 <Select
                                                     value={filters.material || ""}
                                                     onValueChange={(value) => onFilterChange({ target: { name: "material", value } })}
@@ -230,58 +212,34 @@ const FilterModal = ({
 
                                             {/* Filtro por Fecha de Inicio */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="startDate">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="startDate">
                                                     Fecha de Inicio
-                                                </label>
-                                                <Select
-                                                    value={filters.startDate || ""}
-                                                    onValueChange={(value) => onFilterChange({ target: { name: "startDate", value } })}
-                                                >
-                                                    <SelectTrigger className="w-full bg-sipe-blue-dark text-sipe-white">
-                                                        <SelectValue placeholder="Seleccione una fecha de inicio" />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="bg-sipe-blue-light select-content text-sipe-white">
-                                                        {Array.from({ length: 31 }, (_, i) => {
-                                                            const date = new Date(today);
-                                                            date.setDate(i + 1);
-                                                            return (
-                                                                <SelectItem key={i} value={date.toISOString().split("T")[0]}>
-                                                                    {date.toISOString().split("T")[0]}
-                                                                </SelectItem>
-                                                            );
-                                                        })}
-                                                    </SelectContent>
-                                                </Select>
+                                                </Label>
+                                                <Input
+                                                    type="date"
+                                                    name="startDate"
+                                                    value={filters.startDate}
+                                                    onChange={onFilterChange}
+                                                    max={today}
+                                                    className="w-full bg-sipe-blue-dark text-sipe-white"
+                                                />
                                             </div>
-
                                             {/* Filtro por Fecha de Fin */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="endDate">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="endDate">
                                                     Fecha de Fin
-                                                </label>
-                                                <Select
-                                                    value={filters.endDate || ""}
-                                                    onValueChange={(value) => onFilterChange({ target: { name: "endDate", value } })}
-                                                >
-                                                    <SelectTrigger className="w-full bg-sipe-blue-dark text-sipe-white">
-                                                        <SelectValue placeholder="Seleccione una fecha de fin" />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="bg-sipe-blue-light select-content text-sipe-white">
-                                                        {Array.from({ length: 31 }, (_, i) => {
-                                                            const date = new Date(today);
-                                                            date.setDate(i + 1);
-                                                            return (
-                                                                <SelectItem key={i} value={date.toISOString().split("T")[0]}>
-                                                                    {date.toISOString().split("T")[0]}
-                                                                </SelectItem>
-                                                            );
-                                                        })}
-                                                    </SelectContent>
-                                                </Select>
+                                                </Label>
+                                                <Input
+                                                    type="date"
+                                                    name="endDate"
+                                                    value={filters.endDate}
+                                                    onChange={onFilterChange}
+                                                    max={today}
+                                                    className="w-full bg-sipe-blue-dark text-sipe-white"
+                                                />
                                             </div>
                                         </>
                                     )}
-
                                 </form>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-4">

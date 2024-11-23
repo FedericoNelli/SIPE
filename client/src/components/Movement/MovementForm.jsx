@@ -183,7 +183,6 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
     };
 
 
-
     const handleCancel = () => {
         if (onClose) onClose();
     };
@@ -222,15 +221,14 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
                                     <SelectValue placeholder="Selecciona un material" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-sipe-blue-light">
-                                    {/* Campo de búsqueda */}
                                     <div className="p-2">
                                         <Input
                                             type="text"
-                                            value={searchTerm} // Estado independiente para la búsqueda
+                                            value={searchTerm}
                                             placeholder="Buscar material..."
                                             onChange={handleSearchMaterials} 
                                             onKeyDown={(e) => e.stopPropagation()}
-                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                            className="bg-sipe-blue-light border-b-1 text-sipe-white text-sm border-sipe-white"
                                         />
                                     </div>
                                     {/* Lista de materiales filtrada */}
@@ -239,7 +237,7 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
                                             <SelectItem
                                                 className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
                                                 key={material.id}
-                                                value={material.id} // Solo se selecciona al hacer clic explícito
+                                                value={material.id}
                                             >
                                                 {material.nombre} - {material.depositoNombre} - {material.ubicacionNombre}
                                             </SelectItem>
