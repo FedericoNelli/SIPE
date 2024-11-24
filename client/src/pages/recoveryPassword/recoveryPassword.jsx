@@ -37,13 +37,34 @@ function RecoveryPassword() {
         }
     };
 
+
+const handleLogout = async () => {
+    try {
+        await axios.post('http://localhost:8081/logout', {}, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        localStorage.setItem('firstLogin', '0');
+        const rememberMe = localStorage.getItem('rememberedUser');
+        localStorage.clear();
+        if (rememberMe) {
+            localStorage.setItem('rememberedUser', rememberMe);
+        }
+        window.location.href = '/';
+    } catch (error) {
+        console.error('Error al cerrar sesión', error);
+    }
+};
+
+
     const firstLogin = localStorage.getItem('firstLogin');
     const messageTitle = firstLogin === '1'
         ? 'Como es tu primer inicio de sesión, tenés que cambiar tu contraseña'
         : (state?.source === 'navbar'
             ? 'Cambiá tu contraseña'
             : 'Recuperá tu contraseña');
-
 
     return (
         <div className="bg-sipe-blue-dark">
@@ -73,7 +94,7 @@ function RecoveryPassword() {
                                         CONFIRMAR CORREO
                                     </Button>
                                     <Link to="/">
-                                        <Button variant="sipebuttonalt" size="sipebutton" type="submit">
+                                        <Button variant="sipebuttonalt" size="sipebutton" type="submit" onClick={handleLogout}>
                                             CANCELAR
                                         </Button>
                                     </Link>

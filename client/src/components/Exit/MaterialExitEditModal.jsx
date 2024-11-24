@@ -171,8 +171,14 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
         cantidad: material.cantidadSalida
       }))
     };
+    const token = localStorage.getItem('token');
     try {
-      await axios.put(`http://localhost:8081/materials/exits/${selectedExitId}`, updatedData);
+      await axios.put(`http://localhost:8081/materials/exits/${selectedExitId}`, updatedData, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // Agrega el token al encabezado
+          'Content-Type': 'application/json',
+        },
+      });
       notify('success', 'Salida actualizada con éxito');
       onExitUpdated();
       onClose();
@@ -249,16 +255,6 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
 
         {salidaData && (
           <>
-            <div className="grid gap-2 mt-4">
-              <Label htmlFor="editNumeroSalida" className="text-sm font-medium">Nuevo número de salida</Label>
-              <Input
-                type="text"
-                value={exitNumber}
-                onChange={handleExitNumberChange}
-                placeholder="Número de salida"
-                className="border-b bg-sipe-blue-dark text-white"
-              />
-            </div>
             <div className="grid gap-2 mt-4">
               <Label htmlFor="fecha" className="text-sm font-medium">Fecha de salida</Label>
               <Input
@@ -370,7 +366,6 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
               )}
             </div>
 
-
             <div className="grid gap-2 mt-4">
               <Label htmlFor="reason" className="text-sm font-medium">Motivo</Label>
               <Input
@@ -381,7 +376,7 @@ function MaterialExitEditModal({ onClose, notify, onExitUpdated }) {
               />
             </div>
             <div className="grid gap-2 mt-4">
-              <Label htmlFor="usuario" className="text-sm font-medium">Usuario</Label>
+              <Label htmlFor="usuario" className="text-sm font-medium">Usuario que sacó los materiales</Label>
               <Select onValueChange={setSelectedUser} value={selectedUser}>
                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                   <SelectValue placeholder="Selecciona un usuario" />

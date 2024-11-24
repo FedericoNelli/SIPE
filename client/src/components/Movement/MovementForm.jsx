@@ -13,14 +13,15 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
         idUsuario: '',
         idDepositoOrigen: '',
         idDepositoDestino: '',
-        cantidadMovida: '',
-        numero: ''
+        cantidadMovida: ''
     });
     const [materiales, setMateriales] = useState([]);
     const [usuarios, setUsuarios] = useState([]);
     const [depositos, setDepositos] = useState([]);
     const [cantidadDisponible, setCantidadDisponible] = useState('');
     const [maxDatetime, setMaxDatetime] = useState('');
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filteredMaterials, setFilteredMaterials] = useState(materiales);
 
     // Cerrar modal al presionar la tecla Escape
     useEffect(() => {
@@ -60,6 +61,10 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
     }, [notify]);
 
     useEffect(() => {
+        setFilteredMaterials(materiales); // Sincroniza los materiales filtrados con los materiales cargados
+    }, [materiales]);
+
+    useEffect(() => {
         if (formData.idMaterial) {
             const materialSeleccionado = materiales.find(material => material.id === formData.idMaterial);
             if (materialSeleccionado) {
@@ -92,21 +97,6 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
             notify('error', 'La cantidad a mover no puede ser mayor a la disponible');
             return;
         }
-        // Validación solo para el campo "numero"
-        if (name === "numero") {
-            if (value === "" || value === "-") {
-                setFormData((prevData) => ({
-                    ...prevData,
-                    [name]: value
-                }));
-                return;
-            }
-            const numero = Number(value);
-            if (numero <= 0) {
-                notify('error', 'El número de movimiento no puede ser 0 ni negativo');
-                return;
-            }
-        }
 
         setFormData((prevData) => ({
             ...prevData,
@@ -121,14 +111,37 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
         }));
     };
 
+    const handleSearchMaterials = (e) => {
+        const search = e.target.value.toLowerCase();
+        setSearchTerm(search); // Actualiza el texto de búsqueda
+        setFilteredMaterials(
+            materiales.filter(
+                (material) =>
+                    material.nombre.toLowerCase().includes(search) ||
+                    material.depositoNombre.toLowerCase().includes(search) ||
+                    material.ubicacionNombre.toLowerCase().includes(search)
+            )
+        );
+    };
+
     const handleAddPendingMovement = () => {
         const material = materiales.find(mat => mat.id === formData.idMaterial);
         const usuario = usuarios.find(user => user.id === formData.idUsuario);
         const depositoOrigen = depositos.find(dep => dep.id === formData.idDepositoOrigen);
         const depositoDestino = depositos.find(dep => dep.id === formData.idDepositoDestino);
 
+        // Generar el número de movimiento pendiente localmente
+        let numeroPendiente = localStorage.getItem('pendingMovementCounter');
+        if (!numeroPendiente) {
+            numeroPendiente = 1;
+        } else {
+            numeroPendiente = parseInt(numeroPendiente, 10) + 1;
+        }
+        localStorage.setItem('pendingMovementCounter', numeroPendiente);
+
         const movementWithDetails = {
             ...formData,
+            numero: numeroPendiente, // Asignar el número generado
             fechaMovimiento: new Date(formData.fechaMovimiento).toISOString().split('T')[0],
             materialNombre: material ? material.nombre : '',
             usuarioNombre: usuario ? usuario.nombre : '',
@@ -137,10 +150,38 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
             expiry: new Date().getTime() + 7 * 24 * 60 * 60 * 1000
         };
 
+        // Guardar el movimiento pendiente
         addPendingMovement(movementWithDetails);
+
+        // Datos para la auditoría
+        const auditData = {
+            tipo_accion: 'Alta de movimiento',
+            comentario: `Número de movimiento: ${numeroPendiente}, Material movido: ${material ? material.nombre : 'Desconocido'}, 
+                        Cantidad de inicio: ${formData.cantidadMovida}, 
+                        Depósito Origen: ${depositoOrigen ? depositoOrigen.nombre : 'Desconocido'}, 
+                        Depósito Destino: ${depositoDestino ? depositoDestino.nombre : 'Desconocido'}`
+        };
+
+        const token = localStorage.getItem('token');
+
+        axios.post('http://localhost:8081/addAuditoria', auditData, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(() => {
+                notify('success', 'Auditoría registrada correctamente');
+            })
+            .catch(error => {
+                notify('error', 'Error al registrar auditoría', error);
+            });
+
+        // Actualizar movimientos y cerrar el modal
         onMovementUpdated();
         onClose();
     };
+
 
     const handleCancel = () => {
         if (onClose) onClose();
@@ -154,18 +195,6 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
             </CardHeader>
             <CardContent className="flex flex-col space-y-10">
                 <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-2">
-                        <Label htmlFor="numero" className="text-sm font-medium">Número de movimiento</Label>
-                        <Input
-                            className="border-b"
-                            id="numero"
-                            name="numero"
-                            type="number"
-                            value={formData.numero}
-                            onChange={handleInputChange}
-                            max={1}
-                        />
-                    </div>
                     <div className="flex items-center gap-2">
                         <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha de movimiento</Label>
                         <Input
@@ -184,23 +213,38 @@ function MovementForm({ onClose, addPendingMovement, notify, onMovementUpdated }
                             <p className="text-sipe-gray">No hay materiales disponibles</p>
                         ) : (
                             <Select
-                                value={formData.idMaterial}
-                                onValueChange={handleSelectChange('idMaterial')}
+                                value={formData.idMaterial || ""} // Solo se actualiza al seleccionar explícitamente
+                                onValueChange={(value) => setFormData({ ...formData, idMaterial: value })} // Manejar cambios explícitos
                                 className="w-full"
                             >
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Selecciona un material" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-sipe-blue-light">
-                                    {materiales.map((material) => (
-                                        <SelectItem
-                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
-                                            key={material.id}
-                                            value={material.id}
-                                        >
-                                            {material.nombre} - {material.depositoNombre} - {material.ubicacionNombre}
-                                        </SelectItem>
-                                    ))}
+                                    <div className="p-2">
+                                        <Input
+                                            type="text"
+                                            value={searchTerm}
+                                            placeholder="Buscar material..."
+                                            onChange={handleSearchMaterials} 
+                                            onKeyDown={(e) => e.stopPropagation()}
+                                            className="bg-sipe-blue-light border-b-1 text-sipe-white text-sm border-sipe-white"
+                                        />
+                                    </div>
+                                    {/* Lista de materiales filtrada */}
+                                    {filteredMaterials.length > 0 ? (
+                                        filteredMaterials.map((material) => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                key={material.id}
+                                                value={material.id}
+                                            >
+                                                {material.nombre} - {material.depositoNombre} - {material.ubicacionNombre}
+                                            </SelectItem>
+                                        ))
+                                    ) : (
+                                        <p className="p-2 text-sipe-gray">No se encontraron materiales</p>
+                                    )}
                                 </SelectContent>
                             </Select>
                         )}

@@ -5,12 +5,10 @@ import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
 import { Button } from "@/components/Common/Button/Button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/Common/Select/Select";
-import { X } from 'lucide-react';
 
 const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
     const [movements, setMovements] = useState([]);
     const [selectedMovementId, setSelectedMovementId] = useState('');
-    const [movementNumber, setMovementNumber] = useState('');
     const [movementData, setMovementData] = useState(null);
     const [cantidad, setCantidad] = useState('');
     const [cantidadDisponible, setCantidadDisponible] = useState('');
@@ -100,7 +98,6 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                     const data = response.data;
                     setMovementData(data);
                     setCantidad(data.cantidad || '');
-                    setMovementNumber(data.numero) || '';
                     setIdMaterial(data.idMaterial || '');
                     setFechaMovimiento(data.fechaMovimiento ? data.fechaMovimiento.slice(0, 10) : '');
                     setSelectedDepositoOrigen(data.idDepositoOrigen || '');
@@ -132,35 +129,31 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
             notify('error', 'La cantidad a mover no puede ser mayor a la cantidad disponible');
             return;
         }
+        const token = localStorage.getItem('token');
         try {
             await axios.put(`http://localhost:8081/edit-movements/${selectedMovementId}`, {
-                numero: movementNumber,
                 cantidad,
                 fechaMovimiento,
                 idMaterial,
                 idDepositoOrigen: selectedDepositoOrigen,
                 idDepositoDestino: selectedDepositoDestino,
-                idUsuario: selectedUsuario // Mandar el usuario seleccionado
-            });
+                idUsuario: selectedUsuario
+            },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
             notify('success', 'Movimiento actualizado correctamente');
-            onMovementUpdated(); // Recargar lista de movimientos
-            onClose(); // Cerrar modal
+            onMovementUpdated();
+            onClose();
         } catch (error) {
             if (error.response && error.response.data && error.response.data.error) {
                 notify('error', error.response.data.error)
             } else {
                 notify('error', 'Error al actualizar el movimiento');
             }
-        }
-    };
-
-    const handleMovementNumberChange = (e) => {
-        const value = e.target.value;
-        if (value === '' || /^[1-9]\d*$/.test(value)) { // Solo permitir valores positivos o vacío
-            setMovementNumber(value);
-        } else if (value === '0' || value.startsWith('-')) {
-            setMovementNumber(''); // Restablecer si es 0 o negativo
-            notify('error', 'El número de movimiento no puede ser 0 ni negativo');
         }
     };
 
@@ -191,16 +184,6 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="numero" className="text-sm font-medium">Nuevo número de movimiento</Label>
-                                        <Input
-                                            id="numero"
-                                            value={movementNumber}
-                                            onChange={handleMovementNumberChange}
-                                            required
-                                            className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
-                                        />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha del movimiento</Label>
@@ -234,7 +217,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                         />
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex flex-col gap-3">
                                     <div className="grid gap-2">
                                         <Label htmlFor="idMaterial" className="text-sm font-medium">Material</Label>
@@ -245,7 +228,7 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                             <SelectContent className="bg-sipe-blue-light">
                                                 {materials.map((material) => (
                                                     <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={material.id} value={material.id}>
-                                                        {material.nombre}
+                                                        {material.nombre} - {material.depositoNombre} - {material.ubicacionNombre}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -296,97 +279,6 @@ const MovementEditModal = ({ onClose, onMovementUpdated, notify }) => {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="fechaMovimiento" className="text-sm font-medium">Fecha del movimiento</Label>
-                                    <Input
-                                        id="fechaMovimiento"
-                                        type="date"
-                                        value={fechaMovimiento}
-                                        onChange={(e) => setFechaMovimiento(e.target.value)}
-                                        required
-                                        className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
-                                        max={maxDatetime}
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="cantidadDisponible" className="text-sm font-medium">Cantidad Disponible</Label>
-                                    <Input
-                                        id="cantidadDisponible"
-                                        value={cantidadDisponible}
-                                        readOnly
-                                        className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg"
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="cantidad" className="text-sm font-medium">Cantidad</Label>
-                                    <Input
-                                        id="cantidad"
-                                        value={cantidad}
-                                        onChange={(e) => setCantidad(e.target.value)}
-                                        required
-                                        className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
-                                    />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="idMaterial" className="text-sm font-medium">Material</Label>
-                                    <Select value={idMaterial} onValueChange={setIdMaterial}>
-                                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                            <SelectValue placeholder="Seleccionar material" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {materials.map((material) => (
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id}>
-                                                    {`${material.nombre} - ${material.depositoNombre} - ${material.ubicacionNombre}`}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="usuario" className="text-sm font-medium">Usuario</Label>
-                                    <Select value={selectedUsuario} onValueChange={setSelectedUsuario}>
-                                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                            <SelectValue placeholder="Seleccionar usuario" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {usuarios.map((usuario) => (
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={usuario.id} value={usuario.id}>
-                                                    {usuario.nombre}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="depositoOrigen" className="text-sm font-medium">Depósito de origen</Label>
-                                    <Select value={selectedDepositoOrigen} onValueChange={setSelectedDepositoOrigen}>
-                                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                            <SelectValue placeholder="Seleccionar depósito origen" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {depositos.map((deposito) => (
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
-                                                    {deposito.nombre} - {deposito.ubicacion}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="depositoDestino" className="text-sm font-medium">Depósito de destino</Label>
-                                    <Select value={selectedDepositoDestino} onValueChange={setSelectedDepositoDestino}>
-                                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                            <SelectValue placeholder="Seleccionar depósito destino" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {depositos.map((deposito) => (
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
-                                                    {deposito.nombre} - {deposito.ubicacion}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
                                 </div>
                             </div>
                         ) : (

@@ -11,22 +11,22 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
 
     function generateRandomColor() {
         const isBlue = Math.random() > 0.5;
-    
+
         if (isBlue) {
             // Generar un color azul (R y G bajos, B alto)
-            const r = Math.floor(Math.random() * 50); 
-            const g = Math.floor(Math.random() * 50); 
-            const b = Math.floor(Math.random() * 206) + 50; 
+            const r = Math.floor(Math.random() * 50);
+            const g = Math.floor(Math.random() * 50);
+            const b = Math.floor(Math.random() * 206) + 50;
             return `rgb(${r}, ${g}, ${b})`;
         } else {
             // Generar un color naranja (R y G altos, B bajo)
-            const r = Math.floor(Math.random() * 156) + 100; 
-            const g = Math.floor(Math.random() * 156) + 100; 
-            const b = Math.floor(Math.random() * 50); 
+            const r = Math.floor(Math.random() * 156) + 100;
+            const g = Math.floor(Math.random() * 156) + 100;
+            const b = Math.floor(Math.random() * 50);
             return `rgb(${r}, ${g}, ${b})`;
         }
     }
-    
+
     useEffect(() => {
         if (reportData) {
             let formattedData = [];
@@ -39,6 +39,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                 const deposits = splitField(reportData.nombre_deposito);
                 formattedData = materials.map((material, index) => ({
                     name: `${material} - Depósito ${deposits[index] || "N/A"}`,
+                    materialName: material,
                     value: parseInt(quantities[index], 10) || 0,
                     color: generateRandomColor()
                 }));
@@ -50,6 +51,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
 
                 formattedData = materials.map((material, index) => ({
                     name: `${material} - Depósito ${deposits[index] || "N/A"}`,
+                    materialName: material,
                     value: parseInt(quantities[index], 10) || 0,
                     estado: states[index] || "Sin estado",
                     color: generateRandomColor()
@@ -63,6 +65,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
 
                 formattedData = materials.map((material, index) => ({
                     name: `Origen: ${origins[index] || "N/A"} -> Destino: ${destinations[index] || "N/A"}`,
+                    materialName: material,
                     value: parseInt(quantities[index], 10) || 0,
                     depositoOrigen: origins[index],
                     depositoDestino: destinations[index],
@@ -79,6 +82,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
 
                 formattedData = materials.map((material, index) => ({
                     name: material,
+                    materialName: material,
                     value: parseInt(quantities[index], 10) || 0,
                     fecha: dates[index] || "Sin fecha",
                     motivo: reasons[index] || "Sin motivo",
@@ -98,7 +102,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
     const [startDate, endDate] = dateRange.split(' - '); // Dividimos las dos fechas
     const formattedStartDate = startDate ? format(new Date(startDate), 'dd/MM/yyyy') : 'N/A';
     const formattedEndDate = endDate ? format(new Date(endDate), 'dd/MM/yyyy') : 'N/A';
-    
+
     // Obtener valores únicos de `selectedOption` y `selectedOption1`
     const uniqueSelectedOption = Array.from(new Set(selectedOption.split(', '))).join(', ');
     const uniqueSelectedOption1 = Array.from(new Set(selectedOption1.split(', '))).join(', ');
@@ -132,6 +136,27 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
             label: "Cantidad",
             color: "hsl(var(--chart-1))",
         },
+    };
+
+    const CustomTooltip = ({ active, payload }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div
+                    style={{
+                        backgroundColor: "white",
+                        border: "1px solid #ccc", 
+                        borderRadius: "5px", 
+                        padding: "10px", 
+                        boxShadow: "0 2px 5px rgba(0, 0, 0, 0.2)", 
+                        fontWeight: "bold", 
+                        color: "black", 
+                    }}
+                >
+                    <p style={{ margin: 0 }}>{`Material: ${payload[0].payload.materialName}`}</p>
+                </div>
+            );
+        }
+        return null;
     };
 
     return (
@@ -212,7 +237,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                         />
                                         <ChartTooltip
                                             cursor={false}
-                                            content={<ChartTooltipContent hideLabel />}
+                                            content={<CustomTooltip />}
                                         />
                                         <Bar
                                             dataKey="value"

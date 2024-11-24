@@ -31,8 +31,8 @@ function ReportList({ reports, setReports, isDeleteMode, notify, fetchReportDeta
             notify('success', 'Informes eliminados correctamente');
             setReports(prevReports => prevReports.filter(report => !selectedReports.includes(report.id)));
             setSelectedReports([]); // Limpiar la selección
-            setIsConfirmingDeletion(false);
             onReportUpdated();
+            setIsConfirmingDeletion(false);
         } catch (error) {
             console.error('Error eliminando informes:', error);
             notify('error', 'Error al eliminar informes');

@@ -5,7 +5,7 @@ import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Common/Select/Select";
 import { Button } from "@/components/Common/Button/Button";
-import { X } from 'lucide-react';
+
 
 const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
     const [shelves, setShelves] = useState([]); // Lista de estanterías para seleccionar
@@ -60,7 +60,6 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
 
                     // Establecer los datos de la estantería
                     setShelfData(data);
-                    setShelfNumber(data.numero);
                     setShelfQuantity(data.cantidad_estante);
                     setDivisionQuantity(data.cantidad_division);
 
@@ -132,13 +131,6 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
 
     const handleUpdateShelf = async () => {
         setLoading(true);
-        console.log({
-            numero: shelfNumber,
-            cantidad_estante: shelfQuantity,
-            cantidad_division: divisionQuantity,
-            idPasillo: selectedAisle?.id,
-            idLado: selectedSide, // Verifica que este valor sea 1 o 2
-        });
 
         try {
             const response = await axios.put(`http://localhost:8081/edit-shelf/${selectedShelfId}`, {
@@ -173,13 +165,11 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
         // Permite que el campo esté vacío o solo valores mayores a 0
         if (value === '' || /^[1-9]\d*$/.test(value)) {
             // Actualiza el estado correspondiente basado en el id del input
-            if (id === 'shelfNumber') setShelfNumber(value);
             if (id === 'shelfQuantity') setShelfQuantity(value);
             if (id === 'divisionQuantity') setDivisionQuantity(value);
         } else {
             // Si el valor es 0 o negativo, muestra el mensaje de error
             const errorMessage = {
-                shelfNumber: "El número de estantería debe ser mayor a 0",
                 shelfQuantity: "La cantidad de estantes debe ser mayor que 0",
                 divisionQuantity: "La cantidad de divisiones debe ser mayor que 0"
             };
@@ -212,18 +202,6 @@ const ShelfEditModal = ({ onClose, onShelfUpdated, notify }) => {
                                     ))}
                                 </SelectContent>
                             </Select>
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="shelfNumber" className="text-sm font-medium">Número de estantería</Label>
-                            <Input
-                                id="shelfNumber"
-                                type="number"
-                                value={shelfNumber}
-                                onChange={handleChange}
-                                required
-                                className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
-                            />
                         </div>
 
                         <div className="grid gap-2">
