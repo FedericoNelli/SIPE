@@ -20,7 +20,8 @@ const FilterModal = ({
     availableLocations,
     availableDeposits,
     availableCategories,
-    availableStatuses
+    availableStatuses,
+    availableAudits
 }) => {
     const modalContentRef = useRef(null);
     const [isVisible, setIsVisible] = useState(isOpen);
@@ -76,7 +77,7 @@ const FilterModal = ({
                             </div>
                             <CardHeader>
                                 <CardTitle className="text-3xl text-center font-bold text-sipe-white mb-4">
-                                    {mode === 'MaterialExit' ? 'Filtrar salidas de materiales' : mode === 'Movement' ? 'Filtrar movimientos de materiales' : 'Filtrar materiales'}
+                                    {mode === 'Audit' ? 'Filtrar Auditorías' : mode === 'MaterialExit' ? 'Filtrar salidas de materiales' : mode === 'Movement' ? 'Filtrar movimientos de materiales' : 'Filtrar materiales'}
                                 </CardTitle>
                                 <hr />
                             </CardHeader>
@@ -98,7 +99,7 @@ const FilterModal = ({
                                                     </SelectTrigger>
                                                     <SelectContent
                                                         className="bg-sipe-blue-light select-content text-sipe-white"
-                                                        onClick={(e) => e.stopPropagation()} // Evitar propagación
+                                                        onClick={(e) => e.stopPropagation()}
                                                     >
                                                         {availableLocations.map((location) => (
                                                             <SelectItem key={location.id} value={location.nombre}>
@@ -186,6 +187,7 @@ const FilterModal = ({
                                         </>
                                     )}
 
+                                    {/* Filtros específicos para cada modo */}
                                     {(mode === 'MaterialExit' || mode === 'Movement') && (
                                         <>
                                             {/* Filtro por Material */}
@@ -209,7 +211,64 @@ const FilterModal = ({
                                                     </SelectContent>
                                                 </Select>
                                             </div>
+                                        </>
+                                    )}
 
+                                    {mode === 'Audit' && (
+                                        <>
+                                            {/* Filtro por Usuario */}
+                                            <div className="mb-4">
+                                                <label className="block text-sipe-white text-sm font-bold mb-2">
+                                                    Usuario
+                                                </label>
+                                                <Select
+                                                    value={filters.nombre_usuario || ""}
+                                                    onValueChange={(value) =>
+                                                        onFilterChange({ target: { name: "nombre_usuario", value } })
+                                                    }
+                                                >
+                                                    <SelectTrigger className="w-full bg-sipe-blue-dark text-sipe-white">
+                                                        <SelectValue placeholder="Seleccione un usuario" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-sipe-blue-light select-content text-sipe-white">
+                                                        {[...new Set(availableAudits.map(audit => audit.nombre_usuario))].map(usuario => (
+                                                            <SelectItem key={usuario} value={usuario}>
+                                                                {usuario}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            {/* Filtro por Tipo de Acción */}
+                                            <div className="mb-4">
+                                                <label className="block text-sipe-white text-sm font-bold mb-2">
+                                                    Tipo de acción
+                                                </label>
+                                                <Select
+                                                    value={filters.tipo_accion || ""}
+                                                    onValueChange={(value) =>
+                                                        onFilterChange({ target: { name: "tipo_accion", value } })
+                                                    }
+                                                >
+                                                    <SelectTrigger className="w-full bg-sipe-blue-dark text-sipe-white">
+                                                        <SelectValue placeholder="Seleccione un tipo" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-sipe-blue-light select-content text-sipe-white">
+                                                        {[...new Set(availableAudits.map(audit => audit.tipo_accion))]
+                                                            .sort((a, b) => a.localeCompare(b)) // Ordenar alfabéticamente
+                                                            .map(tipo => (
+                                                                <SelectItem key={tipo} value={tipo}>
+                                                                    {tipo}
+                                                                </SelectItem>
+                                                            ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </>
+                                    )}
+                                    {/* Inputs comunes a los tres modos */}
+                                    {(mode === 'MaterialExit' || mode === 'Movement' || mode === 'Audit') && (
+                                        <>
                                             {/* Filtro por Fecha de Inicio */}
                                             <div className="mb-4">
                                                 <Label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="startDate">

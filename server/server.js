@@ -4003,28 +4003,20 @@ app.get('/audits', (req, res) => {
     });
 });
 
-app.delete('/delete-audits', (req, res) => {
-    const { auditIds } = req.body;
+app.post('/addAuditoria', authenticateToken, async (req, res) => {
+    const { tipo_accion, comentario } = req.body;
+    const id_usuario = req.user.id;
 
-    // Verificar que se envíen IDs de auditoría
-    if (!auditIds || auditIds.length === 0) {
-        return res.status(400).json({ error: 'No se proporcionaron auditorías para eliminar' });
+    try {
+        await db.query(
+            'INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)',
+            [id_usuario, tipo_accion, comentario]
+        );
+        res.status(201).json({ message: 'Auditoría registrada con éxito' });
+    } catch (error) {
+        console.error('Error al registrar auditoría:', error);
+        res.status(500).json({ error: 'Error al registrar auditoría' });
     }
-
-    // Convertir los IDs en una lista de placeholders para la consulta
-    const placeholders = auditIds.map(() => '?').join(',');
-
-    // Consulta para eliminar múltiples registros de auditoría
-    const deleteQuery = `DELETE FROM Auditoria WHERE id IN (${placeholders})`;
-
-    db.query(deleteQuery, auditIds, (err, result) => {
-        if (err) {
-            console.error('Error al eliminar auditorías:', err);
-            return res.status(500).json({ error: 'Error al eliminar auditorías' });
-        }
-
-        res.status(200).json({ message: 'Auditorías eliminadas correctamente' });
-    });
 });
 
 app.get('/total-audits', (req, res) => {
@@ -4119,21 +4111,7 @@ app.get('/shelves/:idPasillo', (req, res) => {
     });
 });
 
-app.post('/addAuditoria', authenticateToken, async (req, res) => {
-    const { tipo_accion, comentario } = req.body;
-    const id_usuario = req.user.id;
 
-    try {
-        await db.query(
-            'INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)',
-            [id_usuario, tipo_accion, comentario]
-        );
-        res.status(201).json({ message: 'Auditoría registrada con éxito' });
-    } catch (error) {
-        console.error('Error al registrar auditoría:', error);
-        res.status(500).json({ error: 'Error al registrar auditoría' });
-    }
-});
 
 
 
