@@ -42,7 +42,21 @@ function MaterialDetailModal({ isOpen, onClose, selectedMaterial, notify, loadMa
             return;
         }
         try {
-            const response = await axios.delete(`http://localhost:8081/materials/delete/${selectedMaterial.id}`);
+            // Obtener el token del usuario almacenado en localStorage
+            const token = localStorage.getItem('token');
+            if (!token) {
+                notify('error', 'No se encontró un token de autenticación');
+                return;
+            }
+            // Realizar la solicitud DELETE con el token en los headers
+            const response = await axios.delete(
+                `http://localhost:8081/materials/delete/${selectedMaterial.id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
             onClose();
             notify('success', 'Material eliminado con éxito!');
             loadMaterials();
@@ -51,6 +65,7 @@ function MaterialDetailModal({ isOpen, onClose, selectedMaterial, notify, loadMa
             notify('error', 'Error al eliminar el material');
         }
     }, [selectedMaterial, onClose]);
+
 
     const confirmDelete = useCallback(() => {
         handleDelete();

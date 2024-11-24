@@ -207,7 +207,19 @@ function Movement({ notify }) {
             return;
         }
 
-        axios.delete('http://localhost:8081/delete-movements', { data: { movementIds: selectedMovements } })
+        const token = localStorage.getItem('token'); // Obtener el token del localStorage
+
+        if (!token) {
+            notify('error', 'Usuario no autenticado. Por favor, inicia sesión.');
+            return;
+        }
+
+        axios.delete('http://localhost:8081/delete-movements', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            data: { movementIds: selectedMovements }
+        })
             .then(() => {
                 notify('success', 'Movimientos eliminados correctamente');
                 setMovements(movements.filter(movement => !selectedMovements.includes(movement.id)));
@@ -220,6 +232,7 @@ function Movement({ notify }) {
                 notify('error', 'Error al eliminar movimientos');
             });
     };
+
 
     const addPendingMovement = (newMovement) => {
         const updatedPendingMovements = [...pendingMovements, newMovement];

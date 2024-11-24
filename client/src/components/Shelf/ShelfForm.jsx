@@ -14,7 +14,6 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
     const [selectedLocation, setSelectedLocation] = useState('');
     const [selectedDeposit, setSelectedDeposit] = useState('');
     const [formData, setFormData] = useState({
-        numero: '',
         cantidad_estante: '',
         cantidad_division: '',
         idPasillo: '',
@@ -132,7 +131,6 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                 const errorMessage = {
                     cantidad_estante: "La cantidad de estantes debe ser mayor que 0",
                     cantidad_division: "La cantidad de divisiones debe ser mayor que 0",
-                    numero: "El número de estante debe ser mayor a 0"
                 };
                 notify('error', errorMessage[name] || "El valor debe ser mayor a 0");
             }
@@ -218,7 +216,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                 </CardHeader>
                 <CardContent className="flex flex-col space-y-10">
                     <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-2">
+                        {/* <div className="flex items-center gap-2">
                             <Label htmlFor="cantidad_estante" className="text-sm font-medium">
                                 {isTutorial ? "" : "Número de Estantería"}
                             </Label>
@@ -232,7 +230,7 @@ function ShelfForm({ onClose, onSubmit, notify, isTutorial = false, currentStep,
                                 onChange={handleChange}
                                 min="0"
                             />
-                        </div>
+                        </div> */}
                     </div>
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
 import { Button } from "@/components/Common/Button/Button";
 
-function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handleDeleteExits, materialExits = [] }) {
+function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handleCancelExits, materialExits = [] }) {
     const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false);
     const exitsArray = Array.isArray(materialExits) ? materialExits : [];
 
@@ -23,7 +23,7 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
         }
     };
 
-    const confirmDelete = () => {
+    const confirmCancel = () => {
         if (selectedExits.length === 0) {
             notify('error', 'No hay salidas seleccionadas para eliminar');
             return;
@@ -31,7 +31,7 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
         setIsConfirmingDeletion(true);
     };
 
-    const cancelDelete = () => {
+    const cancelExitCancel = () => {
         setIsConfirmingDeletion(false);
     };
 
@@ -64,13 +64,16 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                     </TableHeader>
                     <TableBody>
                         {exitsArray.map(salida => (
-                            <TableRow key={salida.salidaId}>
+                            <TableRow 
+                            key={salida.salidaId}
+                            className={salida.anulado ? 'bg-sipe-orange-super-light' : ''}>
                                 {isDeleteMode && (
                                     <TableCell className="text-center">
                                         <input
                                             type="checkbox"
                                             checked={selectedExits.includes(salida.salidaId)}
                                             onChange={() => toggleExitSelection(salida.salidaId)}
+                                            disabled={salida.anulado}
                                         />
                                     </TableCell>
                                 )}
@@ -123,19 +126,19 @@ function MaterialExitList({ isDeleteMode, selectedExits, setSelectedExits, handl
                 <div className="flex flex-col items-center mt-4">
                     {isConfirmingDeletion ? (
                         <>
-                            <p className="text-red-500 font-bold">Si confirma la eliminación no se podrán recuperar los datos</p>
+                            <p className="text-red-500 font-bold">Si confirma la anulación no se podrán recuperar los datos</p>
                             <div className="flex gap-4 mt-2">
-                                <Button onClick={cancelDelete} variant="sipemodalalt">
+                                <Button onClick={cancelExitCancel} variant="sipemodalalt">
                                     CANCELAR
                                 </Button>
-                                <Button onClick={handleDeleteExits} variant="sipemodal">
+                                <Button onClick={handleCancelExits} variant="sipemodal">
                                     ACEPTAR
                                 </Button>
                             </div>
                         </>
                     ) : (
-                        <Button onClick={confirmDelete} variant="sipemodal">
-                            CONFIRMAR ELIMINACIÓN
+                        <Button onClick={confirmCancel} variant="sipemodal">
+                            CONFIRMAR ANULACIÓN
                         </Button>
                     )}
                 </div>

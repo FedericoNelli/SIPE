@@ -5,7 +5,6 @@ import { Button } from "@/components/Common/Button/Button";
 function MovementList({ movements, pendingMovements, isDeleteMode, selectedMovements, setSelectedMovements, handleDeleteMovements, onConfirmMovement, notify }) {
     const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false);
 
-
     // Función para alternar la selección de un movimiento
     const toggleMovementSelection = (movementId) => {
         if (selectedMovements.includes(movementId)) {

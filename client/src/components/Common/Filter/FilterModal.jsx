@@ -4,6 +4,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 import { X } from "lucide-react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/Common/Select/Select";
+import { Label } from "@/components/Common/Label/Label";
+import { Input } from "@/components/Common/Input/Input";
+
 
 const FilterModal = ({
     isOpen,
@@ -17,7 +20,8 @@ const FilterModal = ({
     availableLocations,
     availableDeposits,
     availableCategories,
-    availableStatuses
+    availableStatuses,
+    availableAudits
 }) => {
     const modalContentRef = useRef(null);
     const [isVisible, setIsVisible] = useState(isOpen);
@@ -48,27 +52,6 @@ const FilterModal = ({
         };
     }, [onClose]);
 
-    const handleClickOutside = (event) => {
-        const isClickInsideModal = modalContentRef.current && modalContentRef.current.contains(event.target);
-        const isClickInsideSelect = event.target.closest(".select-content"); // Verifica si el clic está en el Select
-
-        if (!isClickInsideModal && !isClickInsideSelect) {
-            handleClose();
-        }
-    };
-
-    useEffect(() => {
-        if (isVisible) {
-            document.addEventListener("mousedown", handleClickOutside);
-        } else {
-            document.removeEventListener("mousedown", handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [isVisible]);
-
     return (
         <AnimatePresence>
             {isVisible && (
@@ -94,7 +77,7 @@ const FilterModal = ({
                             </div>
                             <CardHeader>
                                 <CardTitle className="text-3xl text-center font-bold text-sipe-white mb-4">
-                                    {mode === 'MaterialExit' ? 'Filtrar salidas de materiales' : mode === 'Movement' ? 'Filtrar movimientos de materiales' : 'Filtrar materiales'}
+                                    {mode === 'Audit' ? 'Filtrar Auditorías' : mode === 'MaterialExit' ? 'Filtrar salidas de materiales' : mode === 'Movement' ? 'Filtrar movimientos de materiales' : 'Filtrar materiales'}
                                 </CardTitle>
                                 <hr />
                             </CardHeader>
@@ -104,9 +87,9 @@ const FilterModal = ({
                                         <>
                                             {/* Filtro por Ubicación */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2">
                                                     Ubicación
-                                                </label>
+                                                </Label>
                                                 <Select
                                                     value={filters.ubicacion || ""}
                                                     onValueChange={(value) => onFilterChange({ target: { name: "ubicacion", value } })}
@@ -116,7 +99,7 @@ const FilterModal = ({
                                                     </SelectTrigger>
                                                     <SelectContent
                                                         className="bg-sipe-blue-light select-content text-sipe-white"
-                                                        onClick={(e) => e.stopPropagation()} // Evitar propagación
+                                                        onClick={(e) => e.stopPropagation()}
                                                     >
                                                         {availableLocations.map((location) => (
                                                             <SelectItem key={location.id} value={location.nombre}>
@@ -129,9 +112,9 @@ const FilterModal = ({
 
                                             {/* Filtro por Depósito */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2">
                                                     Depósito
-                                                </label>
+                                                </Label>
                                                 <Select
                                                     value={filters.deposito || ""}
                                                     onValueChange={(value) => onFilterChange({ target: { name: "deposito", value } })}
@@ -154,9 +137,9 @@ const FilterModal = ({
 
                                             {/* Filtro por Categoría */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2">
                                                     Categoría
-                                                </label>
+                                                </Label>
                                                 <Select
                                                     value={filters.categoria || ""}
                                                     onValueChange={(value) => onFilterChange({ target: { name: "categoria", value } })}
@@ -179,9 +162,9 @@ const FilterModal = ({
 
                                             {/* Filtro por Estado */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2">
                                                     Estado
-                                                </label>
+                                                </Label>
                                                 <Select
                                                     value={filters.estado || ""}
                                                     onValueChange={(value) => onFilterChange({ target: { name: "estado", value } })}
@@ -204,13 +187,14 @@ const FilterModal = ({
                                         </>
                                     )}
 
+                                    {/* Filtros específicos para cada modo */}
                                     {(mode === 'MaterialExit' || mode === 'Movement') && (
                                         <>
                                             {/* Filtro por Material */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="material">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="material">
                                                     Material
-                                                </label>
+                                                </Label>
                                                 <Select
                                                     value={filters.material || ""}
                                                     onValueChange={(value) => onFilterChange({ target: { name: "material", value } })}
@@ -227,61 +211,94 @@ const FilterModal = ({
                                                     </SelectContent>
                                                 </Select>
                                             </div>
+                                        </>
+                                    )}
 
-                                            {/* Filtro por Fecha de Inicio */}
+                                    {mode === 'Audit' && (
+                                        <>
+                                            {/* Filtro por Usuario */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="startDate">
-                                                    Fecha de Inicio
+                                                <label className="block text-sipe-white text-sm font-bold mb-2">
+                                                    Usuario
                                                 </label>
                                                 <Select
-                                                    value={filters.startDate || ""}
-                                                    onValueChange={(value) => onFilterChange({ target: { name: "startDate", value } })}
+                                                    value={filters.nombre_usuario || ""}
+                                                    onValueChange={(value) =>
+                                                        onFilterChange({ target: { name: "nombre_usuario", value } })
+                                                    }
                                                 >
                                                     <SelectTrigger className="w-full bg-sipe-blue-dark text-sipe-white">
-                                                        <SelectValue placeholder="Seleccione una fecha de inicio" />
+                                                        <SelectValue placeholder="Seleccione un usuario" />
                                                     </SelectTrigger>
                                                     <SelectContent className="bg-sipe-blue-light select-content text-sipe-white">
-                                                        {Array.from({ length: 31 }, (_, i) => {
-                                                            const date = new Date(today);
-                                                            date.setDate(i + 1);
-                                                            return (
-                                                                <SelectItem key={i} value={date.toISOString().split("T")[0]}>
-                                                                    {date.toISOString().split("T")[0]}
-                                                                </SelectItem>
-                                                            );
-                                                        })}
+                                                        {[...new Set(availableAudits.map(audit => audit.nombre_usuario))].map(usuario => (
+                                                            <SelectItem key={usuario} value={usuario}>
+                                                                {usuario}
+                                                            </SelectItem>
+                                                        ))}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
-
-                                            {/* Filtro por Fecha de Fin */}
+                                            {/* Filtro por Tipo de Acción */}
                                             <div className="mb-4">
-                                                <label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="endDate">
-                                                    Fecha de Fin
+                                                <label className="block text-sipe-white text-sm font-bold mb-2">
+                                                    Tipo de acción
                                                 </label>
                                                 <Select
-                                                    value={filters.endDate || ""}
-                                                    onValueChange={(value) => onFilterChange({ target: { name: "endDate", value } })}
+                                                    value={filters.tipo_accion || ""}
+                                                    onValueChange={(value) =>
+                                                        onFilterChange({ target: { name: "tipo_accion", value } })
+                                                    }
                                                 >
                                                     <SelectTrigger className="w-full bg-sipe-blue-dark text-sipe-white">
-                                                        <SelectValue placeholder="Seleccione una fecha de fin" />
+                                                        <SelectValue placeholder="Seleccione un tipo" />
                                                     </SelectTrigger>
                                                     <SelectContent className="bg-sipe-blue-light select-content text-sipe-white">
-                                                        {Array.from({ length: 31 }, (_, i) => {
-                                                            const date = new Date(today);
-                                                            date.setDate(i + 1);
-                                                            return (
-                                                                <SelectItem key={i} value={date.toISOString().split("T")[0]}>
-                                                                    {date.toISOString().split("T")[0]}
+                                                        {[...new Set(availableAudits.map(audit => audit.tipo_accion))]
+                                                            .sort((a, b) => a.localeCompare(b)) // Ordenar alfabéticamente
+                                                            .map(tipo => (
+                                                                <SelectItem key={tipo} value={tipo}>
+                                                                    {tipo}
                                                                 </SelectItem>
-                                                            );
-                                                        })}
+                                                            ))}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
                                         </>
                                     )}
-
+                                    {/* Inputs comunes a los tres modos */}
+                                    {(mode === 'MaterialExit' || mode === 'Movement' || mode === 'Audit') && (
+                                        <>
+                                            {/* Filtro por Fecha de Inicio */}
+                                            <div className="mb-4">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="startDate">
+                                                    Fecha de Inicio
+                                                </Label>
+                                                <Input
+                                                    type="date"
+                                                    name="startDate"
+                                                    value={filters.startDate}
+                                                    onChange={onFilterChange}
+                                                    max={today}
+                                                    className="w-full bg-sipe-blue-dark text-sipe-white"
+                                                />
+                                            </div>
+                                            {/* Filtro por Fecha de Fin */}
+                                            <div className="mb-4">
+                                                <Label className="block text-sipe-white text-sm font-bold mb-2" htmlFor="endDate">
+                                                    Fecha de Fin
+                                                </Label>
+                                                <Input
+                                                    type="date"
+                                                    name="endDate"
+                                                    value={filters.endDate}
+                                                    onChange={onFilterChange}
+                                                    max={today}
+                                                    className="w-full bg-sipe-blue-dark text-sipe-white"
+                                                />
+                                            </div>
+                                        </>
+                                    )}
                                 </form>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-4">

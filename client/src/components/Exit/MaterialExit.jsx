@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Filter, Plus, Trash2, PenLine } from 'lucide-react';
+import { Filter, Plus, PenLine, X } from 'lucide-react';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import MaterialExitList from '@/components/Exit/MaterialExitList';
@@ -127,23 +127,47 @@ function MaterialExit({ notify }) {
         closeEditModal();
     }
 
-    const handleDeleteExits = () => {
+    const handleCancelExits = () => {
         if (selectedExits.length === 0) {
-            notify('error', 'No hay salidas seleccionadas para eliminar');
+            notify('error', 'No hay salidas seleccionadas para anular');
             return;
         }
-        axios.delete('http://localhost:8081/delete-exits', { data: { exitIds: selectedExits } })
+
+        const nonAnulledExits = selectedExits.filter(exitId => {
+            const exit = materialExits.find(e => e.salidaId === exitId);
+            return exit && !exit.anulado;
+        });
+
+        if (nonAnulledExits.length === 0) {
+            notify('error', 'Todas las salidas seleccionadas ya están anuladas');
+            return;
+        }
+
+        const token = localStorage.getItem('token'); // Obtener el token almacenado en el navegador
+        const cancelPromises = nonAnulledExits.map((exitId) =>
+            axios.put(
+                `http://localhost:8081/canceled-exit/${exitId}`,
+                {}, // No hay cuerpo en la solicitud
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`, // Incluir el token en el encabezado
+                    },
+                }
+            )
+        );
+        Promise.all(cancelPromises)
             .then(() => {
-                notify('success', 'Salidas eliminadas correctamente');
+                notify('success', 'Salidas anuladas correctamente');
                 setSelectedExits([]);
                 setIsDeleteMode(false);
-                refreshMaterialExits();
+                loadMaterialExits(); // Recargar la lista de salidas
             })
-            .catch(error => {
-                console.error('Error eliminando salidas:', error);
-                notify('error', 'Error al eliminar salidas');
+            .catch((error) => {
+                console.error('Error anulando salidas:', error);
+                notify('error', 'Error al anular salidas');
             });
     };
+
 
     const toggleDeleteMode = () => {
         setIsDeleteMode(!isDeleteMode);
@@ -189,7 +213,7 @@ function MaterialExit({ notify }) {
                             <>
                                 <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR</Button>
                                 <Button onClick={openEditModal} variant="sipemodalalt"> <PenLine /> EDITAR</Button>
-                                <Button onClick={toggleDeleteMode} variant="sipemodalalt2"> <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : ' ELIMINAR '}</Button>
+                                <Button onClick={toggleDeleteMode} variant="sipemodalalt2"> <X /> {isDeleteMode ? 'CANCELAR ANULACIÓN' : ' ANULAR '}</Button>
                             </>
                         )}
                         <Button onClick={openFilterModal} variant="sipebuttonalt3" className="bg-sipe-gray bg-opacity-80 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2">
@@ -204,7 +228,7 @@ function MaterialExit({ notify }) {
                     isDeleteMode={isDeleteMode}
                     selectedExits={selectedExits}
                     setSelectedExits={setSelectedExits}
-                    handleDeleteExits={handleDeleteExits}
+                    handleCancelExits={handleCancelExits}
                 />
 
                 {/* Paginación */}
