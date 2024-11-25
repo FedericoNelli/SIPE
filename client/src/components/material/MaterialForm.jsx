@@ -214,7 +214,7 @@ function MaterialForm({ onClose, notify, loadMaterials }) {
                 notify('error', error.response.data.mensaje);
             } else {
                 // Mostrar un mensaje de error genérico si no existe un mensaje específico
-                notify('error', error.message || "Error al agregar el material");
+                notify('error', "Error al agregar el material");
             }
         };
     }

@@ -743,11 +743,11 @@ app.delete('/materials/delete/:id', authenticateToken, (req, res) => {
     db.query(queryGetMaterialInfo, [materialId], (err, results) => {
         if (err) {
             console.error('Error al obtener la información del material:', err);
-            return res.status(500).send('Error al obtener la información del material');
+            return res.status(500).json({ error: 'Error al obtener la información del material'});
         }
 
         if (results.length === 0) {
-            return res.status(404).send('Material no encontrado');
+            return res.status(404).json({error: 'Material no encontrado'});
         }
 
         const { nombre, cantidad, matricula, depositoNombre, imagen } = results[0];
@@ -761,7 +761,7 @@ app.delete('/materials/delete/:id', authenticateToken, (req, res) => {
         db.query(auditQuery, [userId, 'Eliminación de Material', comentario], (err) => {
             if (err) {
                 console.error('Error al registrar en auditoría:', err);
-                return res.status(500).send('Error al registrar en auditoría');
+                return res.status(500).json({error: 'Error al registrar en auditoría'});
             }
 
             // Si hay imagen asociada, intentamos eliminarla del sistema de archivos
@@ -779,7 +779,7 @@ app.delete('/materials/delete/:id', authenticateToken, (req, res) => {
                     db.query(queryDeleteMaterial, [materialId], (err) => {
                         if (err) {
                             console.error('Error al eliminar el material:', err);
-                            return res.status(500).send('Error al eliminar el material');
+                            return res.status(500).json({error: 'Error al eliminar el material'});
                         }
                         res.status(200).send('Material eliminado con éxito y se intentó eliminar la imagen.');
                     });
@@ -790,7 +790,7 @@ app.delete('/materials/delete/:id', authenticateToken, (req, res) => {
                 db.query(queryDeleteMaterial, [materialId], (err) => {
                     if (err) {
                         console.error('Error al eliminar el material:', err);
-                        return res.status(500).send('Error al eliminar el material');
+                        return res.status(500).json({error: 'Error al eliminar el material'});
                     }
                     res.status(200).send('Material eliminado con éxito (sin imagen asociada).');
                 });
@@ -809,7 +809,7 @@ app.delete('/materiales/:id/imagen', (req, res) => {
     db.query(queryGetImage, [materialId], (err, results) => {
         if (err) {
             console.error('Error al obtener la imagen:', err);
-            return res.status(500).send('Error al obtener la imagen');
+            return res.status(500).json({error: 'Error al obtener la imagen'});
         }
 
         if (results.length > 0) {
@@ -822,7 +822,7 @@ app.delete('/materiales/:id/imagen', (req, res) => {
                 fs.unlink(fullPath, (err) => {
                     if (err) {
                         console.error('Error al eliminar la imagen:', err);
-                        return res.status(500).send('Error al eliminar la imagen');
+                        return res.status(500).json({error: 'Error al eliminar la imagen'});
                     }
 
                     // Actualiza la base de datos para eliminar la referencia a la imagen
@@ -830,16 +830,16 @@ app.delete('/materiales/:id/imagen', (req, res) => {
                     db.query(queryDeleteImage, [materialId], (err, result) => {
                         if (err) {
                             console.error('Error al actualizar la base de datos:', err);
-                            return res.status(500).send('Error al actualizar la base de datos');
+                            return res.status(500).json({error: 'Error al actualizar la base de datos'});
                         }
                         res.status(200).send('Imagen eliminada correctamente');
                     });
                 });
             } else {
-                return res.status(404).send('No hay imagen para eliminar');
+                return res.status(404).json({error: 'No hay imagen para eliminar'});
             }
         } else {
-            return res.status(404).send('Material no encontrado');
+            return res.status(404).json('Material no encontrado');
         }
     });
 });
@@ -3974,7 +3974,6 @@ app.delete('/delete-reports', (req, res) => {
 });
 
 
-
 // Endpoint para obtener la cantidad total de informes
 app.get('/total-reports', (req, res) => {
     const query = 'SELECT COUNT(*) AS total FROM Informe';
@@ -4110,9 +4109,6 @@ app.get('/shelves/:idPasillo', (req, res) => {
         res.json(results);
     });
 });
-
-
-
 
 
 app.listen(8081, () => {
