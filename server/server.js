@@ -743,11 +743,11 @@ app.delete('/materials/delete/:id', authenticateToken, (req, res) => {
     db.query(queryGetMaterialInfo, [materialId], (err, results) => {
         if (err) {
             console.error('Error al obtener la información del material:', err);
-            return res.status(500).json({ error: 'Error al obtener la información del material'});
+            return res.status(500).json({ error: 'Error al obtener la información del material' });
         }
 
         if (results.length === 0) {
-            return res.status(404).json({error: 'Material no encontrado'});
+            return res.status(404).json({ error: 'Material no encontrado' });
         }
 
         const { nombre, cantidad, matricula, depositoNombre, imagen } = results[0];
@@ -761,7 +761,7 @@ app.delete('/materials/delete/:id', authenticateToken, (req, res) => {
         db.query(auditQuery, [userId, 'Eliminación de Material', comentario], (err) => {
             if (err) {
                 console.error('Error al registrar en auditoría:', err);
-                return res.status(500).json({error: 'Error al registrar en auditoría'});
+                return res.status(500).json({ error: 'Error al registrar en auditoría' });
             }
 
             // Si hay imagen asociada, intentamos eliminarla del sistema de archivos
@@ -779,7 +779,7 @@ app.delete('/materials/delete/:id', authenticateToken, (req, res) => {
                     db.query(queryDeleteMaterial, [materialId], (err) => {
                         if (err) {
                             console.error('Error al eliminar el material:', err);
-                            return res.status(500).json({error: 'Error al eliminar el material'});
+                            return res.status(500).json({ error: 'Error al eliminar el material' });
                         }
                         res.status(200).send('Material eliminado con éxito y se intentó eliminar la imagen.');
                     });
@@ -790,7 +790,7 @@ app.delete('/materials/delete/:id', authenticateToken, (req, res) => {
                 db.query(queryDeleteMaterial, [materialId], (err) => {
                     if (err) {
                         console.error('Error al eliminar el material:', err);
-                        return res.status(500).json({error: 'Error al eliminar el material'});
+                        return res.status(500).json({ error: 'Error al eliminar el material' });
                     }
                     res.status(200).send('Material eliminado con éxito (sin imagen asociada).');
                 });
@@ -809,7 +809,7 @@ app.delete('/materiales/:id/imagen', (req, res) => {
     db.query(queryGetImage, [materialId], (err, results) => {
         if (err) {
             console.error('Error al obtener la imagen:', err);
-            return res.status(500).json({error: 'Error al obtener la imagen'});
+            return res.status(500).json({ error: 'Error al obtener la imagen' });
         }
 
         if (results.length > 0) {
@@ -822,7 +822,7 @@ app.delete('/materiales/:id/imagen', (req, res) => {
                 fs.unlink(fullPath, (err) => {
                     if (err) {
                         console.error('Error al eliminar la imagen:', err);
-                        return res.status(500).json({error: 'Error al eliminar la imagen'});
+                        return res.status(500).json({ error: 'Error al eliminar la imagen' });
                     }
 
                     // Actualiza la base de datos para eliminar la referencia a la imagen
@@ -830,13 +830,13 @@ app.delete('/materiales/:id/imagen', (req, res) => {
                     db.query(queryDeleteImage, [materialId], (err, result) => {
                         if (err) {
                             console.error('Error al actualizar la base de datos:', err);
-                            return res.status(500).json({error: 'Error al actualizar la base de datos'});
+                            return res.status(500).json({ error: 'Error al actualizar la base de datos' });
                         }
                         res.status(200).send('Imagen eliminada correctamente');
                     });
                 });
             } else {
-                return res.status(404).json({error: 'No hay imagen para eliminar'});
+                return res.status(404).json({ error: 'No hay imagen para eliminar' });
             }
         } else {
             return res.status(404).json('Material no encontrado');
@@ -1347,8 +1347,12 @@ app.put('/canceled-exit/:id', authenticateToken, async (req, res) => {
             });
         });
 
-        // Revertir las cantidades de los materiales
+        let nombresMateriales = [];
+        let cantidadesMateriales = [];
+
+        // Revertir las cantidades de los materiales y manejar estado y notificaciones
         for (const material of materiales) {
+            // Revertir la cantidad en la tabla Material
             const updateMaterialQuery = `
                 UPDATE Material
                 SET cantidad = cantidad + ?
@@ -1360,10 +1364,46 @@ app.put('/canceled-exit/:id', authenticateToken, async (req, res) => {
                     resolve();
                 });
             });
+
+            // Obtener datos actualizados del material
+            const materialData = await new Promise((resolve, reject) => {
+                db.query('SELECT cantidad, bajoStock, nombre FROM Material WHERE id = ?', [material.idMaterial], (err, results) => {
+                    if (err) return reject(err);
+                    if (!results || results.length === 0) return reject(new Error('Material no encontrado'));
+                    resolve(results[0]);
+                });
+            });
+
+            const nuevaCantidadMaterial = materialData.cantidad;
+            const bajoStock = materialData.bajoStock;
+            const nombreMaterial = materialData.nombre;
+
+            // Asignar nuevo estado
+            const nuevoEstado = assignStatus(nuevaCantidadMaterial, bajoStock);
+            if ([1, 2, 3].includes(nuevoEstado)) {
+                await new Promise((resolve, reject) => {
+                    db.query('UPDATE Material SET idEstado = ? WHERE id = ?', [nuevoEstado, material.idMaterial], (err) => {
+                        if (err) return reject(err);
+                        resolve();
+                    });
+                });
+            }
+
+            // Manejar notificaciones de stock
+            handleStockNotifications(nombreMaterial, nuevaCantidadMaterial, bajoStock, (error) => {
+                if (error) {
+                    console.error('Error en notificaciones de stock:', error);
+                    // Opcional: manejar el error si es necesario
+                }
+            });
+
+            // Almacenar nombres y cantidades para auditoría
+            nombresMateriales.push(nombreMaterial);
+            cantidadesMateriales.push(material.cantidad);
         }
 
         // Registrar la acción en la tabla de auditoría
-        const comentario = `Salida número ${salidaNumero} anulada`;
+        const comentario = `Salida anulada con número: ${salidaNumero}, Materiales: ${nombresMateriales.join(', ')}, Cantidades: ${cantidadesMateriales.join(', ')}`;
         const auditoriaQuery = `
             INSERT INTO Auditoria (id_usuario, tipo_accion, comentario)
             VALUES (?, 'Anulación de Salida', ?)
@@ -1375,12 +1415,13 @@ app.put('/canceled-exit/:id', authenticateToken, async (req, res) => {
             });
         });
 
-        res.status(200).json({ message: 'Salida anulada exitosamente y cantidades revertidas' });
+        res.status(200).json({ message: 'Salida anulada exitosamente, cantidades revertidas y auditoría registrada' });
     } catch (error) {
         console.error('Error al anular salida:', error);
         res.status(500).json({ error: 'Error al anular salida', details: error });
     }
 });
+
 
 
 // Endpoint para obtener materiales por depósito
@@ -3127,7 +3168,8 @@ app.post('/addMovements', authenticateToken, (req, res) => {
                             FROM movimiento t1
                             LEFT JOIN movimiento t2 ON t1.numero + 1 = t2.numero
                             WHERE t2.numero IS NULL),
-                            (SELECT MAX(numero) + 1 FROM movimiento)
+                            (SELECT MAX(numero) + 1 FROM movimiento),
+                            1
                         ) AS numeroDisponible;
                     `;
 
@@ -3138,7 +3180,7 @@ app.post('/addMovements', authenticateToken, (req, res) => {
                             return;
                         }
 
-                        const numero = numeroResult[0].numeroDisponible;
+                        const numero = numeroResult[0].numeroDisponible || 1;
 
                         const insertMovementAndAudit = (idMaterialMovimiento) => {
                             const isCantidadMenor = cantidadRecibidaNumero < cantidadMovidaNumero;
