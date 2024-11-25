@@ -36,9 +36,8 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
             if (reportType === "Informe de inventario general" || reportType === "Informe de material por deposito") {
                 const materials = splitField(reportData.nombre_material);
                 const quantities = splitField(reportData.cantidad);
-                const deposits = splitField(reportData.nombre_deposito);
                 formattedData = materials.map((material, index) => ({
-                    name: `${material} - Depósito ${deposits[index] || "N/A"}`,
+                    name: `${material}`,
                     materialName: material,
                     value: parseInt(quantities[index], 10) || 0,
                     color: generateRandomColor()
@@ -46,11 +45,10 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
             } else if (reportType === "Informe de material por estado") {
                 const materials = splitField(reportData.nombre_material);
                 const quantities = splitField(reportData.cantidad);
-                const deposits = splitField(reportData.nombre_deposito);
                 const states = splitField(reportData.estado_material);
 
                 formattedData = materials.map((material, index) => ({
-                    name: `${material} - Depósito ${deposits[index] || "N/A"}`,
+                    name: `${material}`,
                     materialName: material,
                     value: parseInt(quantities[index], 10) || 0,
                     estado: states[index] || "Sin estado",
@@ -138,18 +136,22 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
         },
     };
 
+    const totalRegistros = reportData && reportData.cantidad
+        ? reportData.cantidad.split(',').filter(item => item.trim() !== '').length
+        : 0;
+
     const CustomTooltip = ({ active, payload }) => {
         if (active && payload && payload.length) {
             return (
                 <div
                     style={{
                         backgroundColor: "white",
-                        border: "1px solid #ccc", 
-                        borderRadius: "5px", 
-                        padding: "10px", 
-                        boxShadow: "0 2px 5px rgba(0, 0, 0, 0.2)", 
-                        fontWeight: "bold", 
-                        color: "black", 
+                        border: "1px solid #ccc",
+                        borderRadius: "5px",
+                        padding: "10px",
+                        boxShadow: "0 2px 5px rgba(0, 0, 0, 0.2)",
+                        fontWeight: "bold",
+                        color: "black",
                     }}
                 >
                     <p style={{ margin: 0 }}>{`Material: ${payload[0].payload.materialName}`}</p>
@@ -269,7 +271,6 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                         <Pie
                                             data={chartData}
                                             dataKey="value"
-                                            nameKey="name"
                                             innerRadius={75}
                                             outerRadius={125}
                                             strokeWidth={5}
@@ -286,7 +287,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                                         dominantBaseline="central"
                                                         className="font-bold fill-sipe-white"
                                                     >
-                                                        {`${name} Cantidad:${value}`}
+                                                        {`${name}: ${value}`}
                                                     </text>
                                                 );
                                             }}
@@ -296,7 +297,6 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                             ))}
                                             <Label
                                                 content={({ viewBox }) => {
-                                                    const totalMaterials = reportData.length;
                                                     if (viewBox && "cx" in viewBox && "cy" in viewBox) {
                                                         return (
                                                             <text
@@ -310,7 +310,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                                                                     y={viewBox.cy}
                                                                     className="fill-sipe-white text-3xl font-bold"
                                                                 >
-                                                                    {totalMaterials} {/* Mostrar la cantidad total de materiales */}
+                                                                    {totalRegistros} {/* Mostrar la cantidad total de materiales */}
                                                                 </tspan>
                                                                 <tspan
                                                                     x={viewBox.cx}
@@ -369,7 +369,7 @@ function ReportDetailModal({ isOpen, onClose, reportData, reportType, tipoGrafic
                         {/* Detalles del informe debajo del gráfico */}
                         <div className="bg-sipe-orange-dark rounded-xl mt-8 p-4 flex flex-col justify-center items-center w-full text-sipe-white">
                             <h2 className="text-center text-2xl font-bold mb-2">Detalle del Informe</h2>
-                            <p className="font-bold">Total de registros: {reportData.length}</p>
+                            <p className="font-bold">Total de registros: {totalRegistros}</p>
 
                             {/* Detalles adicionales para los informes de salida de material y movimientos */}
                             {reportType === "Informe de salida de material" && (
