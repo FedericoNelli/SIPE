@@ -62,7 +62,11 @@ function MaterialDetailModal({ isOpen, onClose, selectedMaterial, notify, loadMa
             loadMaterials();
         } catch (error) {
             console.error('Error al eliminar el material:', error);
-            notify('error', 'Error al eliminar el material');
+            if (error.response && error.response.data && error.response.data.error) {
+                notify('error', error.response.data.error)
+            } else {
+                notify('error', 'Error al eliminar el material');
+            }
         }
     }, [selectedMaterial, onClose]);
 
