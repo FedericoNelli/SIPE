@@ -147,7 +147,7 @@ function Aside() {
                 </div>
             </aside>
             <div className='bg-sipe-blue-light absolute z-20 bottom-0 left-0 w-64 mb-3'>
-                <p className='font-thin text-sipe-gray opacity-90 text-xs text-center'><strong>SIPE {currentYear} - Version 1.0</strong></p>
+                <p className='font-thin text-sipe-gray opacity-90 text-xs text-center'><strong>SIPE {currentYear} - Version 2.0</strong></p>
             </div>
         </div>
     );
