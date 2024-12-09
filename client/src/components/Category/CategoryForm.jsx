@@ -5,7 +5,7 @@ import { Input } from "@/components/Common/Input/Input";
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep, ubicacionId, depositoId}) {
+function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep, ubicacionId, depositoId }) {
 
     const [formData, setFormData] = useState({
         nombre: '',
@@ -18,17 +18,20 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
     const [ubicaciones, setUbicaciones] = useState([]);
     const [depositos, setDepositos] = useState([]);
 
-    // useEffect(() => {
-    //     const handleKeyDown = (event) => {
-    //         if (event.key === 'Enter') {
-    //             event.preventDefault();
-    //             handleSubmit();
-    //         }
-    //     };
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                onClose(); // Cierra el modal cuando se presiona Escape
+            }
+        };
 
-    //     window.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keydown', handleEscape);
 
-    // }, [handleSubmit]);
+        // Limpia el evento cuando el componente se desmonta
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [onClose]);
 
     useEffect(() => {
         // Cargar ubicaciones cuando el componente se monte
@@ -60,42 +63,39 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
     };
 
     const handleSubmit = async () => {
-
         if (isTutorial && formData.descripcion.trim() === '') {
             notify('error', 'Debes ingresar un nombre');
             return;
         }
-
         try {
             const response = await axios.post('http://localhost:8081/addCategory', formData);
-
-            if (response.status !== 200) {
-                throw new Error(response.data.error || "Error al agregar categoría");
-            }
 
             if (!isTutorial) {
                 notify('success', "¡Categoría agregada correctamente!");
             }
-
             if (onClose) onClose();
-
             const idUbicacion = ubicacionId;
             const idDeposito = depositoId;
             const idCategoria = response.data.id;
 
             if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria);
 
-            // Verificar si no estamos en el tutorial y recargar la página
             const isInTutorial = localStorage.getItem('inTutorial');
             if (!isInTutorial || isInTutorial === 'false') {
-                window.location.reload(); // Recargar la página si no estamos en el tutorial
+                window.location.reload();
             }
 
         } catch (error) {
             console.error('Error al agregar la categoría:', error);
-            notify('error', error.message || "Error al agregar categoría");
+
+            if (error.response && error.response.data && error.response.data.message) {
+                notify('error', error.response.data.message);
+            } else {
+                notify('error', "Error al agregar categoría");
+            }
         }
     };
+
 
     const handleCancel = async () => {
         if (!isTutorial) {
@@ -103,7 +103,7 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
             if (onClose) onClose();
         } else {
             // Lógica cuando estamos en el tutorial y debemos volver al paso anterior
-            if (currentStep === 3 && depositoId) {
+            if (currentStep === 2 && depositoId) {
                 try {
                     // Eliminar el depósito creado cuando se vuelve al paso anterior
                     await axios.delete(`http://localhost:8081/deposits/delete/${depositoId}`);
@@ -148,7 +148,7 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
                             {depositos.find(u => u.id === formData.idDeposito)?.nombreDeposito || "Sin depósito seleccionado"}
                         </span>
                     </div>
-                    : ("")
+                        : ("")
                     }
                 </div>
             </CardContent>

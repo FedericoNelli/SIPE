@@ -20,24 +20,24 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
     const [selectedSide1, setSelectedSide1] = useState('');
     const [selectedSide2, setSelectedSide2] = useState('');
 
-        // Cerrar modal al presionar la tecla Escape
-        useEffect(() => {
-            const handleKeyDown = (event) => {
-                if (event.key === 'Escape') {
-                    onClose(); // Llamar a la función onClose cuando se presiona Escape
-                }
-            };
-    
-            // Agregar el event listener
-            window.addEventListener('keydown', handleKeyDown);
-    
-            // Eliminar el event listener al desmontar el componente
-            return () => {
-                window.removeEventListener('keydown', handleKeyDown);
-            };
-        }, [onClose]);
+    // Cerrar modal al presionar la tecla Escape
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                onClose(); // Llamar a la función onClose cuando se presiona Escape
+            }
+        };
 
-        
+        // Agregar el event listener
+        window.addEventListener('keydown', handleKeyDown);
+
+        // Eliminar el event listener al desmontar el componente
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [onClose]);
+
+
     // Cargar la lista de pasillos
     useEffect(() => {
         const fetchAisles = async () => {
@@ -59,12 +59,13 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                 try {
                     const response = await axios.get(`http://localhost:8081/aisle/${selectedAisleId}`);
                     const data = response.data;
+                    // Asignar valores con valores predeterminados si están en null o undefined
                     setAisleData(data);
-                    setAisleNumber(data.numero);
-                    setSelectedLocation(data.idUbicacion);
-                    setSelectedDeposit(data.idDeposito);
-                    setSelectedSide1(data.idLado1);
-                    setSelectedSide2(data.idLado2 !== undefined && data.idLado2 !== null ? data.idLado2 : null); // Asignar "null" si no hay lado 2
+                    setAisleNumber(data.numero || 'Sin número'); // Si 'numero' es undefined o null, establece 'Sin número'
+                    setSelectedLocation(data.idUbicacion !== undefined && data.idUbicacion !== null ? data.idUbicacion : 'Sin ubicación'); // Si no existe idUbicacion, usa 'Sin ubicación'
+                    setSelectedDeposit(data.idDeposito !== undefined && data.idDeposito !== null ? data.idDeposito : 'Sin depósito'); // Si no existe idDeposito, usa 'Sin depósito'
+                    setSelectedSide1(data.idLado1 !== undefined && data.idLado1 !== null ? data.idLado1 : 'Sin lado 1'); // Si no existe idLado1, usa 'Sin lado 1'
+                    setSelectedSide2(data.idLado2 !== undefined && data.idLado2 !== null ? data.idLado2 : 'Sin lado 2'); // Si no existe idLado2, usa 'Sin lado 2'
                 } catch (error) {
                     notify('error', 'Error al cargar los datos del pasillo');
                 }
@@ -72,6 +73,25 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
             fetchAisleData();
         }
     }, [selectedAisleId]);
+
+
+    const handleChange = (e) => {
+        const { id, value } = e.target;
+        // Permite que el campo esté vacío o solo acepte valores mayores a 0
+        if (value === '' || /^[1-9]\d*$/.test(value)) {
+            if (id === 'aisleNumber') {
+                setAisleNumber(value);
+            }
+        } else {
+            // Si el valor es 0 o negativo, muestra el mensaje de error
+            if (parseInt(value, 10) <= 0) {
+                const errorMessage = {
+                    aisleNumber: "El número de pasillo debe ser mayor a 0"
+                };
+                notify('error', errorMessage[id] || "El valor debe ser mayor a 0");
+            }
+        }
+    };
 
 
     // Cargar ubicaciones
@@ -173,8 +193,9 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                             <Label htmlFor="aisleNumber" className="text-sm font-medium">Número de Pasillo</Label>
                             <Input
                                 id="aisleNumber"
+                                type="number"
                                 value={aisleNumber}
-                                onChange={(e) => setAisleNumber(e.target.value)}
+                                onChange={handleChange}
                                 required
                                 className="bg-sipe-blue-dark text-sipe-white border-sipe-white border-b-1"
                             />
@@ -233,7 +254,7 @@ const AisleEditModal = ({ onClose, onAisleUpdated, notify }) => {
                                 <SelectContent>
                                     <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key="null" value="null">Sin Lado</SelectItem>
                                     {sides
-                                        .filter((side) => side.id !== selectedSide1) // Filtrar para que no se seleccione el mismo lado
+                                        .filter((side) => side.id !== selectedSide1)
                                         .map((side) => (
                                             <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={side.id} value={side.id}>
                                                 {side.descripcion}

@@ -10,15 +10,25 @@ function RecoveryPassword() {
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
     const { state } = useLocation();
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        if (!email.includes('@')) {
+            setMessage('Por favor, ingresa un email válido.');
+            return;
+        }
+        setLoading(true);
         try {
             await axios.post('http://localhost:8081/sendRecoveryCode', { email });
-            setMessage('Correo de recuperación enviado');
-            navigate('/rCod', { state: { email } });
+            setMessage('Código de recuperación enviado');
+            setLoading(false);
+            setTimeout(() => {
+                navigate('/rCod', { state: { email } });
+            }, 1500);
         } catch (err) {
+            setLoading(false);
             if (err.response && err.response.status === 404) {
                 setMessage('Email no encontrado');
             } else {
@@ -27,7 +37,13 @@ function RecoveryPassword() {
         }
     };
 
-    const messageTitle = state?.source === 'navbar' ? 'Cambiá tu contraseña' : 'Recuperá tu contraseña';
+    const firstLogin = localStorage.getItem('firstLogin');
+    const messageTitle = firstLogin === '1'
+        ? 'Como es tu primer inicio de sesión, tenés que cambiar tu contraseña'
+        : (state?.source === 'navbar'
+            ? 'Cambiá tu contraseña'
+            : 'Recuperá tu contraseña');
+
 
     return (
         <div className="bg-sipe-blue-dark">
@@ -44,7 +60,7 @@ function RecoveryPassword() {
                         <div className="mx-auto w-full max-w-md space-y-4">
                             <div className="space-y-2">
                                 <h1 className="font-bold text-sipe-white text-4xl">{messageTitle}</h1>
-                                <p className="font-thin text-sipe-white">Escribí tu email y recibí allí un código para reestablecer tu contraseña</p>
+                                <p className="font-thin text-sipe-white">Escribí tu email y recibí allí un código para cambiar tu contraseña</p>
                             </div>
                             <div className="space-y-4">
                                 <div className="space-y-2">
@@ -53,8 +69,8 @@ function RecoveryPassword() {
                                     </Label>
                                 </div>
                                 <div>
-                                    <Button className="mb-5" variant="sipebutton" size="sipebutton" type="button" onClick={handleSubmit}>
-                                        ENVIAR CORREO
+                                    <Button className="mb-5" variant="sipebutton" size="sipebutton" type="submit" onClick={handleSubmit}>
+                                        CONFIRMAR CORREO
                                     </Button>
                                     <Link to="/">
                                         <Button variant="sipebuttonalt" size="sipebutton" type="submit">
@@ -62,7 +78,16 @@ function RecoveryPassword() {
                                         </Button>
                                     </Link>
                                 </div>
-                                {message && <div className="text-sipe-white">{message}</div>}
+                                <div className="text-sipe-white">
+                                    {loading ? (
+                                        <div className="flex items-center space-x-2">
+                                            <div className="loader"></div>
+                                            <span>Enviando correo...</span>
+                                        </div>
+                                    ) : (
+                                        message
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

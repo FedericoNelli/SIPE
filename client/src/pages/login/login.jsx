@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import LoginInput from "@/components/LoginInput/LoginInput";
 import { useNavigate } from "react-router-dom";
 import Tutorials from '../Tutorials/Tutorials';
+import axios from 'axios';
 
 function Login() {
     const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -11,26 +12,34 @@ function Login() {
     const [showTutorial, setShowTutorial] = useState(false);
     const navigate = useNavigate();
 
-    const handleLoginSuccess = () => {
+    const handleLoginSuccess = async () => {
         setStartExpand(true);
-        setTimeout(() => {
-            setIsLoginSuccessful(true); // Marca el login como exitoso después de la animación
-            
-            if (localStorage.getItem('firstLogin') === '1') {
-                setShowTutorial(true); // Mostrar el tutorial después de la animación
-                navigate('/tuto'); // Redirigir a la ruta donde se encuentra el componente Tutorial
-            } else {
-                navigate('/dshb');
+        setTimeout(async () => {
+            try {
+                const userId = localStorage.getItem('id');
+                const res = await axios.get(`http://localhost:8081/check-tutorial-status/${userId}`);
+                
+                if (res.data.redirectToChangePassword) {
+                    setIsLoginSuccessful(false); // No marca el login como exitoso si va al cambio de contraseña
+                    navigate('/rPsw'); // Redirige al cambio de contraseña
+                } else if (res.data.showTutorial) {
+                    setShowTutorial(true);
+                    setIsLoginSuccessful(false); // No marca el login como exitoso si va al tutorial
+                    navigate('/tuto'); // Redirige al tutorial
+                } else {
+                    setIsLoginSuccessful(true); // Marca el login como exitoso para mostrar la animación
+                    navigate('/dshb'); // Redirige al dashboard
+                }
+            } catch (error) {
+                console.error('Error al verificar el estado del tutorial:', error.response?.data || error.message);
             }
-        }, 1250); // Espera 1.25 segundos para que la animación se complete antes de ejecutar el tutorial
+        }, 1250);
     };
-    
 
     const handleFirstLogin = () => {
         setShowTutorial(true);
-        navigate('/tuto'); // Redirigir a la ruta donde se encuentra el componente Tutorial
+        navigate('/tuto');
     };
-    
 
     const openLogin = () => {
         setIsLoginOpen(true);
@@ -73,7 +82,7 @@ function Login() {
                     transition={{ duration: 1 }}
                     className="fixed top-0 left-0 w-full h-full flex items-center justify-center z-50 bg-opacity-75 bg-sipe-blue-dark"
                 >
-                    <Tutorials /> 
+                    <Tutorials />
                 </motion.div>
             )}
 

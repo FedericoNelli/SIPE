@@ -28,7 +28,13 @@ function User({ notify }) {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentUsers = users.slice(indexOfFirstItem, indexOfLastItem);
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    const totalPages = Math.ceil(users.length / itemsPerPage);
+
+    const paginate = (pageNumber) => {
+        if (pageNumber >= 1 && pageNumber <= totalPages) {
+            setCurrentPage(pageNumber);
+        }
+    };
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
@@ -61,11 +67,11 @@ function User({ notify }) {
                         <Button onClick={openFormModal} variant="sipemodal">NUEVO USUARIO</Button>
                     </div>
                 </div>
-                <UserList users={currentUsers} onUserClick={openDetailModal} />
+                <UserList users={currentUsers} onUserClick={openDetailModal} notify={notify} />
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
-                            {[...Array(Math.ceil(users.length / itemsPerPage)).keys()].map(page => (
+                            {[...Array(totalPages).keys()].map(page => (
                                 <PaginationItem key={page + 1}>
                                     <PaginationLink href="#" onClick={() => paginate(page + 1)} isActive={currentPage === page + 1}>
                                         {page + 1}
@@ -85,6 +91,7 @@ function User({ notify }) {
                         isOpen={isDetailModalOpen}
                         onClose={closeDetailModal}
                         selectedUser={selectedUser}
+                        notify={notify}
                     />
                 )}
             </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import { Plus, Trash2, PenLine, Eraser } from 'lucide-react';
 import ShelfForm from '@/components/Shelf/ShelfForm';
 import ShelfList from './ShelfList';
 import ShelfEditModal from './ShelfEditModal';
@@ -36,10 +37,18 @@ function Shelf({ notify }) {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentShelves = shelves.slice(indexOfFirstItem, indexOfLastItem);
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    const totalPages = Math.ceil(shelves.length / itemsPerPage);
+
+    const paginate = (pageNumber) => {
+        if (pageNumber >= 1 && pageNumber <= totalPages) {
+            setCurrentPage(pageNumber);
+        }
+    };
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
+        setIsEmptyMode(false);
+        setIsDeleteMode(false);
     };
 
     const closeFormModal = () => {
@@ -49,12 +58,14 @@ function Shelf({ notify }) {
     // Función para activar el modo de eliminación
     const toggleDeleteMode = () => {
         setIsDeleteMode(!isDeleteMode);
-        setSelectedShelves([]); // Limpiar selección al salir del modo de eliminación
+        setSelectedShelves([]);
+        setIsEmptyMode(false);
     };
 
     const toggleEmptyMode = () => { // Activar el modo vaciar estanterías
         setIsEmptyMode(!isEmptyMode);
         setSelectedShelves([]);
+        setIsDeleteMode(false);
     };
 
     // Función para manejar la eliminación de estanterías
@@ -88,6 +99,7 @@ function Shelf({ notify }) {
                 notify('success', 'Estanterías vaciadas correctamente');
                 setSelectedShelves([]);
                 setIsEmptyMode(false);
+                window.location.reload();
             })
             .catch(error => {
                 notify('error', 'Error al vaciar estanterías');
@@ -102,6 +114,8 @@ function Shelf({ notify }) {
 
     const openEditModal = () => {
         setIsEditModalOpen(true);
+        setIsDeleteMode(false);
+        setIsEmptyMode(false);
     };
 
     const closeEditModal = () => {
@@ -118,13 +132,13 @@ function Shelf({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de estanterías</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} variant="sipemodal">NUEVA ESTANTERÍA</Button>
-                        <Button onClick={openEditModal} variant="sipemodalalt">EDITAR ESTANTERÍA</Button>
+                        <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR</Button>
+                        <Button onClick={openEditModal} variant="sipemodalalt"> <PenLine /> EDITAR</Button>
                         <Button onClick={toggleEmptyMode} variant="sipemodalalt3">
-                            {isEmptyMode ? 'CANCELAR VACIAR' : 'VACIAR ESTANTERÍAS'}
+                            <Eraser /> {isEmptyMode ? 'CANCELAR VACIAR' : 'VACIAR'}
                         </Button>
                         <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
-                            {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR ESTANTERÍAS'}
+                            <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR'}
                         </Button>
                     </div>
                 </div>
@@ -141,7 +155,7 @@ function Shelf({ notify }) {
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
-                            {[...Array(Math.ceil(shelves.length / itemsPerPage)).keys()].map(page => (
+                            {[...Array(totalPages).keys()].map(page => (
                                 <PaginationItem key={page + 1}>
                                     <PaginationLink href="#" onClick={() => paginate(page + 1)} isActive={currentPage === page + 1}>
                                         {page + 1}

@@ -9,7 +9,7 @@ function MainDashboard() {
     const [lowStockMaterials, setLowStockMaterials] = useState(0);
     const [totalEstanterias, setTotalEstanterias] = useState(0);
     const [lastMaterial, setLastMaterial] = useState('');
-    const [totalCategorias, setTotalCategorias] = useState(0); // Nuevo estado
+    const [totalAuditorias, setTotalAuditorias] = useState(0); // Nuevo estado
     const [updateTrigger, setUpdateTrigger] = useState(false);
     const [totalInformes, setTotalInformes] = useState(0);
     
@@ -68,15 +68,15 @@ function MainDashboard() {
     }, [updateTrigger]);
 
     useEffect(() => {
-        const fetchTotalCategorias = async () => { // Nueva llamada al endpoint
+        const fetchTotalAuditorias = async () => { // Nueva llamada al endpoint
             try {
-                const response = await axios.get('http://localhost:8081/total-categories');
-                setTotalCategorias(response.data.total);
+                const response = await axios.get('http://localhost:8081/total-audits');
+                setTotalAuditorias(response.data.total);
             } catch (error) {
                 console.error('Error:', error);
             }
         };
-        fetchTotalCategorias();
+        fetchTotalAuditorias();
     }, [updateTrigger]);
 
     useEffect(() => {
@@ -106,7 +106,7 @@ function MainDashboard() {
         { 
             label: 'IR A MATERIALES',
             disabled: rol !== 'Administrador' && rol !== 'Colaborador',
-            path: '/mtls' 
+            path: '/enters' 
         },
         { 
             label: 'IR A INFORMES',
@@ -114,9 +114,9 @@ function MainDashboard() {
             path: '/inf' 
         },
         { 
-            label: 'IR A CATEGORÍAS',
+            label: 'IR A AUDITORÍAS',
             disabled: rol !== 'Administrador',
-            path: '/category'  
+            path: '/audits'  
         }
     ];
 
@@ -178,8 +178,8 @@ function MainDashboard() {
                 <CustomCard
                     Icon={Tags}
                     colSpan={1}
-                    title="Cantidad de categorías"
-                    totalElement={`${totalCategorias} categorías`}
+                    title="Cantidad de auditorías"
+                    totalElement={`${totalAuditorias} auditorías`}
                     buttonText={buttonSection[4].label}
                     buttonDisabled={buttonSection[4].disabled}
                     onButtonClick={() => handleButtonClick(buttonSection[4].path)} 

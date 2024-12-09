@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import { Plus, Trash2 } from 'lucide-react';
 import ReportList from './ReportList';
 import ReportForm from './ReportForm';
 import ReportDetailModal from './ReportDetailModal';
-import axios from 'axios';
 
 function Report({ notify }) {
     const [reports, setReports] = useState([]); // Lista de informes
@@ -36,13 +37,19 @@ function Report({ notify }) {
     const fetchReportDetails = async (reportId) => {
         try {
             const response = await axios.get(`http://localhost:8081/reports/${reportId}`);
-            setSelectedReport(response.data); // Guardar el informe seleccionado en el estado
+            setSelectedReport(response.data);
             setIsDetailModalOpen(true); // Abrir el modal
         } catch (error) {
             console.error('Error fetching report details:', error);
             notify('error', 'Error al obtener detalles del informe');
         }
     };
+
+    useEffect(() => {
+        if (selectedReport) {
+        }
+    }, [selectedReport]);
+
 
     // Cerrar el modal de detalles
     const closeDetailModal = () => {
@@ -52,6 +59,7 @@ function Report({ notify }) {
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
+        setIsDeleteMode(false);
     };
 
     const closeFormModal = () => {
@@ -63,7 +71,13 @@ function Report({ notify }) {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentReports = reports.slice(indexOfFirstItem, indexOfLastItem);
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    const totalPages = Math.ceil(reports.length / itemsPerPage);
+
+    const paginate = (pageNumber) => {
+        if (pageNumber >= 1 && pageNumber <= totalPages) {
+            setCurrentPage(pageNumber);
+        }
+    };
 
     return (
         <div className="relative">
@@ -75,8 +89,8 @@ function Report({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de informes</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} variant="sipemodal">GENERAR INFORME</Button>
-                        <Button onClick={() => setIsDeleteMode(!isDeleteMode)} variant="sipemodalalt">{isDeleteMode ? "CANCELAR ELIMINACIÓN" : "ELIMINAR INFORMES"}</Button>
+                        <Button onClick={openFormModal} variant="sipemodal"> <Plus /> GENERAR </Button>
+                        <Button onClick={() => setIsDeleteMode(!isDeleteMode)} variant="sipemodalalt"> <Trash2 /> {isDeleteMode ? "CANCELAR ELIMINACIÓN" : "ELIMINAR"}</Button>
                     </div>
                 </div>
 
@@ -85,6 +99,7 @@ function Report({ notify }) {
                     isDeleteMode={isDeleteMode}
                     notify={notify}
                     fetchReportDetails={fetchReportDetails}
+                    setReports={setReports}
                     reports={currentReports} // Pasamos solo los informes de la página actual
                 />
 
@@ -92,7 +107,7 @@ function Report({ notify }) {
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
-                            {[...Array(Math.ceil(reports.length / itemsPerPage)).keys()].map(page => (
+                            {[...Array(totalPages).keys()].map(page => (
                                 <PaginationItem key={page + 1}>
                                     <PaginationLink href="#" onClick={() => paginate(page + 1)} isActive={currentPage === page + 1}>
                                         {page + 1}
@@ -115,12 +130,13 @@ function Report({ notify }) {
                     <ReportDetailModal
                         isOpen={isDetailModalOpen}
                         onClose={closeDetailModal}
-                        reportData={selectedReport.datos}
+                        reportData={selectedReport.detalles}
                         reportType={selectedReport.tipo}
                         tipoGrafico={selectedReport.tipoGrafico}
-                        selectedMaterial={selectedReport.nombreMaterial || 'Todos los materiales'}
+                        selectedMaterial={selectedReport.detalles.nombre_material || 'Todos los materiales'}
                         dateRange={`${selectedReport.fechaInicio || 'N/A'} - ${selectedReport.fechaFin || 'N/A'}`}
-                        selectedOption={selectedReport.deposito?.nombre || selectedReport.estado || 'Todos'}
+                        selectedOption={selectedReport.detalles.nombre_deposito || 'N/A'}
+                        selectedOption1={selectedReport.detalles.estado_material || 'N/A'}
                     />
                 )}
             </div>

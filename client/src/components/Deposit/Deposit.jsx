@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
+import { Plus, Trash2, PenLine } from 'lucide-react';
 import DepositForm from '@/components/Deposit/DepositForm';
 import DepositList from '@/components/Deposit/DepositList';
 import DepositEditModal from './DepositEditModal';
@@ -34,10 +35,17 @@ function Deposit({ notify }) {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentDeposits = deposits.slice(indexOfFirstItem, indexOfLastItem);
 
-    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    const totalPages = Math.ceil(deposits.length / itemsPerPage);
+
+    const paginate = (pageNumber) => {
+        if (pageNumber >= 1 && pageNumber <= totalPages) {
+            setCurrentPage(pageNumber);
+        }
+    };
 
     const openFormModal = () => {
         setIsFormModalOpen(true);
+        setIsDeleteMode(false);
     };
 
     const closeFormModal = () => {
@@ -64,6 +72,7 @@ function Deposit({ notify }) {
                 setSelectedDeposits([]);
                 setIsDeleteMode(false);
             })
+
             .catch(error => {
                 console.error('Error eliminando depósitos:', error);
                 notify('error', 'Error al eliminar depósitos');
@@ -72,6 +81,7 @@ function Deposit({ notify }) {
 
     const openEditModal = () => {
         setIsEditModalOpen(true);
+        setIsDeleteMode(false);
     };
 
     const closeEditModal = () => {
@@ -93,10 +103,12 @@ function Deposit({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de depósitos</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                        <Button onClick={openFormModal} variant="sipemodal">NUEVO DEPÓSITO</Button>
-                        <Button onClick={openEditModal} variant="sipemodalalt3">EDITAR DEPÓSITO</Button>
+                        <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR</Button>
+                        <Button onClick={openEditModal} variant="sipemodalalt">
+                            <PenLine /> EDITAR
+                        </Button>
                         <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
-                            {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR DEPÓSITOS'}
+                            <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : 'ELIMINAR'}
                         </Button>
                     </div>
                 </div>
@@ -111,7 +123,7 @@ function Deposit({ notify }) {
                 <div className="flex justify-center p-4">
                     <Pagination>
                         <PaginationContent>
-                            {[...Array(Math.ceil(deposits.length / itemsPerPage)).keys()].map(page => (
+                            {[...Array(totalPages).keys()].map(page => (
                                 <PaginationItem key={page + 1}>
                                     <PaginationLink href="#" onClick={() => paginate(page + 1)} isActive={currentPage === page + 1}>
                                         {page + 1}
@@ -128,11 +140,11 @@ function Deposit({ notify }) {
                 )}
                 {isEditModalOpen && (
                     <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                    <DepositEditModal
-                        onClose={closeEditModal}
-                        onDepositUpdated={handleDepositUpdated}
-                        notify={notify}
-                    />
+                        <DepositEditModal
+                            onClose={closeEditModal}
+                            onDepositUpdated={handleDepositUpdated}
+                            notify={notify}
+                        />
                     </div>
                 )}
             </div>

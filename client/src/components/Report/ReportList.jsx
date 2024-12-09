@@ -1,29 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/Common/Table/Table";
 import { Button } from "@/components/Common/Button/Button";
 import axios from "axios";
 
-function ReportList({ isDeleteMode, notify, fetchReportDetails }) {
-    const [reports, setReports] = useState([]);
-    const [loading, setLoading] = useState(true);
+function ReportList({ reports, setReports, isDeleteMode, notify, fetchReportDetails }) {
     const [selectedReports, setSelectedReports] = useState([]); // Para la eliminación múltiple
     const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false); // Estado de confirmación
-
-    // Cargar los informes
-    useEffect(() => {
-        const loadReports = async () => {
-            try {
-                const response = await axios.get('http://localhost:8081/reports');
-                setReports(response.data);
-            } catch (error) {
-                console.error('Error fetching reports:', error);
-                notify('error', 'Error al cargar los informes');
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadReports();
-    }, [notify]);
 
     // Manejo de la selección de informes
     const handleRowClick = (report) => {
@@ -47,9 +29,9 @@ function ReportList({ isDeleteMode, notify, fetchReportDetails }) {
                 data: { reportIds: selectedReports }
             });
             notify('success', 'Informes eliminados correctamente');
-            // Filtrar los informes eliminados
-            setReports(reports.filter(report => !selectedReports.includes(report.id)));
+            setReports(prevReports => prevReports.filter(report => !selectedReports.includes(report.id)));
             setSelectedReports([]); // Limpiar la selección
+            window.location.reload();
         } catch (error) {
             console.error('Error eliminando informes:', error);
             notify('error', 'Error al eliminar informes');
@@ -71,10 +53,6 @@ function ReportList({ isDeleteMode, notify, fetchReportDetails }) {
             setSelectedReports(allReportIds);
         }
     };
-
-    if (loading) {
-        return <p className="text-center text-white">Cargando informes...</p>;
-    }
 
     return (
         <>

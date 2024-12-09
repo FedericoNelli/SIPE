@@ -1,26 +1,41 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { format } from 'date-fns';  // Importamos date-fns para formatear y parsear fechas
+import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/Common/Cards/Card";
 import { Label } from "@/components/Common/Label/Label";
 import { Input } from "@/components/Common/Input/Input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/Common/Select/Select";
 import { Button } from "@/components/Common/Button/Button";
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
 
-function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la prop onExitCreated
+function MaterialExitForm({ onClose, notify, onExitCreated }) {
     const [ubicaciones, setUbicaciones] = useState([]);
     const [depositos, setDepositos] = useState([]);
     const [materials, setMaterials] = useState([]);
     const [users, setUsers] = useState([]);
-
     const [selectedUbicacion, setSelectedUbicacion] = useState(null);
     const [selectedDeposito, setSelectedDeposito] = useState(null);
     const [selectedMaterials, setSelectedMaterials] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [reason, setReason] = useState('');
-    const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd')); // Fecha actual como valor inicial
-    const [maxDate] = useState(format(new Date(), 'yyyy-MM-dd')); // Establecemos la fecha máxima como hoy
+    const [numero, setNumero] = useState('');
+    const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+    const [showMaterialSelect, setShowMaterialSelect] = useState(true);
+    const [maxDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleEscape);
+
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [onClose]);
 
     useEffect(() => {
         axios.get('http://localhost:8081/deposit-locations')
@@ -59,6 +74,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la
 
         if (material && !selectedMaterials.find(m => m.id === material.id)) {
             setSelectedMaterials([...selectedMaterials, { ...material, cantidadSalida: '' }]);
+            setShowMaterialSelect(false);
         }
     };
 
@@ -66,11 +82,12 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la
         setSelectedMaterials(
             selectedMaterials.map(material =>
                 material.id === id
-                    ? { ...material, cantidadSalida: value > 0 ? value : 0 }
+                    ? { ...material, cantidadSalida: value === '' ? '' : Math.max(0, value) }
                     : material
             )
         );
     };
+    
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -80,6 +97,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la
             idMaterial: material.id,
             cantidad: material.cantidadSalida,
             motivo: reason,
+            numero: numero,
             fecha: formattedDateForMySQL,
             idUsuario: selectedUser,
         }));
@@ -87,20 +105,35 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la
         axios.post('http://localhost:8081/materials/exits', salidas)
             .then(response => {
                 notify('success', 'Salida registrada con éxito');
-                if (onExitCreated) {
-                    onExitCreated();  // Llamamos a la función para refrescar la lista de salidas
-                }
-                onClose();  // Cerrar el modal
+                setTimeout(() => {
+                    if (onExitCreated) {
+                        onExitCreated();
+                        onClose();
+                    }
+                }, 1000);
             })
             .catch(error => {
                 console.error('Error registrando salida:', error);
-                notify('error', 'Error al registrar la salida');
+                if (error.response && error.response.data && error.response.data.error) {
+                    notify('error', error.response.data.error);
+                } else {
+                    notify('error', 'Error al registrar la salida');
+                }
+                
             });
+
     };
 
     const handleRemoveMaterial = (id) => {
         setSelectedMaterials(selectedMaterials.filter(material => material.id !== id));
     };
+
+    const handleShowMaterialSelect = () => {
+        setShowMaterialSelect(true);
+    };
+
+    // Calcular si quedan materiales disponibles para agregar
+    const availableMaterials = materials.filter(material => !selectedMaterials.some(m => m.id === material.id));
 
     return (
         <Card className="bg-sipe-blue-dark text-sipe-white p-4 rounded-xl relative">
@@ -113,7 +146,21 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la
             </CardHeader>
             <CardContent className="grid gap-4">
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 mt-4">
+                        <Label htmlFor="numero" className="text-sm font-medium">Número de salida</Label>
+                        <Input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="Número de la salida" className="border-b bg-sipe-blue-dark text-white" />
+                    </div>
+                    <div className="grid gap-2 mt-4">
+                        <Label htmlFor="fecha" className="text-sm font-medium">Fecha de Salida</Label>
+                        <Input
+                            type="date"
+                            value={selectedDate}
+                            max={maxDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="border-b bg-sipe-blue-dark text-white"
+                        />
+                    </div>
+                    <div className="grid gap-2 mt-4">
                         <Label htmlFor="ubicacion" className="text-sm font-medium">Ubicación</Label>
                         <Select onValueChange={handleUbicacionChange}>
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
@@ -126,7 +173,7 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 mt-4">
                         <Label htmlFor="deposito" className="text-sm font-medium">Depósito</Label>
                         <Select onValueChange={handleDepositoChange}>
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
@@ -143,18 +190,34 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la
 
                 <div className="grid gap-2">
                     <Label htmlFor="material" className="text-sm font-medium">Material</Label>
-                    <Select onValueChange={handleMaterialChange}>
-                        <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                            <SelectValue placeholder="Selecciona un material" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {materials.map(material => (
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id} disabled={selectedMaterials.find(m => m.id === material.id)}>
-                                    {material.nombre}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    
+                    {showMaterialSelect && (
+                        <Select onValueChange={handleMaterialChange}>
+                            <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                <SelectValue placeholder="Selecciona un material" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableMaterials.map(material => (
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.id} value={material.id}>
+                                        {material.nombre} (Disponible: {material.cantidad})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+
+                    {!showMaterialSelect && availableMaterials.length > 0 && (
+                        <button
+                            className="text-green-500 hover:text-green-700 text-sm flex items-center mt-2"
+                            onClick={handleShowMaterialSelect}
+                        >
+                            <Plus size={16} className="mr-1" /> Agregar Material
+                        </button>
+                    )}
+
+                    {!showMaterialSelect && availableMaterials.length === 0 && (
+                        <p className="text-gray-500 mt-2">No existen más materiales en el depósito</p>
+                    )}
                 </div>
 
                 {selectedMaterials.length > 0 && (
@@ -181,25 +244,13 @@ function MaterialExitForm({ onClose, notify, onExitCreated }) {  // Agregamos la
                         ))}
                     </div>
                 )}
-
-                <div className="grid gap-2 mt-4">
-                    <Label htmlFor="fecha" className="text-sm font-medium">Fecha de Salida</Label>
-                    <Input
-                        type="date"
-                        value={selectedDate}
-                        max={maxDate}  // Limitar la fecha máxima a hoy
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        className="border-b bg-sipe-blue-dark text-white"
-                    />
-                </div>
-
                 <div className="grid gap-2 mt-4">
                     <Label htmlFor="reason" className="text-sm font-medium">Motivo</Label>
                     <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Motivo de la salida" className="border-b bg-sipe-blue-dark text-white" />
                 </div>
 
                 <div className="grid gap-2 mt-4">
-                    <Label htmlFor="usuario" className="text-sm font-medium">Usuario</Label>
+                    <Label htmlFor="usuario" className="text-sm font-medium">Usuario que sacó los materiales</Label>
                     <Select onValueChange={setSelectedUser}>
                         <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                             <SelectValue placeholder="Selecciona un usuario" />

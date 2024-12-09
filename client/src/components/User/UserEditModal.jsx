@@ -7,9 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import toast from 'react-hot-toast';
 
-function UserEditModal({ isOpen, onClose, user }) {
+function UserEditModal({ isOpen, onClose, user, notify }) {
     const [isVisible, setIsVisible] = useState(isOpen);
     const [formData, setFormData] = useState({
         nombre: user?.nombre || '',
@@ -23,6 +22,20 @@ function UserEditModal({ isOpen, onClose, user }) {
         imagenPreview: user?.imagen ? `http://localhost:8081${user.imagen}` : ''
     });
     const [isImageToDelete, setIsImageToDelete] = useState(false);
+
+    // Cerrar modal al presionar la tecla Escape
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [onClose]);
 
     useEffect(() => {
         setIsVisible(isOpen);
@@ -47,13 +60,7 @@ function UserEditModal({ isOpen, onClose, user }) {
         const file = e.target.files[0];
         if (file) {
             if (file.size > 10 * 1024 * 1024) {
-                toast.error('El archivo es demasiado grande. El tamaño máximo es 10 MB.', {
-                    duration: 2500,
-                    style: {
-                        background: '#2C3B4D',
-                        color: '#EEE9DF',
-                    },
-                });
+                notify('error' ,'El archivo es demasiado grande. El tamaño máximo es 10 MB.');
                 return;
             }
             setFormData(prevData => ({
@@ -62,21 +69,9 @@ function UserEditModal({ isOpen, onClose, user }) {
                 imagenPreview: URL.createObjectURL(file)
             }));
             setIsImageToDelete(false); 
-            toast.success('Imagen lista para guardarse', {
-                duration: 2500,
-                style: {
-                    background: '#2C3B4D',
-                    color: '#EEE9DF',
-                },
-            });
+            notify('success', 'Imagen lista para guardarse');
         } else {
-            toast.error('Error al cargar imagen', {
-                duration: 2500,
-                style: {
-                    background: '#2C3B4D',
-                    color: '#EEE9DF',
-                },
-            });
+            notify('error', 'Error al cargar imagen');
         }
     };
 
@@ -91,13 +86,7 @@ function UserEditModal({ isOpen, onClose, user }) {
             }));
             setIsImageToDelete(false);
             resetFileInput();
-            toast.success('Imagen del preview eliminada', {
-                duration: 2500,
-                style: {
-                    background: '#2C3B4D',
-                    color: '#EEE9DF',
-                },
-            });
+            notify('success', 'Imagen del preview eliminada');
         } else if (formData.imagenPreview) {
             setIsImageToDelete(true);
             setFormData(prevData => ({
@@ -105,13 +94,7 @@ function UserEditModal({ isOpen, onClose, user }) {
                 imagenPreview: ''
             }));
             resetFileInput();
-            toast.success('Imagen del servidor marcada para eliminarse', {
-                duration: 2500,
-                style: {
-                    background: '#2C3B4D',
-                    color: '#EEE9DF',
-                },
-            });
+            notify('success', 'Imagen del servidor marcada para eliminarse');
         }
     };
 
@@ -138,13 +121,7 @@ function UserEditModal({ isOpen, onClose, user }) {
             if (response.status !== 200) {
                 throw new Error(response.data.error || "Error al actualizar el usuario");
             }
-            toast.success("Usuario actualizado correctamente", {
-                duration: 2500,
-                style: {
-                    background: '#2C3B4D',
-                    color: '#EEE9DF',
-                },
-            });
+            notify('success', "Usuario actualizado correctamente");
 
             setIsVisible(false);
 
@@ -153,13 +130,7 @@ function UserEditModal({ isOpen, onClose, user }) {
             }, 2500);
 
         } catch (error) {
-            toast.error(error.message || "Error al actualizar el usuario", {
-                duration: 2500,
-                style: {
-                    background: '#2C3B4D',
-                    color: '#EEE9DF',
-                },
-            });
+            notify('error', "Error al actualizar el usuario");
         }
     };
 
