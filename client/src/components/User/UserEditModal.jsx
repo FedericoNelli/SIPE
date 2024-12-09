@@ -8,7 +8,7 @@ import { Button } from "@/components/Common/Button/Button";
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 
-function UserEditModal({ isOpen, onClose, user, notify }) {
+function UserEditModal({ isOpen, onClose, user, notify, onUserUpdated }) {
     const [isVisible, setIsVisible] = useState(isOpen);
     const [formData, setFormData] = useState({
         nombre: user?.nombre || '',
@@ -30,7 +30,6 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
                 onClose();
             }
         };
-
         window.addEventListener('keydown', handleKeyDown);
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
@@ -60,7 +59,7 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
         const file = e.target.files[0];
         if (file) {
             if (file.size > 10 * 1024 * 1024) {
-                notify('error' ,'El archivo es demasiado grande. El tamaño máximo es 10 MB.');
+                notify('error', 'El archivo es demasiado grande. El tamaño máximo es 10 MB.');
                 return;
             }
             setFormData(prevData => ({
@@ -68,7 +67,7 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
                 imagen: file,
                 imagenPreview: URL.createObjectURL(file)
             }));
-            setIsImageToDelete(false); 
+            setIsImageToDelete(false);
             notify('success', 'Imagen lista para guardarse');
         } else {
             notify('error', 'Error al cargar imagen');
@@ -100,7 +99,35 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
 
     const handleSave = async () => {
         const { nombre, apellido, legajo, nombre_usuario, email, rol, imagen } = formData;
-
+    
+        // Regex para validaciones
+        const emailRegex = /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+        const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/; // Solo letras, espacios y caracteres con tilde
+        const usernameRegex = /^[a-zA-Z0-9_.-]+$/; // Letras, números, guión bajo, punto y guión
+        const legajoRegex = /^[0-9]+$/; // Solo números
+    
+        // Validaciones
+        if (!nameRegex.test(nombre)) {
+            notify('error', 'El nombre solo puede contener letras y espacios.');
+            return;
+        }
+        if (!nameRegex.test(apellido)) {
+            notify('error', 'El apellido solo puede contener letras y espacios.');
+            return;
+        }
+        if (!usernameRegex.test(nombre_usuario)) {
+            notify('error', 'El nombre de usuario solo puede contener letras, números, guiones y puntos.');
+            return;
+        }
+        if (!legajoRegex.test(legajo)) {
+            notify('error', 'El legajo solo puede contener números.');
+            return;
+        }
+        if (!emailRegex.test(email)) {
+            notify('error', 'El correo electrónico debe ser válido.');
+            return;
+        }
+    
         const formDataToSend = new FormData();
         formDataToSend.append('nombre', nombre);
         formDataToSend.append('apellido', apellido);
@@ -110,29 +137,27 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
         formDataToSend.append('rol', rol);
         if (imagen) formDataToSend.append('imagen', imagen);
         if (isImageToDelete) formDataToSend.append('eliminarImagen', true);
-
         try {
             const response = await axios.put(`http://localhost:8081/editUser/${user.id}`, formDataToSend, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+                    'Content-Type': 'multipart/form-data',
+                },
             });
-
             if (response.status !== 200) {
-                throw new Error(response.data.error || "Error al actualizar el usuario");
+                throw new Error(response.data.error || 'Error al actualizar el usuario');
             }
-            notify('success', "Usuario actualizado correctamente");
-
+            notify('success', 'Usuario actualizado correctamente');
             setIsVisible(false);
-
-            setTimeout(() => {
-                window.location.reload();
-            }, 2500);
-
+            onUserUpdated();
         } catch (error) {
-            notify('error', "Error al actualizar el usuario");
+            if (error.response && error.response.data && error.response.data.message) {
+                notify('error', error.response.data.message);
+            } else {
+                notify('error', 'Error al actualizar el usuario');
+            }
         }
     };
+    
 
     const handleCancel = () => {
         setIsVisible(false);
@@ -179,27 +204,27 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="nombre" className="text-sm font-medium">Nombre</Label>
-                                        <Input id="nombre" placeholder="Ingresa el nombre" value={formData.nombre} onChange={handleInputChange} />
+                                        <Input id="nombre" className="border-b-1" placeholder="Ingresa el nombre" value={formData.nombre} onChange={handleInputChange} />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="apellido" className="text-sm font-medium">Apellido</Label>
-                                        <Input id="apellido" placeholder="Ingresa el apellido" value={formData.apellido} onChange={handleInputChange} />
+                                        <Input id="apellido" className="border-b-1" placeholder="Ingresa el apellido" value={formData.apellido} onChange={handleInputChange} />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="legajo" className="text-sm font-medium">Legajo</Label>
-                                        <Input id="legajo" placeholder="Ingresa el legajo" value={formData.legajo} onChange={handleInputChange} />
+                                        <Input id="legajo" className="border-b-1" placeholder="Ingresa el legajo" value={formData.legajo} onChange={handleInputChange} />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="nombre_usuario" className="text-sm font-medium">Nombre de usuario</Label>
-                                        <Input id="nombre_usuario" placeholder="Ingresa el nombre de usuario" value={formData.nombre_usuario} onChange={handleInputChange} />
+                                        <Input id="nombre_usuario" className="border-b-1" placeholder="Ingresa el nombre de usuario" value={formData.nombre_usuario} onChange={handleInputChange} />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                                        <Input id="email" placeholder="Ingresa el email" value={formData.email} onChange={handleInputChange} />
+                                        <Input id="email" className="border-b-1" placeholder="Ingresa el email" value={formData.email} onChange={handleInputChange} />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="rol" className="text-sm font-medium">Rol</Label>
@@ -207,9 +232,9 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
                                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                                 <SelectValue placeholder="Selecciona el rol" />
                                             </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Administrador">Administrador</SelectItem>
-                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Colaborador">Colaborador</SelectItem>
+                                            <SelectContent className="bg-sipe-blue-light">
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Administrador">Administrador</SelectItem>
+                                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Colaborador">Colaborador</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -220,21 +245,21 @@ function UserEditModal({ isOpen, onClose, user, notify }) {
                                         {formData.imagenPreview ? (
                                             <img src={formData.imagenPreview} alt="Imagen del usuario" className="rounded-md w-16 h-16 object-cover" />
                                         ) : (
-                                            <div className="w-16 h-16 border rounded-2xl flex justify-center items-center">
+                                            <div className="w-20 h-20 border rounded-2xl flex justify-center items-center">
                                                 <p className="text-sm text-center font-thin">No hay imagen disponible</p>
                                             </div>
                                         )}
                                         <div className="flex flex-row gap-2">
-                                            <Button variant="sipemodalalt" onClick={handleDeleteImage}>Eliminar Imagen</Button>
+                                            <Button variant="sipemodalalt" onClick={handleDeleteImage}>ELIMINAR IMAGEN</Button>
                                             <input type="file" id="photo" className="hidden" onChange={handleFileChange} />
-                                            <Button variant="sipemodal" onClick={() => document.getElementById('photo').click()}>Subir Nueva Imagen</Button>
+                                            <Button variant="sipemodal" onClick={() => document.getElementById('photo').click()}>SUBIR NUEVA IMAGEN</Button>
                                         </div>
                                     </div>
                                 </div>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-4">
                                 <Button variant="sipebuttonalt" size="sipebutton" onClick={handleCancel}>CANCELAR</Button>
-                                <Button variant="sipebutton" size="sipebutton" onClick={handleSave}>Guardar</Button>
+                                <Button variant="sipebutton" size="sipebutton" onClick={handleSave}>GUARDAR</Button>
                             </CardFooter>
                         </Card>
                     </motion.div>

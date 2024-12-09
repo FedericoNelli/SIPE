@@ -5,7 +5,7 @@ import { Input } from "@/components/Common/Input/Input";
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep, ubicacionId, depositoId }) {
+function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep, ubicacionId, depositoId, updateCategories }) {
 
     const [formData, setFormData] = useState({
         nombre: '',
@@ -56,11 +56,16 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prevData) => ({
-            ...prevData,
-            [name]: value
-        }));
+        const regex = /^[a-zA-ZáéíóúÁÉÍÓÚ\s]*$/;
+
+        if (regex.test(value)) {
+            setFormData((prevData) => ({
+                ...prevData,
+                [name]: value
+            }));
+        }
     };
+
 
     const handleSubmit = async () => {
         if (isTutorial && formData.descripcion.trim() === '') {
@@ -69,9 +74,10 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
         }
         try {
             const response = await axios.post('http://localhost:8081/addCategory', formData);
-
             if (!isTutorial) {
                 notify('success', "¡Categoría agregada correctamente!");
+                updateCategories();
+                onClose();
             }
             if (onClose) onClose();
             const idUbicacion = ubicacionId;
@@ -79,19 +85,16 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
             const idCategoria = response.data.id;
 
             if (onSubmit) onSubmit(idUbicacion, idDeposito, idCategoria);
-
             const isInTutorial = localStorage.getItem('inTutorial');
             if (!isInTutorial || isInTutorial === 'false') {
-                window.location.reload();
+                updateCategories();
+                onClose();
             }
 
         } catch (error) {
             console.error('Error al agregar la categoría:', error);
-
             if (error.response && error.response.data && error.response.data.message) {
                 notify('error', error.response.data.message);
-            } else {
-                notify('error', "Error al agregar categoría");
             }
         }
     };
@@ -113,8 +116,6 @@ function CategoryForm({ onClose, onSubmit, notify, isTutorial = false, currentSt
                     notify('error', "No se pudo eliminar el depósito. Intenta nuevamente.");
                 }
             }
-
-            // Llamar a la función para volver al paso anterior en el tutorial
             handlePreviousStep();
         }
     };

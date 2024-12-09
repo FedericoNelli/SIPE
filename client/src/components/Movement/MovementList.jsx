@@ -5,7 +5,6 @@ import { Button } from "@/components/Common/Button/Button";
 function MovementList({ movements, pendingMovements, isDeleteMode, selectedMovements, setSelectedMovements, handleDeleteMovements, onConfirmMovement, notify }) {
     const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false);
 
-
     // Función para alternar la selección de un movimiento
     const toggleMovementSelection = (movementId) => {
         if (selectedMovements.includes(movementId)) {
@@ -70,7 +69,7 @@ function MovementList({ movements, pendingMovements, isDeleteMode, selectedMovem
                             )}
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Número de movimiento</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Fecha</TableHead>
-                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Usuario</TableHead>
+                            <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Usuario que realizó el movimiento</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Material</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Cantidad Movida</TableHead>
                             <TableHead className="text-center text-sipe-white font-bold text-sm bg-sipe-white/10">Depósito Origen</TableHead>
@@ -82,7 +81,9 @@ function MovementList({ movements, pendingMovements, isDeleteMode, selectedMovem
                     </TableHeader>
                     <TableBody>
                         {movements.map(movement => (
-                            <TableRow key={movement.id}>
+                            <TableRow 
+                            key={movement.id}
+                            className={movement.isCantidadMenor ? 'bg-red-400' : ''}>
                                 {isDeleteMode && (
                                     <TableCell className="text-center">
                                         <input

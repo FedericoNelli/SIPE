@@ -261,7 +261,7 @@ const Tutorial = ({ notify }) => {
                 localStorage.removeItem('pasilloId');
                 localStorage.removeItem('estanteriaId');
                 localStorage.removeItem('currentStep');
-
+                
                 setTimeout(() => {
                     navigate('/dshb');
                 }, 500);

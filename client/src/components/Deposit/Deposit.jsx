@@ -71,6 +71,7 @@ function Deposit({ notify }) {
                 setDeposits(deposits.filter(deposit => !selectedDeposits.includes(deposit.id)));
                 setSelectedDeposits([]);
                 setIsDeleteMode(false);
+                loadDeposits();
             })
 
             .catch(error => {
@@ -89,8 +90,8 @@ function Deposit({ notify }) {
     };
 
     const handleDepositUpdated = () => {
-        loadDeposits(); // Recargar depósitos
-        closeEditModal(); // Cerrar modal de edición después de actualizar
+        loadDeposits();
+        closeEditModal(); 
     };
 
     return (
@@ -134,12 +135,15 @@ function Deposit({ notify }) {
                     </Pagination>
                 </div>
                 {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <DepositForm onClose={closeFormModal} notify={notify} />
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                        <DepositForm 
+                        onClose={closeFormModal} 
+                        notify={notify} 
+                        onDepositUpdated={loadDeposits} />
                     </div>
                 )}
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <DepositEditModal
                             onClose={closeEditModal}
                             onDepositUpdated={handleDepositUpdated}

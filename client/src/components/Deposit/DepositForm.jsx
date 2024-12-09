@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/Common/Button/Button";
 import axios from 'axios';
 
-function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep }) {
+function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentStep, handlePreviousStep, onDepositUpdated }) {
 
     const [formData, setFormData] = useState(() => JSON.parse(localStorage.getItem('depositFormData')) || {
         nombre: '',
@@ -19,9 +19,8 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
         const handleEscape = (event) => {
             if (event.key === 'Escape') {
                 onClose(); // Cierra el modal cuando se presiona Escape
-            }
+            } onDepositUpdated();
         };
-
         document.addEventListener('keydown', handleEscape);
 
         // Limpia el evento cuando el componente se desmonta
@@ -70,12 +69,15 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
             }
             if (!isTutorial) {
                 notify('success', "¡Depósito agregado correctamente!");
+                onDepositUpdated();
+                onClose();
             }
             if (onClose) onClose();
             if (onSubmit) onSubmit(formData.idUbicacion, response.data.id);
             const isInTutorial = localStorage.getItem('inTutorial');
             if (!isInTutorial || isInTutorial === 'false') {
-                window.location.reload();
+                onDepositUpdated();
+                onClose();
             }
         } catch (error) {
             console.error('Error al agregar el depósito:', error);
@@ -142,9 +144,9 @@ function DepositForm({ onClose, onSubmit, notify, isTutorial = false, currentSte
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona una ubicación" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="bg-sipe-blue-light">
                                 {ubicaciones.map((ubicacion) => (
-                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={ubicacion.id} value={ubicacion.id}>
+                                    <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={ubicacion.id} value={ubicacion.id}>
                                         {ubicacion.nombre}
                                     </SelectItem>
                                 ))}

@@ -9,6 +9,7 @@ const multer = require('multer');
 const path = require('path');
 const app = express();
 const fs = require('fs');
+const fsPromises = fs.promises;
 const SECRET_KEY = process.env.SECRET_KEY;
 const { format, addDays } = require('date-fns');
 
@@ -37,6 +38,15 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+const queryPromise = (sql, params) => {
+    return new Promise((resolve, reject) => {
+        db.query(sql, params, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+        });
+    });
+};
+
 // Configuración de multer para almacenar archivos en public/uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -58,7 +68,7 @@ function authenticateToken(req, res, next) {
     if (!token) return res.status(401).json({ error: 'Token no proporcionado' });
 
     jwt.verify(token, SECRET_KEY, (err, user) => {
-        if (err) return res.status(403).json({ error: 'Token inválido' });
+        if (err) return res.status(403).json({ error: 'Por Favor inicie sesión nuevamente' });
         req.user = user;
         next();
     });
@@ -68,6 +78,120 @@ const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 } // Limitar el tamaño a 10 MB
 });
+
+const getNextImageNumber = (callback) => {
+    const query = 'SELECT COUNT(*) AS count FROM Material WHERE imagen IS NOT NULL';
+    db.query(query, (err, results) => {
+        if (err) {
+            return callback(err, null);
+        }
+        const count = results[0].count;
+        callback(null, count + 1);
+    });
+};
+
+
+function handleStockNotifications(nombre, cantidad, bajoStock, callback) {
+    cantidad = Number(cantidad);
+    bajoStock = Number(bajoStock);
+    let descripcion = null;
+
+    if (cantidad === 0) {
+        descripcion = `El material ${nombre} se ha quedado sin stock.`;
+    } else if (cantidad <= bajoStock) {
+        descripcion = `El material ${nombre} ha llegado a su límite de bajo stock.`;
+    } else {
+        return callback(null);
+    }
+
+    db.query(
+        `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
+        [descripcion],
+        (error, result) => {
+            if (error) {
+                console.error('Error al agregar notificación', error);
+                return callback({ mensaje: 'Error al agregar notificación' });
+            }
+
+            const notificacionId = result.insertId;
+
+            db.query(
+                `INSERT INTO usuario_notificacion (idUsuario, idNotificacion, visto) 
+                SELECT id, ?, FALSE FROM usuario`,
+                [notificacionId],
+                (error) => {
+                    if (error) {
+                        console.error('Error al relacionar notificación con usuarios', error);
+                        return callback({ mensaje: 'Error al relacionar notificación con usuarios' });
+                    }
+                    return callback(null);
+                }
+            );
+        }
+    );
+}
+
+function notifyNewMaterialCreation(nombre, idDeposito, callback) {
+    // Obtener el nombre del depósito
+    const queryDeposito = `SELECT nombre FROM Deposito WHERE id = ?`;
+
+    db.query(queryDeposito, [idDeposito], (error, depositoResult) => {
+        if (error) {
+            console.error('Error al obtener el nombre del depósito:', error);
+            return callback({ mensaje: 'Error al obtener el nombre del depósito' });
+        }
+
+        if (depositoResult.length === 0) {
+            return callback({ mensaje: 'Depósito no encontrado' });
+        }
+
+        const nombreDeposito = depositoResult[0].nombre;
+
+        const descripcion = `Se ha creado el material '${nombre}' en el '${nombreDeposito}' ya que no existía.`;
+
+        db.query(
+            `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
+            [descripcion],
+            (error, result) => {
+                if (error) {
+                    console.error('Error al agregar notificación de nuevo material', error);
+                    return callback({ mensaje: 'Error al agregar notificación de nuevo material' });
+                }
+
+                const notificacionId = result.insertId;
+
+                db.query(
+                    `INSERT INTO usuario_notificacion (idUsuario, idNotificacion, visto) 
+                    SELECT id, ?, FALSE FROM usuario`,
+                    [notificacionId],
+                    (error) => {
+                        if (error) {
+                            console.error('Error al relacionar notificación de nuevo material con usuarios', error);
+                            return callback({ mensaje: 'Error al relacionar notificación de nuevo material con usuarios' });
+                        }
+                        return callback(null);
+                    }
+                );
+            }
+        );
+    });
+}
+
+function assignStatus(cantidad, bajoStock) {
+
+    // Convertir a números para asegurar que las comparaciones sean correctas
+    cantidad = parseInt(cantidad, 10);
+    bajoStock = parseInt(bajoStock, 10);
+
+    if (cantidad > bajoStock) {
+        return 1; // Disponible
+    } else if (cantidad <= bajoStock && cantidad > 0) {
+        return 2; // Bajo stock
+    } else if (cantidad === 0) {
+        return 3; // Sin stock
+    }
+
+}
 
 app.get('/materials/search', (req, res) => {
     const query = req.query.query;
@@ -260,6 +384,8 @@ app.get('/materials', (req, res) => {
         Lado l ON et.idLado = l.id
     LEFT JOIN 
         Usuario uu ON m.ultimoUsuarioId = uu.id
+    ORDER BY
+        m.nombre ASC;
     `;
 
     const filters = [];
@@ -354,28 +480,56 @@ app.get('/materials/:id', (req, res) => {
 
 
 // Endpoint para editar un material
-app.put('/materiales/:id', authenticateToken, upload.single('imagen'), (req, res) => {
+app.put('/materiales/:id', authenticateToken, upload.single('imagen'), async (req, res) => {
     const id = req.params.id;
-    const { nombre, cantidad, matricula, fechaUltimoEstado, bajoStock, idCategoria, idDeposito, idEspacio, eliminarImagen } = req.body;
+    const {
+        nombre,
+        cantidad,
+        matricula,
+        fechaUltimoEstado,
+        bajoStock,
+        idCategoria,
+        idDeposito,
+        idEspacio,
+        eliminarImagen
+    } = req.body;
     const nuevaImagen = req.file ? '/uploads/' + req.file.filename : null;
-    let { idEstado } = req.body;
-    let idEstadoComp = idEstado;
+    const usuarioId = req.user.id;
 
-    // Aquí obtienes el ID del usuario logueado (por ejemplo, desde el token)
-    const usuarioId = req.user.id; // Ajusta según cómo obtienes el usuario del token
+    try {
+        // Obtener información actual del material
+        const materialActual = await new Promise((resolve, reject) => {
+            db.query(
+                'SELECT nombre, cantidad, matricula, idDeposito, bajoStock, imagen FROM Material WHERE id = ?',
+                [id],
+                (err, results) => {
+                    if (err) return reject(err);
+                    if (results.length === 0) return reject(new Error('Material no encontrado'));
+                    resolve(results[0]);
+                }
+            );
+        });
 
-    idEstado = assignStatus(cantidad, bajoStock);
+        const imagenActual = materialActual.imagen;
 
-    // Primero, obtener la imagen existente si existe
-    db.query('SELECT imagen FROM Material WHERE id = ?', [id], (err, results) => {
-        if (err) {
-            console.error('Error al obtener la imagen actual del material:', err);
-            return res.status(500).json({ error: 'Error al obtener la imagen actual del material' });
+        // Validar que no exista otro material con el mismo nombre, matrícula y depósito
+        const duplicado = await new Promise((resolve, reject) => {
+            db.query(
+                'SELECT * FROM Material WHERE nombre = ? AND matricula = ? AND idDeposito = ? AND id != ?',
+                [nombre || materialActual.nombre, matricula || materialActual.matricula, idDeposito || materialActual.idDeposito, id],
+                (err, results) => {
+                    if (err) return reject(err);
+                    resolve(results.length > 0);
+                }
+            );
+        });
+
+        if (duplicado) {
+            return res.status(400).json({ error: 'Ya existe un material con el mismo nombre, matrícula y depósito' });
         }
 
-        const imagenActual = results.length > 0 ? results[0].imagen : null;
-
-        // Construir la consulta de actualización con los parámetros que se han enviado
+        // Actualizar el material
+        const idEstado = assignStatus(cantidad || materialActual.cantidad, bajoStock || materialActual.bajoStock);
         const queryParams = [
             nombre || null,
             cantidad || null,
@@ -413,68 +567,65 @@ app.put('/materiales/:id', authenticateToken, upload.single('imagen'), (req, res
         query += ` WHERE id = ?`;
         queryParams.push(id);
 
-        db.query(query, queryParams, (err, result) => {
-            if (err) {
-                console.error('Error al actualizar el material:', err);
-                return res.status(500).json({ error: 'Error al actualizar el material', details: err.message });
-            }
-
-            // Si se sube una nueva imagen, eliminar la imagen anterior
-            if (nuevaImagen && imagenActual) {
-                const fullPath = path.join(__dirname, 'public', imagenActual);
-                fs.unlink(fullPath, (err) => {
-                    if (err) {
-                        console.error('Error al eliminar la imagen anterior:', err);
-                    }
-                });
-            }
-
-            // Si se marca para eliminar y no hay nueva imagen, eliminar la imagen actual
-            if (eliminarImagen === 'true' && imagenActual && !nuevaImagen) {
-                const fullPath = path.join(__dirname, 'public', imagenActual);
-                fs.unlink(fullPath, (err) => {
-                    if (err) {
-                        console.error('Error al eliminar la imagen marcada para eliminación:', err);
-                    }
-                });
-            }
-
-            if (idEstado != idEstadoComp) {
-                handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
-                    if (error) {
-                        return res.status(500).json({ mensaje: 'Error al manejar notificaciones de stock' });
-                    }
-
-                    // Insertar registro en Auditoria después de la actualización
-                    db.query(
-                        `INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, 'Edición de Material', ?)`,
-                        [usuarioId, `Material editado: ${nombre}`],
-                        (err) => {
-                            if (err) {
-                                console.error('Error al registrar auditoría:', err);
-                                return res.status(500).json({ mensaje: 'Error al registrar auditoría' });
-                            }
-                            res.status(200).json({ mensaje: 'Material actualizado con éxito y auditoría registrada' });
-                        }
-                    );
-                });
-            } else {
-                // Insertar registro en Auditoria después de la actualización
-                db.query(
-                    `INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, 'Edición de Material', ?)`,
-                    [usuarioId, `Material editado: ${nombre}`],
-                    (err) => {
-                        if (err) {
-                            console.error('Error al registrar auditoría:', err);
-                            return res.status(500).json({ mensaje: 'Error al registrar auditoría' });
-                        }
-                        res.status(200).json({ mensaje: 'Material actualizado con éxito y auditoría registrada' });
-                    }
-                );
-            };
+        await new Promise((resolve, reject) => {
+            db.query(query, queryParams, (err) => {
+                if (err) return reject(err);
+                resolve();
+            });
         });
-    });
+
+        // Eliminar la imagen anterior si se sube una nueva
+        if (nuevaImagen && imagenActual) {
+            const fullPath = path.join(__dirname, 'public', imagenActual);
+            fs.unlink(fullPath, (err) => {
+                if (err) console.error('Error al eliminar la imagen anterior:', err);
+            });
+        }
+
+        // Eliminar imagen actual si se marca para eliminar
+        if (eliminarImagen === 'true' && imagenActual && !nuevaImagen) {
+            const fullPath = path.join(__dirname, 'public', imagenActual);
+            fs.unlink(fullPath, (err) => {
+                if (err) console.error('Error al eliminar la imagen marcada para eliminación:', err);
+            });
+        }
+
+        // Obtener el nombre del depósito actualizado
+        const depositoNombre = await new Promise((resolve, reject) => {
+            db.query('SELECT nombre FROM Deposito WHERE id = ?', [idDeposito || materialActual.idDeposito], (err, results) => {
+                if (err) return reject(err);
+                resolve(results[0]?.nombre || 'Desconocido');
+            });
+        });
+
+        // Manejar notificaciones de stock
+        await new Promise((resolve, reject) => {
+            handleStockNotifications(nombre || materialActual.nombre, cantidad || materialActual.cantidad, bajoStock || materialActual.bajoStock, (error) => {
+                if (error) return reject(new Error('Error al manejar notificaciones de stock'));
+                resolve();
+            });
+        });
+
+        // Insertar registro en la tabla de auditoría
+        const comentario = `Material editado: ${nombre || materialActual.nombre}, Matrícula: ${matricula || materialActual.matricula}, Cantidad: ${cantidad || materialActual.cantidad}, Depósito: ${depositoNombre}`;
+        await new Promise((resolve, reject) => {
+            db.query(
+                `INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, 'Edición de Material', ?)`,
+                [usuarioId, comentario],
+                (err) => {
+                    if (err) return reject(err);
+                    resolve();
+                }
+            );
+        });
+
+        res.status(200).json({ success: 'Material actualizado con éxito y auditoría registrada' });
+    } catch (error) {
+        console.error('Error al actualizar el material:', error);
+        res.status(500).json({ error: 'Error al actualizar el material', details: error.message });
+    }
 });
+
 
 
 app.post('/addMaterial', upload.single('imagen'), (req, res) => {
@@ -487,8 +638,8 @@ app.post('/addMaterial', upload.single('imagen'), (req, res) => {
     }
 
     // Verificar si ya existe un material con el mismo nombre en el mismo depósito
-    const checkQuery = 'SELECT * FROM Material WHERE LOWER(nombre) = LOWER(?) AND idDeposito = ?';
-    db.query(checkQuery, [nombre, idDeposito], (err, results) => {
+    const checkQuery = 'SELECT * FROM Material WHERE LOWER(nombre) = LOWER(?) AND idDeposito = ? AND matricula = ?';
+    db.query(checkQuery, [nombre, idDeposito, matricula], (err, results) => {
         if (err) {
             console.error('Error al verificar material:', err);
             return res.status(500).json({ mensaje: 'Error al verificar material' });
@@ -501,77 +652,134 @@ app.post('/addMaterial', upload.single('imagen'), (req, res) => {
 
         let idEstado = assignStatus(cantidad, bajoStock);
 
-        const insertQuery = `INSERT INTO Material (nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaAlta, fechaUltimoEstado, ultimoUsuarioId, ocupado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        const values = [nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaAlta, fechaUltimoEstado, ultimoUsuarioId, ocupado];
-
-        db.query(insertQuery, values, (err, result) => {
+        // Obtener el nombre del depósito
+        const depositoQuery = 'SELECT nombre FROM Deposito WHERE id = ?';
+        db.query(depositoQuery, [idDeposito], (err, depositoResult) => {
             if (err) {
-                console.error('Error al insertar material:', err);
-                return res.status(500).json({ mensaje: 'Error al insertar material' });
+                console.error('Error al obtener el nombre del depósito:', err);
+                return res.status(500).json({ mensaje: 'Error al obtener el nombre del depósito' });
             }
 
-            const materialId = result.insertId;
+            if (depositoResult.length === 0) {
+                return res.status(404).json({ mensaje: 'Depósito no encontrado' });
+            }
 
-            handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
-                if (error) {
-                    return res.status(500).json({ mensaje: 'Error al manejar notificaciones de stock' });
+            const nombreDeposito = depositoResult[0].nombre;
+
+            const insertQuery = `INSERT INTO Material (nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaAlta, fechaUltimoEstado, ultimoUsuarioId, ocupado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            const values = [nombre, cantidad, matricula, bajoStock, idEstado, idEspacio, idCategoria, idDeposito, fechaAlta, fechaUltimoEstado, ultimoUsuarioId, ocupado];
+
+            db.query(insertQuery, values, (err, result) => {
+                if (err) {
+                    console.error('Error al insertar material:', err);
+                    return res.status(500).json({ mensaje: 'Error al insertar material' });
                 }
-                res.status(200).json({ mensaje: 'Material agregado con éxito' });
-            });
 
-            if (imagen) {
-                const imagenPath = `/uploads/SIPE-img-${materialId}${path.extname(imagen.originalname)}`;
-                const newFilePath = path.join(__dirname, 'public', imagenPath);
+                const materialId = result.insertId;
 
-                fs.rename(imagen.path, newFilePath, (err) => {
+                // Insertar en la tabla Auditoria
+                const auditQuery = `INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)`;
+                const auditValues = [ultimoUsuarioId, 'Creación de Material',
+                    `Material "${nombre}" creado con Cantidad: ${cantidad}, en Depósito: "${nombreDeposito}", con Matrícula: ${matricula}`];
+
+                db.query(auditQuery, auditValues, (err, auditResult) => {
                     if (err) {
-                        console.error('Error al renombrar la imagen:', err);
-                        return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
+                        console.error('Error al insertar en Auditoria:', err);
+                        return res.status(500).json({ mensaje: 'Error al insertar en auditoría' });
                     }
 
-                    db.query('UPDATE Material SET imagen = ? WHERE id = ?', [imagenPath, materialId], (err) => {
-                        if (err) {
-                            console.error('Error al actualizar la base de datos con la imagen:', err);
-                            return res.status(500).json({ mensaje: 'Error al actualizar la imagen en la base de datos' });
+                    // Manejar notificaciones de stock
+                    handleStockNotifications(nombre, cantidad, bajoStock, (error) => {
+                        if (error) {
+                            return res.status(500).json({ mensaje: 'Error al manejar notificaciones de stock' });
+                        }
+
+                        // Manejar imagen si existe
+                        if (imagen) {
+                            const imagenPath = `/uploads/SIPE-img-${materialId}${path.extname(imagen.originalname)}`;
+                            const newFilePath = path.join(__dirname, 'public', imagenPath);
+
+                            fs.rename(imagen.path, newFilePath, (err) => {
+                                if (err) {
+                                    console.error('Error al renombrar la imagen:', err);
+                                    return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
+                                }
+
+                                db.query('UPDATE Material SET imagen = ? WHERE id = ?', [imagenPath, materialId], (err) => {
+                                    if (err) {
+                                        console.error('Error al actualizar la base de datos con la imagen:', err);
+                                        return res.status(500).json({ mensaje: 'Error al actualizar la imagen en la base de datos' });
+                                    }
+                                    // Enviar respuesta exitosa
+                                    res.status(200).json({ mensaje: 'Material agregado con éxito' });
+                                });
+                            });
+                        } else {
+                            // Si no hay imagen, enviar respuesta exitosa
+                            res.status(200).json({ mensaje: 'Material agregado con éxito' });
                         }
                     });
                 });
-            }
+            });
         });
     });
 });
 
-app.delete('/materials/delete/:id', (req, res) => {
+
+app.delete('/materials/delete/:id', authenticateToken, (req, res) => {
     const materialId = req.params.id;
+    const userId = req.user.id;
 
-    // Primero, obtenemos la información del material para obtener el path de la imagen
-    const queryGetImage = 'SELECT imagen FROM Material WHERE id = ?';
+    // Primero, obtenemos la información del material para la auditoría y la eliminación
+    const queryGetMaterialInfo = `
+        SELECT 
+            nombre, cantidad, matricula, 
+            (SELECT nombre FROM Deposito WHERE id = Material.idDeposito) AS depositoNombre, 
+            imagen 
+        FROM Material 
+        WHERE id = ?
+    `;
 
-    db.query(queryGetImage, [materialId], (err, results) => {
+    db.query(queryGetMaterialInfo, [materialId], (err, results) => {
         if (err) {
-            console.error('Error al obtener la imagen:', err);
-            return res.status(500).send('Error al obtener la imagen');
+            console.error('Error al obtener la información del material:', err);
+            return res.status(500).json({ error: 'Error al obtener la información del material' });
         }
 
-        if (results.length > 0) {
-            const imagePath = results[0].imagen; // Obtener el path de la imagen
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Material no encontrado' });
+        }
 
-            if (imagePath) {
-                const fullPath = path.join(__dirname, 'public', imagePath); // Construir la ruta completa
+        const { nombre, cantidad, matricula, depositoNombre, imagen } = results[0];
 
-                // Eliminar la imagen del sistema de archivos
+        // Registrar en la auditoría antes de eliminar
+        const auditQuery = `
+            INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) 
+            VALUES (?, ?, ?)
+        `;
+        const comentario = `Material eliminado: "${nombre}", Cantidad: ${cantidad}, en Depósito: "${depositoNombre}", con Matrícula: ${matricula}`;
+        db.query(auditQuery, [userId, 'Eliminación de Material', comentario], (err) => {
+            if (err) {
+                console.error('Error al registrar en auditoría:', err);
+                return res.status(500).json({ error: 'Error al registrar en auditoría' });
+            }
+
+            // Si hay imagen asociada, intentamos eliminarla del sistema de archivos
+            if (imagen) {
+                const fullPath = path.join(__dirname, 'public', imagen);
+
                 fs.unlink(fullPath, (err) => {
                     if (err) {
                         console.error('Error al eliminar la imagen:', err);
                         // Aunque falle la eliminación de la imagen, seguimos eliminando el material
                     }
 
-                    // Eliminar el registro de la base de datos una vez que tratamos de eliminar la imagen
+                    // Eliminar el registro del material de la base de datos
                     const queryDeleteMaterial = 'DELETE FROM Material WHERE id = ?';
-                    db.query(queryDeleteMaterial, [materialId], (err, result) => {
+                    db.query(queryDeleteMaterial, [materialId], (err) => {
                         if (err) {
                             console.error('Error al eliminar el material:', err);
-                            return res.status(500).send('Error al eliminar el material');
+                            return res.status(500).json({ error: 'Error al eliminar el material' });
                         }
                         res.status(200).send('Material eliminado con éxito y se intentó eliminar la imagen.');
                     });
@@ -579,19 +787,18 @@ app.delete('/materials/delete/:id', (req, res) => {
             } else {
                 // Si no hay imagen, eliminamos directamente el material de la base de datos
                 const queryDeleteMaterial = 'DELETE FROM Material WHERE id = ?';
-                db.query(queryDeleteMaterial, [materialId], (err, result) => {
+                db.query(queryDeleteMaterial, [materialId], (err) => {
                     if (err) {
                         console.error('Error al eliminar el material:', err);
-                        return res.status(500).send('Error al eliminar el material');
+                        return res.status(500).json({ error: 'Error al eliminar el material' });
                     }
                     res.status(200).send('Material eliminado con éxito (sin imagen asociada).');
                 });
             }
-        } else {
-            return res.status(404).send('Material no encontrado');
-        }
+        });
     });
 });
+
 
 app.delete('/materiales/:id/imagen', (req, res) => {
     const materialId = req.params.id;
@@ -602,7 +809,7 @@ app.delete('/materiales/:id/imagen', (req, res) => {
     db.query(queryGetImage, [materialId], (err, results) => {
         if (err) {
             console.error('Error al obtener la imagen:', err);
-            return res.status(500).send('Error al obtener la imagen');
+            return res.status(500).json({ error: 'Error al obtener la imagen' });
         }
 
         if (results.length > 0) {
@@ -615,7 +822,7 @@ app.delete('/materiales/:id/imagen', (req, res) => {
                 fs.unlink(fullPath, (err) => {
                     if (err) {
                         console.error('Error al eliminar la imagen:', err);
-                        return res.status(500).send('Error al eliminar la imagen');
+                        return res.status(500).json({ error: 'Error al eliminar la imagen' });
                     }
 
                     // Actualiza la base de datos para eliminar la referencia a la imagen
@@ -623,16 +830,16 @@ app.delete('/materiales/:id/imagen', (req, res) => {
                     db.query(queryDeleteImage, [materialId], (err, result) => {
                         if (err) {
                             console.error('Error al actualizar la base de datos:', err);
-                            return res.status(500).send('Error al actualizar la base de datos');
+                            return res.status(500).json({ error: 'Error al actualizar la base de datos' });
                         }
                         res.status(200).send('Imagen eliminada correctamente');
                     });
                 });
             } else {
-                return res.status(404).send('No hay imagen para eliminar');
+                return res.status(404).json({ error: 'No hay imagen para eliminar' });
             }
         } else {
-            return res.status(404).send('Material no encontrado');
+            return res.status(404).json('Material no encontrado');
         }
     });
 });
@@ -645,16 +852,20 @@ app.get('/exits', (req, res) => {
             numero,
             motivo,
             DATE_FORMAT(s.fecha, '%d-%m-%Y') AS fechaSalida,
+            us.nombre AS usuario,
             COALESCE(GROUP_CONCAT(m.nombre ORDER BY ds.idMaterial ASC SEPARATOR ', '), 'Sin Material') AS nombresMateriales,
             COALESCE(GROUP_CONCAT(ds.cantidad ORDER BY ds.idMaterial ASC SEPARATOR ' , '), 'Sin Cantidad') AS cantidadesMateriales,
             COALESCE(GROUP_CONCAT(DISTINCT d.nombre ORDER BY d.nombre ASC SEPARATOR ', '), 'Sin Depósito') AS depositoNombre,
-            COALESCE(GROUP_CONCAT(DISTINCT u.nombre ORDER BY u.nombre ASC SEPARATOR ', '), 'Sin Ubicación') AS ubicacionNombre
+            COALESCE(GROUP_CONCAT(DISTINCT u.nombre ORDER BY u.nombre ASC SEPARATOR ', '), 'Sin Ubicación') AS ubicacionNombre,
+            anulado
         FROM 
             salida_material s
         LEFT JOIN 
             detalle_salida_material ds ON s.id = ds.idSalida
         LEFT JOIN 
             Material m ON ds.idMaterial = m.id
+        JOIN
+            Usuario us ON s.idUsuario = us.id
         LEFT JOIN 
             Deposito d ON m.idDeposito = d.id
         LEFT JOIN 
@@ -662,7 +873,7 @@ app.get('/exits', (req, res) => {
         GROUP BY 
             s.id, s.fecha
         ORDER BY 
-            s.fecha DESC;
+            numero ASC;
     `;
     db.query(query, (error, results) => {
         if (error) {
@@ -673,7 +884,6 @@ app.get('/exits', (req, res) => {
         res.status(200).json({ data: results });
     });
 });
-
 
 //Este endpoint se usa para el informe de salida de material y para el editar salida de materiales
 app.get('/exits-details', (req, res) => {
@@ -718,16 +928,36 @@ app.get('/exits-details', (req, res) => {
     });
 });
 
-
-app.post('/materials/exits', async (req, res) => {
-    const salidas = req.body; // Aquí recibes un array de objetos
+app.post('/materials/exits', authenticateToken, async (req, res) => {
+    const salidas = req.body;
+    const nombreUsuario = req.user.id
 
     try {
-        let { motivo, fecha, idUsuario, numero } = salidas[0]; // Tomamos el motivo, fecha, y usuario del primer material (asumimos que es el mismo para todos)
-        fecha = addDays(new Date(fecha), 2); // Ajuste de día
+        let { motivo, fecha, idUsuario } = salidas[0]; // Tomamos el motivo, fecha, y usuario del primer material (asumimos que es el mismo para todos)
+        fecha = addDays(new Date(fecha), 2);
         const formattedFecha = format(fecha, 'yyyy-MM-dd');
+        const formattedFechaNueva = format(fecha, 'dd-MM-yyyy');
 
-        // 1. Registrar la salida principal en la tabla `salida_material`
+        // 1. Obtener el número de salida automáticamente
+        const numero = await new Promise((resolve, reject) => {
+            db.query('SELECT numero FROM salida_material ORDER BY numero ASC', (err, rows) => {
+                if (err) return reject(err);
+
+                if (rows.length === 0) {
+                    resolve(1); // Si no hay salidas, empezar con 1
+                } else {
+                    // Encontrar el número faltante más bajo
+                    for (let i = 1; i <= rows.length; i++) {
+                        if (rows[i - 1].numero !== i) {
+                            return resolve(i); // Retornar el primer número faltante
+                        }
+                    }
+                    resolve(rows.length + 1); // Si no faltan números, asignar el siguiente
+                }
+            });
+        });
+
+        // 2. Registrar la salida principal en la tabla `salida_material`
         const salidaId = await new Promise((resolve, reject) => {
             db.query('INSERT INTO salida_material (fecha, numero, motivo, idUsuario) VALUES (?, ?, ?, ?)',
                 [formattedFecha, numero, motivo, idUsuario], (err, result) => {
@@ -736,13 +966,18 @@ app.post('/materials/exits', async (req, res) => {
                 });
         });
 
-        // 2. Para cada material, agregar su detalle a la tabla `detalle_salida_material`
+        // Inicializar arrays para nombres y cantidades
+        let nombresMateriales = [];
+        let cantidadesMateriales = [];
+        let depositosSet = new Set();
+
+        // 3. Para cada material, agregar su detalle a la tabla `detalle_salida_material`
         for (const salida of salidas) {
             const { idMaterial, cantidad } = salida;
 
             // Verificar que el material existe y obtener la cantidad disponible
             const result = await new Promise((resolve, reject) => {
-                db.query('SELECT cantidad, bajoStock, nombre FROM Material WHERE id = ?', [idMaterial], (err, rows) => {
+                db.query('SELECT cantidad, bajoStock, nombre, idDeposito FROM Material WHERE id = ?', [idMaterial], (err, rows) => {
                     if (err) return reject(err);
                     resolve(rows);
                 });
@@ -802,14 +1037,31 @@ app.post('/materials/exits', async (req, res) => {
                     return res.status(500).json({ message: 'Error al manejar notificaciones de stock' });
                 }
             });
+
+            nombresMateriales.push(material.nombre);
+            cantidadesMateriales.push(cantidad);
+            depositosSet.add(material.idDeposito);
         }
 
-        // 3. Registrar la acción en la tabla de auditoría
+        // 4. Obtener el nombre del depósito
+        const depositosNombres = await new Promise((resolve, reject) => {
+            const query = `
+                SELECT GROUP_CONCAT(nombre SEPARATOR ', ') AS nombres
+                FROM Deposito
+                WHERE id IN (?)
+            `;
+            db.query(query, [[...depositosSet]], (err, results) => {
+                if (err) return reject(err);
+                resolve(results[0]?.nombres || 'Desconocido');
+            });
+        });
+
+        // 5. Registrar la acción en la tabla de auditoría
         await new Promise((resolve, reject) => {
-            const comentario = `Salida generada con número: ${numero}`;
+            const comentario = `Salida generada con número: ${numero}, Materiales: ${nombresMateriales.join(', ')}, Cantidades: ${cantidadesMateriales.join(', ')}, Fecha: ${formattedFechaNueva}, Depósito: ${depositosNombres}`;
             const tipoAccion = "Creación de Salida";
             db.query('INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)',
-                [idUsuario, tipoAccion, comentario], (err) => {
+                [nombreUsuario, tipoAccion, comentario], (err) => {
                     if (err) return reject(err);
                     resolve();
                 });
@@ -830,10 +1082,10 @@ app.post('/materials/exits', async (req, res) => {
 });
 
 
-
-app.put('/materials/exits/:id', async (req, res) => {
+app.put('/materials/exits/:id', authenticateToken, async (req, res) => {
     const salidaId = req.params.id;
     const salidasActualizadas = req.body;
+    const nombreUsuario = req.user.id;
 
     try {
         if (!salidasActualizadas || Object.keys(salidasActualizadas).length === 0) {
@@ -841,38 +1093,22 @@ app.put('/materials/exits/:id', async (req, res) => {
         }
 
         // Extraer los datos de `salidasActualizadas`
-        let { motivo, fecha, idUsuario, numero, idUbicacion, idDeposito, materials } = salidasActualizadas;
+        let { motivo, fecha, idUsuario, idUbicacion, idDeposito, materials } = salidasActualizadas;
 
         if (!motivo || !fecha || !idUsuario || !idUbicacion || !idDeposito || !materials) {
             return res.status(400).json({ message: 'Datos incompletos para actualizar la salida' });
         }
 
-        // Si `numero` está vacío o no está definido, obtener el número original de la salida
-        if (!numero) {
-            const originalNumero = await new Promise((resolve, reject) => {
-                db.query('SELECT numero FROM salida_material WHERE id = ?', [salidaId], (err, results) => {
-                    if (err) return reject(err);
-                    if (results.length > 0) {
-                        resolve(results[0].numero);
-                    } else {
-                        reject(new Error('Salida no encontrada'));
-                    }
-                });
+        // Obtener el número de la salida
+        const salidaData = await new Promise((resolve, reject) => {
+            db.query('SELECT numero FROM salida_material WHERE id = ?', [salidaId], (err, results) => {
+                if (err) return reject(err);
+                if (results.length === 0) return reject(new Error('Salida no encontrada'));
+                resolve(results[0]);
             });
-            numero = originalNumero;
-        } else {
-            // Verificar si el `numero` ya existe en otra salida
-            const existingNumero = await new Promise((resolve, reject) => {
-                db.query('SELECT id FROM salida_material WHERE numero = ? AND id != ?', [numero, salidaId], (err, rows) => {
-                    if (err) return reject(err);
-                    resolve(rows);
-                });
-            });
+        });
 
-            if (existingNumero.length > 0) {
-                return res.status(409).json({ message: `El número de salida ${numero} ya está en uso. Debe ser único.` });
-            }
-        }
+        const { numero } = salidaData;
 
         // Revertir las cantidades en el inventario de cada material de la salida original
         const originalSalidas = await new Promise((resolve, reject) => {
@@ -909,21 +1145,19 @@ app.put('/materials/exits/:id', async (req, res) => {
                 });
             }
         }
-
         // Formatear la fecha
         const formattedFecha = fecha.includes('-') ? fecha : format(new Date(fecha), 'yyyy-MM-dd');
-
+        const formattedFechaNueva = format(fecha, 'dd-MM-yyyy');
         await new Promise((resolve, reject) => {
             db.query(
-                'UPDATE salida_material SET numero = ?, fecha = ?, motivo = ?, idUsuario = ? WHERE id = ?',
-                [numero, formattedFecha, motivo, idUsuario, salidaId],
+                'UPDATE salida_material SET fecha = ?, motivo = ?, idUsuario = ? WHERE id = ?',
+                [formattedFecha, motivo, idUsuario, salidaId],
                 (err) => {
                     if (err) return reject(err);
                     resolve();
                 }
             );
         });
-
         // Borrar los detalles de salida anteriores para agregar los nuevos detalles
         await new Promise((resolve, reject) => {
             db.query('DELETE FROM detalle_salida_material WHERE idSalida = ?', [salidaId], (err) => {
@@ -931,14 +1165,14 @@ app.put('/materials/exits/:id', async (req, res) => {
                 resolve();
             });
         });
-
+        let nombresMateriales = [];
+        let cantidadesMateriales = [];
         // Insertar los detalles de salida actualizados y ajustar inventario
         for (const salida of materials) {
             const { idMaterial, cantidad } = salida;
             if (cantidad < 0) {
                 return res.status(400).json({ message: 'La cantidad no puede ser negativa' });
             }
-
             const result = await new Promise((resolve, reject) => {
                 db.query('SELECT cantidad, bajoStock, nombre FROM Material WHERE id = ?', [idMaterial], (err, rows) => {
                     if (err) return reject(err);
@@ -949,14 +1183,11 @@ app.put('/materials/exits/:id', async (req, res) => {
             if (!result || result.length === 0) {
                 return res.status(404).json({ message: 'Material no encontrado' });
             }
-
             const material = result[0];
             const nuevaCantidadMaterial = material.cantidad - cantidad;
-
             if (nuevaCantidadMaterial < 0) {
                 return res.status(400).json({ message: `La cantidad de salida no puede ser mayor a la cantidad disponible para el material ${material.nombre}` });
             }
-
             await new Promise((resolve, reject) => {
                 db.query('INSERT INTO detalle_salida_material (idSalida, idMaterial, cantidad) VALUES (?, ?, ?)', [salidaId, idMaterial, cantidad], (err) => {
                     if (err) return reject(err);
@@ -987,14 +1218,25 @@ app.put('/materials/exits/:id', async (req, res) => {
                     return res.status(500).json({ message: 'Error al manejar notificaciones de stock' });
                 }
             });
+
+            nombresMateriales.push(material.nombre);
+            cantidadesMateriales.push(cantidad);
         }
+
+        // Obtener el nombre del depósito
+        const depositoNombre = await new Promise((resolve, reject) => {
+            db.query('SELECT nombre FROM Deposito WHERE id = ?', [idDeposito], (err, results) => {
+                if (err) return reject(err);
+                resolve(results[0]?.nombre || 'Desconocido');
+            });
+        });
 
         // Registrar la acción de edición en la tabla de auditoría
         await new Promise((resolve, reject) => {
-            const comentario = `Salida editada con número: ${numero}`;
+            const comentario = `Salida editada con número: ${numero}, Materiales: ${nombresMateriales.join(', ')}, Cantidades: ${cantidadesMateriales.join(', ')}, Fecha: ${formattedFechaNueva}, Depósito: ${depositoNombre}`;
             const tipoAccion = "Edición de Salida";
             db.query('INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)',
-                [idUsuario, tipoAccion, comentario], (err) => {
+                [nombreUsuario, tipoAccion, comentario], (err) => {
                     if (err) return reject(err);
                     resolve();
                 });
@@ -1030,27 +1272,157 @@ app.get('/materials-with-exits', (req, res) => {
     });
 });
 
+app.get('/last-material-output', (req, res) => {
+    const query = `
+        SELECT 
+            sm.id AS idSalida,
+            sm.fecha
+        FROM 
+            Salida_material sm
+        ORDER BY 
+            sm.fecha DESC
+        LIMIT 1;
+    `;
 
-app.delete('/delete-exits', (req, res) => {
-    const { exitIds } = req.body; // El JSON enviado desde el frontend debe contener un campo "exitIds"
-
-    if (!exitIds || exitIds.length === 0) {
-        return res.status(400).json({ message: 'No se proporcionaron salidas para eliminar' });
-    }
-
-    // Construimos la consulta para eliminar múltiples IDs
-    const placeholders = exitIds.map(() => '?').join(',');
-    const query = `DELETE FROM salida_material WHERE id IN (${placeholders})`;
-
-    db.query(query, exitIds, (err, result) => {
+    db.query(query, (err, results) => {
         if (err) {
-            console.error('Error eliminando salidas:', err);
-            return res.status(500).json({ message: 'Error eliminando salidas' });
+            console.error('Error al obtener la última salida de material:', err);
+            return res.status(500).json({ error: 'Error al obtener la última salida de material' });
         }
 
-        res.status(200).json({ message: 'Salidas eliminadas correctamente' });
+        if (results.length === 0) {
+            // Devuelve un mensaje y `data` como null cuando no hay registros
+            return res.json({ message: 'No hay registros de salidas de material', data: null });
+        }
+
+        // Devuelve el resultado dentro de un objeto `data` para consistencia
+        res.json({ data: results[0] });
     });
 });
+
+
+app.put('/canceled-exit/:id', authenticateToken, async (req, res) => {
+    const salidaId = req.params.id;
+    const userId = req.user.id;
+
+    try {
+        // Verificar si la salida ya está anulada
+        const checkAnuladoQuery = `SELECT anulado, numero FROM salida_material WHERE id = ?`;
+        const [checkResult] = await new Promise((resolve, reject) => {
+            db.query(checkAnuladoQuery, [salidaId], (err, results) => {
+                if (err) return reject(err);
+                resolve(results);
+            });
+        });
+
+        if (!checkResult) {
+            return res.status(404).json({ error: 'Salida no encontrada' });
+        }
+
+        if (checkResult.anulado) {
+            return res.status(400).json({ error: 'La salida ya está anulada' });
+        }
+
+        const salidaNumero = checkResult.numero;
+
+        // Marcar la salida como anulada
+        const updateSalidaQuery = `UPDATE salida_material SET anulado = TRUE WHERE id = ?`;
+        await new Promise((resolve, reject) => {
+            db.query(updateSalidaQuery, [salidaId], (err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
+
+        // Obtener los materiales de la salida
+        const getMaterialesQuery = `
+            SELECT idMaterial, cantidad
+            FROM detalle_salida_material
+            WHERE idSalida = ?
+        `;
+        const materiales = await new Promise((resolve, reject) => {
+            db.query(getMaterialesQuery, [salidaId], (err, results) => {
+                if (err) return reject(err);
+                resolve(results);
+            });
+        });
+
+        let nombresMateriales = [];
+        let cantidadesMateriales = [];
+
+        // Revertir las cantidades de los materiales y manejar estado y notificaciones
+        for (const material of materiales) {
+            // Revertir la cantidad en la tabla Material
+            const updateMaterialQuery = `
+                UPDATE Material
+                SET cantidad = cantidad + ?
+                WHERE id = ?
+            `;
+            await new Promise((resolve, reject) => {
+                db.query(updateMaterialQuery, [material.cantidad, material.idMaterial], (err) => {
+                    if (err) return reject(err);
+                    resolve();
+                });
+            });
+
+            // Obtener datos actualizados del material
+            const materialData = await new Promise((resolve, reject) => {
+                db.query('SELECT cantidad, bajoStock, nombre FROM Material WHERE id = ?', [material.idMaterial], (err, results) => {
+                    if (err) return reject(err);
+                    if (!results || results.length === 0) return reject(new Error('Material no encontrado'));
+                    resolve(results[0]);
+                });
+            });
+
+            const nuevaCantidadMaterial = materialData.cantidad;
+            const bajoStock = materialData.bajoStock;
+            const nombreMaterial = materialData.nombre;
+
+            // Asignar nuevo estado
+            const nuevoEstado = assignStatus(nuevaCantidadMaterial, bajoStock);
+            if ([1, 2, 3].includes(nuevoEstado)) {
+                await new Promise((resolve, reject) => {
+                    db.query('UPDATE Material SET idEstado = ? WHERE id = ?', [nuevoEstado, material.idMaterial], (err) => {
+                        if (err) return reject(err);
+                        resolve();
+                    });
+                });
+            }
+
+            // Manejar notificaciones de stock
+            handleStockNotifications(nombreMaterial, nuevaCantidadMaterial, bajoStock, (error) => {
+                if (error) {
+                    console.error('Error en notificaciones de stock:', error);
+                    // Opcional: manejar el error si es necesario
+                }
+            });
+
+            // Almacenar nombres y cantidades para auditoría
+            nombresMateriales.push(nombreMaterial);
+            cantidadesMateriales.push(material.cantidad);
+        }
+
+        // Registrar la acción en la tabla de auditoría
+        const comentario = `Salida anulada con número: ${salidaNumero}, Materiales: ${nombresMateriales.join(', ')}, Cantidades: ${cantidadesMateriales.join(', ')}`;
+        const auditoriaQuery = `
+            INSERT INTO Auditoria (id_usuario, tipo_accion, comentario)
+            VALUES (?, 'Anulación de Salida', ?)
+        `;
+        await new Promise((resolve, reject) => {
+            db.query(auditoriaQuery, [userId, comentario], (err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
+
+        res.status(200).json({ message: 'Salida anulada exitosamente, cantidades revertidas y auditoría registrada' });
+    } catch (error) {
+        console.error('Error al anular salida:', error);
+        res.status(500).json({ error: 'Error al anular salida', details: error });
+    }
+});
+
+
 
 // Endpoint para obtener materiales por depósito
 app.get('/materials/deposit/:idDeposito', (req, res) => {
@@ -1089,6 +1461,8 @@ app.get('/aisles-shelves', (req, res) => {
     const query = `
         SELECT 
             p.id, p.numero, d.Nombre AS nombreDeposito, u.nombre AS ubicacionDeposito,
+            p.idLado1,
+            p.idLado2,
             COALESCE(l1.descripcion, 'Sin lado') AS lado1Descripcion, 
             COALESCE(l2.descripcion, 'Sin lado') AS lado2Descripcion
         FROM 
@@ -1247,119 +1621,6 @@ app.get('/spaces/:shelfId', (req, res) => {
     });
 });
 
-const getNextImageNumber = (callback) => {
-    const query = 'SELECT COUNT(*) AS count FROM Material WHERE imagen IS NOT NULL';
-    db.query(query, (err, results) => {
-        if (err) {
-            return callback(err, null);
-        }
-        const count = results[0].count;
-        callback(null, count + 1);
-    });
-};
-
-
-function handleStockNotifications(nombre, cantidad, bajoStock, callback) {
-    cantidad = Number(cantidad);
-    bajoStock = Number(bajoStock);
-    let descripcion = null;
-
-    if (cantidad === 0) {
-        descripcion = `El material ${nombre} se ha quedado sin stock.`;
-    } else if (cantidad <= bajoStock) {
-        descripcion = `El material ${nombre} ha llegado a su límite de bajo stock.`;
-    } else {
-        return callback(null);
-    }
-
-    db.query(
-        `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
-        [descripcion],
-        (error, result) => {
-            if (error) {
-                console.error('Error al agregar notificación', error);
-                return callback({ mensaje: 'Error al agregar notificación' });
-            }
-
-            const notificacionId = result.insertId;
-
-            db.query(
-                `INSERT INTO usuario_notificacion (idUsuario, idNotificacion, visto) 
-                SELECT id, ?, FALSE FROM usuario`,
-                [notificacionId],
-                (error) => {
-                    if (error) {
-                        console.error('Error al relacionar notificación con usuarios', error);
-                        return callback({ mensaje: 'Error al relacionar notificación con usuarios' });
-                    }
-                    return callback(null);
-                }
-            );
-        }
-    );
-}
-
-function notifyNewMaterialCreation(nombre, idDeposito, callback) {
-    // Obtener el nombre del depósito
-    const queryDeposito = `SELECT nombre FROM Deposito WHERE id = ?`;
-
-    db.query(queryDeposito, [idDeposito], (error, depositoResult) => {
-        if (error) {
-            console.error('Error al obtener el nombre del depósito:', error);
-            return callback({ mensaje: 'Error al obtener el nombre del depósito' });
-        }
-
-        if (depositoResult.length === 0) {
-            return callback({ mensaje: 'Depósito no encontrado' });
-        }
-
-        const nombreDeposito = depositoResult[0].nombre;
-
-        const descripcion = `Se ha creado el material '${nombre}' en el '${nombreDeposito}' ya que no existía.`;
-
-        db.query(
-            `INSERT INTO notificacion (descripcion, fecha) VALUES (?, NOW())`,
-            [descripcion],
-            (error, result) => {
-                if (error) {
-                    console.error('Error al agregar notificación de nuevo material', error);
-                    return callback({ mensaje: 'Error al agregar notificación de nuevo material' });
-                }
-
-                const notificacionId = result.insertId;
-
-                db.query(
-                    `INSERT INTO usuario_notificacion (idUsuario, idNotificacion, visto) 
-                    SELECT id, ?, FALSE FROM usuario`,
-                    [notificacionId],
-                    (error) => {
-                        if (error) {
-                            console.error('Error al relacionar notificación de nuevo material con usuarios', error);
-                            return callback({ mensaje: 'Error al relacionar notificación de nuevo material con usuarios' });
-                        }
-                        return callback(null);
-                    }
-                );
-            }
-        );
-    });
-}
-
-function assignStatus(cantidad, bajoStock) {
-
-    // Convertir a números para asegurar que las comparaciones sean correctas
-    cantidad = parseInt(cantidad, 10);
-    bajoStock = parseInt(bajoStock, 10);
-
-    if (cantidad > bajoStock) {
-        return 1; // Disponible
-    } else if (cantidad <= bajoStock && cantidad > 0) {
-        return 2; // Bajo stock
-    } else if (cantidad === 0) {
-        return 3; // Sin stock
-    }
-
-}
 
 // Endpoint para verificar si es necesario mostrar el tutorial
 app.get('/check-tutorial-status/:id', (req, res) => {
@@ -1413,8 +1674,6 @@ app.get('/check-tutorial-status/:id', (req, res) => {
 });
 
 
-
-// Cambiar de POST a PATCH, ya que estamos realizando una actualización
 app.patch('/complete-tutorial/:id', (req, res) => {
     const userId = req.params.id; // Obtén el userId del parámetro de la URL
 
@@ -1461,7 +1720,7 @@ app.post('/login', (req, res) => {
         }
 
         // Generar y devolver el token JWT
-        const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '5h' });
+        const token = jwt.sign({ id: user.id, rol: user.rol }, SECRET_KEY, { expiresIn: '24h' });
 
         // Verificar si es el primer login
         const firstLogin = user.firstLogin;
@@ -1498,11 +1757,11 @@ app.post('/addUser', upload.single('imagen'), (req, res) => {
     try {
         decoded = jwt.verify(token, SECRET_KEY);
     } catch (err) {
-        return res.status(401).send("Token inválido");
+        return res.status(401).json({ message: 'Por favor inicie sesión nuevamente' });
     }
 
     if (decoded.rol !== 'Administrador') {
-        return res.status(403).send('Permiso denegado');
+        return res.status(403).json({ message: 'Permiso denegado' });
     }
 
     const checkUserQuery = `
@@ -1543,19 +1802,19 @@ app.post('/addUser', upload.single('imagen'), (req, res) => {
                 fs.rename(imagen.path, newFilePath, (err) => {
                     if (err) {
                         console.error('Error al renombrar la imagen:', err);
-                        return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
+                        return res.status(500).json({ message: 'Error al guardar la imagen' });
                     }
 
                     db.query('UPDATE usuario SET imagen = ? WHERE id = ?', [imagenPath, userId], (err) => {
                         if (err) {
                             console.error('Error al actualizar la base de datos con la imagen:', err);
-                            return res.status(500).json({ mensaje: 'Error al actualizar la imagen en la base de datos' });
+                            return res.status(500).json({ message: 'Error al actualizar la imagen en la base de datos' });
                         }
-                        res.status(200).json({ mensaje: 'Usuario creado con éxito y imagen guardada' });
+                        res.status(200).json({ message: 'Usuario creado con éxito y imagen guardada' });
                     });
                 });
             } else {
-                res.status(200).json({ mensaje: 'Usuario creado con éxito' });
+                res.status(200).json({ message: 'Usuario creado con éxito' });
             }
         });
     });
@@ -1617,7 +1876,7 @@ app.delete('/users/delete/:id', (req, res) => {
 });
 
 // Editar un usuario
-app.put('/editUser/:id', upload.single('imagen'), (req, res) => {
+app.put('/editUser/:id', upload.single('imagen'), async (req, res) => {
     const userId = req.params.id;
     const { nombre, apellido, legajo, nombre_usuario, email, rol, eliminarImagen } = req.body;
     const imagen = req.file;
@@ -1626,72 +1885,92 @@ app.put('/editUser/:id', upload.single('imagen'), (req, res) => {
         return res.status(400).json({ message: 'Faltan campos obligatorios' });
     }
 
-    // Actualiza la información del usuario
-    const updateUserQuery = 'UPDATE usuario SET nombre = ?, apellido = ?, legajo = ?, nombre_usuario = ?, email = ?, rol = ? WHERE id = ?';
-    const values = [nombre, apellido, legajo, nombre_usuario, email, rol, userId];
-
-    db.query(updateUserQuery, values, (err) => {
-        if (err) {
-            return res.status(500).json({ message: 'Error al actualizar el usuario' });
+    try {
+        // Verificar duplicado de nombre_usuario
+        const existingUsername = await queryPromise(
+            'SELECT id FROM usuario WHERE nombre_usuario = ? AND id != ?',
+            [nombre_usuario, userId]
+        );
+        if (existingUsername.length > 0) {
+            return res.status(409).json({ message: 'El nombre de usuario ya está en uso' });
         }
+
+        // Verificar duplicado de legajo
+        const existingLegajo = await queryPromise(
+            'SELECT id FROM usuario WHERE legajo = ? AND id != ?',
+            [legajo, userId]
+        );
+        if (existingLegajo.length > 0) {
+            return res.status(409).json({ message: 'El legajo ya está en uso' });
+        }
+
+        // Verificar duplicado de email
+        const existingEmail = await queryPromise(
+            'SELECT id FROM usuario WHERE email = ? AND id != ?',
+            [email, userId]
+        );
+        if (existingEmail.length > 0) {
+            return res.status(409).json({ message: 'El email ya está en uso' });
+        }
+
+        // Actualiza la información del usuario
+        const updateUserQuery = `
+            UPDATE usuario 
+            SET nombre = ?, apellido = ?, legajo = ?, nombre_usuario = ?, email = ?, rol = ? 
+            WHERE id = ?
+        `;
+        const values = [nombre, apellido, legajo, nombre_usuario, email, rol, userId];
+
+        await queryPromise(updateUserQuery, values);
 
         // Si hay una nueva imagen para guardar
         if (imagen) {
             const imagenPath = `/uploads/SIPEUser-img-${userId}${path.extname(imagen.originalname)}`;
             const newFilePath = path.join(__dirname, 'public', imagenPath);
 
-            fs.rename(imagen.path, newFilePath, (err) => {
-                if (err) {
-                    console.error('Error al renombrar la imagen:', err);
-                    return res.status(500).json({ mensaje: 'Error al guardar la imagen' });
-                }
+            try {
+                await fsPromises.rename(imagen.path, newFilePath);
 
-                db.query('UPDATE usuario SET imagen = ? WHERE id = ?', [imagenPath, userId], (err) => {
-                    if (err) {
-                        console.error('Error al actualizar la base de datos con la imagen:', err);
-                        return res.status(500).json({ mensaje: 'Error al actualizar la imagen en la base de datos' });
-                    }
-                    res.status(200).json({ mensaje: 'Usuario actualizado correctamente con imagen' });
-                });
-            });
+                await queryPromise('UPDATE usuario SET imagen = ? WHERE id = ?', [imagenPath, userId]);
+                return res.status(200).json({ message: 'Usuario actualizado correctamente con imagen' });
+            } catch (err) {
+                console.error('Error al procesar la imagen:', err);
+                return res.status(500).json({ message: 'Error al procesar la imagen' });
+            }
         }
         // Si se solicita eliminar la imagen
         else if (eliminarImagen === 'true') {
-            // Elimina el archivo físico si existe
-            db.query('SELECT imagen FROM usuario WHERE id = ?', [userId], (err, result) => {
-                if (err) {
-                    console.error('Error al obtener la imagen actual:', err);
-                    return res.status(500).json({ mensaje: 'Error al obtener la imagen actual' });
-                }
-
+            try {
+                const result = await queryPromise('SELECT imagen FROM usuario WHERE id = ?', [userId]);
                 const currentImagePath = result[0]?.imagen;
                 if (currentImagePath) {
                     const fullPath = path.join(__dirname, 'public', currentImagePath);
-                    fs.unlink(fullPath, (err) => {
-                        if (err && err.code !== 'ENOENT') {
+                    try {
+                        await fsPromises.unlink(fullPath);
+                    } catch (err) {
+                        if (err.code !== 'ENOENT') {
                             console.error('Error al eliminar la imagen física:', err);
-                            return res.status(500).json({ mensaje: 'Error al eliminar la imagen física' });
+                            return res.status(500).json({ message: 'Error al eliminar la imagen física' });
                         }
+                    }
 
-                        // Actualiza la columna de imagen en la base de datos
-                        db.query('UPDATE usuario SET imagen = NULL WHERE id = ?', [userId], (err) => {
-                            if (err) {
-                                console.error('Error al actualizar la base de datos:', err);
-                                return res.status(500).json({ mensaje: 'Error al actualizar la base de datos' });
-                            }
-                            res.status(200).json({ mensaje: 'Usuario actualizado y la imagen eliminada correctamente' });
-                        });
-                    });
+                    await queryPromise('UPDATE usuario SET imagen = NULL WHERE id = ?', [userId]);
+                    return res.status(200).json({ message: 'Usuario actualizado y la imagen eliminada correctamente' });
                 } else {
-                    res.status(200).json({ mensaje: 'Usuario actualizado correctamente' });
+                    return res.status(200).json({ message: 'Usuario actualizado correctamente' });
                 }
-            });
-        }
-        else {
+            } catch (err) {
+                console.error('Error al procesar la eliminación de imagen:', err);
+                return res.status(500).json({ message: 'Error al procesar la eliminación de imagen' });
+            }
+        } else {
             // Si no se eliminó ni agregó una imagen
-            res.status(200).json({ mensaje: 'Usuario actualizado correctamente' });
+            return res.status(200).json({ message: 'Usuario actualizado correctamente' });
         }
-    });
+    } catch (err) {
+        console.error('Error al actualizar el usuario:', err);
+        return res.status(500).json({ message: 'Error al actualizar el usuario' });
+    }
 });
 
 
@@ -1718,7 +1997,7 @@ app.post('/sendRecoveryCode', (req, res) => {
         const recoveryCode = Math.floor(10000 + Math.random() * 90000).toString();
 
         // Guardar el código de recuperación en la base de datos
-        const query = 'UPDATE usuario SET recovery_code = ? WHERE email = ?';
+        const query = 'UPDATE usuario SET cod_recuperacion = ? WHERE email = ?';
         db.query(query, [recoveryCode, email], (err, result) => {
             if (err) {
                 console.error('Error al actualizar el código de recuperación:', err);
@@ -1763,7 +2042,7 @@ app.post('/sendRecoveryCode', (req, res) => {
 app.post('/verifyRecoveryCode', (req, res) => {
     const { email, recoveryCode } = req.body;
 
-    const query = 'SELECT * FROM usuario WHERE email = ? AND recovery_code = ?';
+    const query = 'SELECT * FROM usuario WHERE email = ? AND cod_recuperacion = ?';
     db.query(query, [email, recoveryCode], (err, results) => {
         if (err) {
             console.error('Error al consultar la base de datos:', err);
@@ -1786,7 +2065,7 @@ app.post('/changePassword', (req, res) => {
     const salt = bcrypt.genSaltSync(10);
     const passwordHash = bcrypt.hashSync(newPassword, salt);
 
-    const query = 'UPDATE usuario SET contrasenia = ?, recovery_code = NULL, firstLogin = 0 WHERE email = ?';
+    const query = 'UPDATE usuario SET contrasenia = ?, cod_recuperacion = NULL, firstLogin = 0 WHERE email = ?';
     db.query(query, [passwordHash, email], (err, result) => {
         if (err) {
             console.error('Error al actualizar la contraseña:', err);
@@ -1863,13 +2142,16 @@ app.get('/aisles', (req, res) => {
         `;
 
     if (depositoId) {
-        query += ` WHERE p.idDeposito = ? GROUP BY p.id, p.numero, d.Nombre, u.nombre, l1.descripcion, l2.descripcion`;
+        query += ` WHERE p.idDeposito = ? 
+        GROUP BY p.id, p.numero, d.Nombre, u.nombre, l1.descripcion, l2.descripcion
+        ORDER BY p.numero ASC`;
         db.query(query, [depositoId], (err, results) => {
             if (err) return res.status(500).send('Error al consultar la base de datos');
             res.json(results);
         });
     } else {
-        query += ` GROUP BY p.id, p.numero, d.Nombre, u.nombre, l1.descripcion, l2.descripcion`;
+        query += ` GROUP BY p.id, p.numero, d.Nombre, u.nombre, l1.descripcion, l2.descripcion
+        ORDER BY p.numero ASC`;
         db.query(query, (err, results) => {
             if (err) return res.status(500).send('Error al consultar la base de datos');
             res.json(results);
@@ -1934,28 +2216,47 @@ app.put('/edit-aisle/:id', (req, res) => {
         return res.status(400).json({ error: 'Todos los campos requeridos deben estar completos' });
     }
 
-    // Si idLado2 no está definido o es una cadena vacía, se asigna null
     const idLado2Value = idLado2 !== undefined && idLado2 !== '' ? idLado2 : null;
 
-    const query = `
-        UPDATE Pasillo 
-        SET numero = ?, idDeposito = ?, idLado1 = ?, idLado2 = ? 
-        WHERE id = ?
+    // Verificar si ya existe un pasillo con el mismo número en el mismo depósito (excluyendo el actual)
+    const checkQuery = `
+        SELECT id FROM Pasillo 
+        WHERE numero = ? AND idDeposito = ? AND id != ?
     `;
 
-    const values = [numero, idDeposito, idLado1, idLado2Value, aisleId];
-
-    db.query(query, values, (err, result) => {
+    db.query(checkQuery, [numero, idDeposito, aisleId], (err, results) => {
         if (err) {
-            console.error('Error al actualizar el pasillo:', err);
-            return res.status(500).json({ error: 'Error al actualizar el pasillo', details: err });
+            console.error('Error al verificar el pasillo:', err);
+            return res.status(500).json({ error: 'Error al verificar el pasillo' });
         }
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Pasillo no encontrado' });
+
+        if (results.length > 0) {
+            // Existe otro pasillo con el mismo número en el mismo depósito
+            return res.status(409).json({ error: 'Ya existe un pasillo con el mismo número en este depósito' });
         }
-        res.status(200).json({ message: 'Pasillo actualizado correctamente' });
+
+        // Si no existe conflicto, proceder con la actualización
+        const updateQuery = `
+            UPDATE Pasillo 
+            SET numero = ?, idDeposito = ?, idLado1 = ?, idLado2 = ? 
+            WHERE id = ?
+        `;
+
+        const values = [numero, idDeposito, idLado1, idLado2Value, aisleId];
+
+        db.query(updateQuery, values, (err, result) => {
+            if (err) {
+                console.error('Error al actualizar el pasillo:', err);
+                return res.status(500).json({ error: 'Error al actualizar el pasillo', details: err });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: 'Pasillo no encontrado' });
+            }
+            res.status(200).json({ message: 'Pasillo actualizado correctamente' });
+        });
     });
 });
+
 
 
 
@@ -2086,27 +2387,45 @@ app.put('/edit-deposit/:id', (req, res) => {
         return res.status(400).json({ error: 'Todos los campos requeridos deben estar completos' });
     }
 
-    const query = `
-        UPDATE Deposito
-        SET nombre = ?, idUbicacion = ?
-        WHERE id = ?
+    // Verificar si ya existe un depósito con el mismo nombre en la misma ubicación, excluyendo el depósito actual
+    const checkDuplicateQuery = `
+        SELECT id FROM Deposito
+        WHERE nombre = ? AND idUbicacion = ? AND id != ?
     `;
 
-    const values = [nombre, idUbicacion, depositId];
-
-    db.query(query, values, (err, result) => {
+    db.query(checkDuplicateQuery, [nombre, idUbicacion, depositId], (err, results) => {
         if (err) {
-            console.error('Error al actualizar el depósito:', err);
-            return res.status(500).json({ error: 'Error al actualizar el depósito' });
+            console.error('Error al verificar depósito duplicado:', err);
+            return res.status(500).json({ error: 'Error al verificar depósito duplicado' });
         }
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Depósito no encontrado' });
+        if (results.length > 0) {
+            // Ya existe otro depósito con el mismo nombre en la misma ubicación
+            return res.status(409).json({ error: 'Ya existe un depósito con el mismo nombre en esta ubicación' });
         }
 
-        res.status(200).json({ message: 'Depósito actualizado correctamente' });
+        // Si no hay duplicados, proceder con la actualización
+        const updateQuery = `
+            UPDATE Deposito
+            SET nombre = ?, idUbicacion = ?
+            WHERE id = ?
+        `;
+        const values = [nombre, idUbicacion, depositId];
+        db.query(updateQuery, values, (err, result) => {
+            if (err) {
+                console.error('Error al actualizar el depósito:', err);
+                return res.status(500).json({ error: 'Error al actualizar el depósito' });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: 'Depósito no encontrado' });
+            }
+
+            res.status(200).json({ message: 'Depósito actualizado correctamente' });
+        });
     });
 });
+
 
 
 app.get('/deposit-names', (req, res) => {
@@ -2310,16 +2629,27 @@ app.put('/categories/:id', (req, res) => {
     if (!descripcion) {
         return res.status(400).json({ message: 'La descripción es obligatoria' });
     }
-
-    const query = 'UPDATE Categoria SET descripcion = ? WHERE id = ?';
-    db.query(query, [descripcion, categoryId], (err, result) => {
+    // Verificar si ya existe una categoría con la misma descripción (excluyendo la actual)
+    const checkQuery = 'SELECT id FROM Categoria WHERE descripcion = ? AND id != ?';
+    db.query(checkQuery, [descripcion, categoryId], (err, results) => {
         if (err) {
-            console.error('Error al actualizar la categoría:', err);
-            return res.status(500).json({ message: 'Error al actualizar la categoría' });
+            console.error('Error al verificar la categoría:', err);
+            return res.status(500).json({ message: 'Error al verificar la categoría' });
         }
-        res.status(200).json({ message: 'Categoría actualizada exitosamente' });
+        if (results.length > 0) {
+            return res.status(409).json({ message: 'Ya existe una categoría con esa descripción' });
+        }
+        const updateQuery = 'UPDATE Categoria SET descripcion = ? WHERE id = ?';
+        db.query(updateQuery, [descripcion, categoryId], (err, result) => {
+            if (err) {
+                console.error('Error al actualizar la categoría:', err);
+                return res.status(500).json({ message: 'Error al actualizar la categoría' });
+            }
+            res.status(200).json({ message: 'Categoría actualizada exitosamente' });
+        });
     });
 });
+
 
 app.get('/total-categories', (req, res) => {
     const query = 'SELECT COUNT(id) AS total FROM Categoria';
@@ -2381,45 +2711,67 @@ app.get('/shelves', (req, res) => {
 
 // Endpoint para agregar una nueva estantería
 app.post('/addShelf', (req, res) => {
-    const { numero, cantidad_estante, cantidad_division, idPasillo, idLado } = req.body;
+    const { cantidad_estante, cantidad_division, idPasillo, idLado } = req.body;
 
     // Validación de campos obligatorios
-    if (!numero || !cantidad_estante || !cantidad_division || !idPasillo || !idLado) {
+    if (!cantidad_estante || !cantidad_division || !idPasillo || !idLado) {
         return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
 
-    // Primero, verificar si ya existe una estantería idéntica
-    const checkQuery = `
-        SELECT * FROM Estanteria 
-        WHERE numero = ? AND idPasillo = ? AND idLado = ?
+    // Generar automáticamente el número de estantería
+    const findMissingNumberQuery = `
+        SELECT t1.numero + 1 AS missingNumber
+        FROM Estanteria t1
+        LEFT JOIN Estanteria t2 ON t1.numero + 1 = t2.numero
+        WHERE t2.numero IS NULL
+        ORDER BY t1.numero
+        LIMIT 1
     `;
-    db.query(checkQuery, [numero, idPasillo, idLado], (err, results) => {
+
+    db.query(findMissingNumberQuery, (err, results) => {
         if (err) {
-            console.error('Error al verificar estantería:', err);
-            return res.status(500).json({ error: 'Error al verificar estantería', details: err });
+            console.error('Error al buscar el número de estantería faltante:', err);
+            return res.status(500).json({ error: 'Error al generar número de estantería', details: err });
         }
 
+        let numero;
         if (results.length > 0) {
-            // La estantería ya existe
-            return res.status(400).json({ error: 'Ya existe una estantería con este número en el pasillo y lado seleccionados' });
+            // Si hay un número faltante, usarlo
+            numero = results[0].missingNumber;
         } else {
-            // Si no existe, proceder a insertar
-            const insertQuery = `
-                INSERT INTO Estanteria (numero, cantidad_estante, cantidad_division, idPasillo, idLado)
-                VALUES (?, ?, ?, ?, ?)
-            `;
-            const values = [numero, cantidad_estante, cantidad_division, idPasillo, idLado];
-
-            db.query(insertQuery, values, (err, result) => {
+            // Si no hay un número faltante, usar el siguiente en la secuencia
+            const maxNumberQuery = `SELECT IFNULL(MAX(numero), 0) + 1 AS nextNumber FROM Estanteria`;
+            db.query(maxNumberQuery, (err, results) => {
                 if (err) {
-                    console.error('Error al insertar estantería:', err);
-                    return res.status(500).json({ error: 'Error al agregar estantería', details: err });
+                    console.error('Error al obtener el siguiente número de estantería:', err);
+                    return res.status(500).json({ error: 'Error al generar número de estantería', details: err });
                 }
-                res.status(200).json({ message: 'Estantería agregada exitosamente', id: result.insertId });
+                numero = results[0].nextNumber;
+                insertShelf(numero);
             });
+            return;
         }
+        // Proceder a insertar la estantería con el número generado
+        insertShelf(numero);
     });
+
+    function insertShelf(numero) {
+        const insertQuery = `
+            INSERT INTO Estanteria (numero, cantidad_estante, cantidad_division, idPasillo, idLado)
+            VALUES (?, ?, ?, ?, ?)
+        `;
+        const values = [numero, cantidad_estante, cantidad_division, idPasillo, idLado];
+
+        db.query(insertQuery, values, (err, result) => {
+            if (err) {
+                console.error('Error al insertar estantería:', err);
+                return res.status(500).json({ error: 'Error al agregar estantería', details: err });
+            }
+            res.status(200).json({ message: 'Estantería agregada exitosamente', id: result.insertId, numero });
+        });
+    }
 });
+
 
 
 // Obtener una estantería por ID
@@ -2449,75 +2801,95 @@ app.put('/edit-shelf/:id', (req, res) => {
     const shelfId = req.params.id;
     const { numero, cantidad_estante, cantidad_division, idPasillo, idLado } = req.body;
 
-    // Primero obtenemos los valores actuales de la estantería
-    const getCurrentShelfQuery = `
-        SELECT cantidad_estante, cantidad_division 
-        FROM Estanteria 
-        WHERE id = ?
+    // Primero verificamos si ya existe una estantería con el mismo número en el mismo pasillo y lado (excluyendo la actual)
+    const checkDuplicateShelfQuery = `
+        SELECT id FROM Estanteria 
+        WHERE numero = ? AND id != ?
     `;
 
-    db.query(getCurrentShelfQuery, [shelfId], (err, rows) => {
+    db.query(checkDuplicateShelfQuery, [numero, shelfId], (err, duplicateResults) => {
         if (err) {
-            console.error('Error al obtener datos actuales de la estantería:', err);
-            return res.status(500).json({ error: 'Error al obtener los datos de la estantería' });
+            console.error('Error al verificar estantería duplicada:', err);
+            return res.status(500).json({ error: 'Error al verificar estantería duplicada' });
         }
 
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'Estantería no encontrada' });
+        if (duplicateResults.length > 0) {
+            // Existe otra estantería con el mismo número en el mismo pasillo y lado
+            return res.status(409).json({ error: 'Ya existe una estantería con este número' });
         }
 
-        const currentShelf = rows[0];
-
-        // Comparamos si los valores de cantidad_estante o cantidad_division cambian
-        if (currentShelf.cantidad_estante !== cantidad_estante || currentShelf.cantidad_division !== cantidad_division) {
-            // Validamos si hay materiales en los espacios de la estantería
-            const checkMaterialsQuery = `
-                SELECT Material.id 
-                FROM Material 
-                INNER JOIN Espacio ON Material.idEspacio = Espacio.id 
-                WHERE Espacio.idEstanteria = ?
-            `;
-
-            db.query(checkMaterialsQuery, [shelfId], (err, materials) => {
-                if (err) {
-                    console.error('Error verificando materiales:', err);
-                    return res.status(500).json({ error: 'Error verificando materiales en la estantería' });
-                }
-
-                if (materials.length > 0) {
-                    return res.status(400).json({ message: 'No se pueden modificar cantidad_estante o cantidad_division si hay materiales en los espacios de la estantería' });
-                }
-
-                // Si no hay materiales, procedemos con la actualización
-                updateShelf();
-            });
-        } else {
-            // Si no cambian esos valores, procedemos directamente con la actualización
-            updateShelf();
-        }
-    });
-
-    function updateShelf() {
-        const query = `
-            UPDATE Estanteria
-            SET numero = ?, cantidad_estante = ?, cantidad_division = ?, idPasillo = ?, idLado = ?
+        // Continuamos con el proceso existente
+        // Primero obtenemos los valores actuales de la estantería
+        const getCurrentShelfQuery = `
+            SELECT cantidad_estante, cantidad_division 
+            FROM Estanteria 
             WHERE id = ?
         `;
 
-        const values = [numero, cantidad_estante, cantidad_division, idPasillo, idLado, shelfId];
-
-        db.query(query, values, (err, result) => {
+        db.query(getCurrentShelfQuery, [shelfId], (err, rows) => {
             if (err) {
-                console.error('Error al actualizar estantería:', err);
-                return res.status(500).json({ error: 'Para modificar este campo primero debe vaciar la estantería' });
+                console.error('Error al obtener datos actuales de la estantería:', err);
+                return res.status(500).json({ error: 'Error al obtener los datos de la estantería' });
             }
-            if (result.affectedRows === 0) {
+
+            if (rows.length === 0) {
                 return res.status(404).json({ error: 'Estantería no encontrada' });
             }
-            res.status(200).json({ message: 'Estantería actualizada correctamente' });
+
+            const currentShelf = rows[0];
+
+            // Comparamos si los valores de cantidad_estante o cantidad_division cambian
+            if (currentShelf.cantidad_estante !== cantidad_estante || currentShelf.cantidad_division !== cantidad_division) {
+                // Validamos si hay materiales en los espacios de la estantería
+                const checkMaterialsQuery = `
+                    SELECT Material.id 
+                    FROM Material 
+                    INNER JOIN Espacio ON Material.idEspacio = Espacio.id 
+                    WHERE Espacio.idEstanteria = ?
+                `;
+
+                db.query(checkMaterialsQuery, [shelfId], (err, materials) => {
+                    if (err) {
+                        console.error('Error verificando materiales:', err);
+                        return res.status(500).json({ error: 'Error verificando materiales en la estantería' });
+                    }
+
+                    if (materials.length > 0) {
+                        return res.status(400).json({ error: 'No se pueden modificar estantes o divisiones si hay materiales en la estantería' });
+                    }
+                    // Si no hay materiales, procedemos con la actualización
+                    updateShelf();
+                });
+            } else {
+                // Si no cambian esos valores, eliminamos los espacios asociados y luego actualizamos la estantería
+                updateShelf();
+            }
+
         });
-    }
+
+        function updateShelf() {
+            const query = `
+                UPDATE Estanteria
+                SET numero = ?, cantidad_estante = ?, cantidad_division = ?, idPasillo = ?, idLado = ?
+                WHERE id = ?
+            `;
+
+            const values = [numero, cantidad_estante, cantidad_division, idPasillo, idLado, shelfId];
+
+            db.query(query, values, (err, result) => {
+                if (err) {
+                    console.error('Error al actualizar estantería:', err);
+                    return res.status(500).json({ error: 'Error al actualizar la estantería' });
+                }
+                if (result.affectedRows === 0) {
+                    return res.status(404).json({ error: 'Estantería no encontrada' });
+                }
+                res.status(200).json({ message: 'Estantería actualizada correctamente' });
+            });
+        }
+    });
 });
+
 
 
 // Endpoint para vaciar estanterías
@@ -2688,7 +3060,8 @@ app.get('/movements', (req, res) => {
             m.cantidad, 
             d1.nombre AS depositoOrigen, 
             d2.nombre AS depositoDestino,
-            ub.nombre AS ubicacionNombre
+            ub.nombre AS ubicacionNombre,
+            isCantidadMenor
         FROM 
             movimiento m
         LEFT JOIN 
@@ -2702,7 +3075,7 @@ app.get('/movements', (req, res) => {
         LEFT JOIN 
             Material mat ON m.idMaterial = mat.id
         ORDER BY
-            m.fechaMovimiento DESC;
+            numero ASC;
     `;
 
     db.query(query, (err, results) => {
@@ -2716,12 +3089,15 @@ app.get('/movements', (req, res) => {
 });
 
 
-app.post('/addMovements', (req, res) => {
-    let { idMaterial, idUsuario, idDepositoDestino, cantidadMovida, numero, fechaMovimiento } = req.body;
+app.post('/addMovements', authenticateToken, (req, res) => {
+    let { idMaterial, idUsuario, idDepositoDestino, cantidadMovida, cantidadRecibida, fechaMovimiento } = req.body;
     fechaMovimiento = new Date(fechaMovimiento);
-    fechaMovimiento.setMinutes(fechaMovimiento.getMinutes() + fechaMovimiento.getTimezoneOffset()); // Ajustar a UTC
-    fechaMovimiento = fechaMovimiento.toISOString().split('T')[0]; // Formato 'YYYY-MM-DD'
-
+    fechaMovimiento.setMinutes(fechaMovimiento.getMinutes() + fechaMovimiento.getTimezoneOffset());
+    fechaMovimiento = fechaMovimiento.toISOString().split('T')[0];
+    const id_usuario = req.user.id
+    const fechaMovimientoOriginal = new Date(fechaMovimiento);
+    const fechaMovimientoModificada = addDays(fechaMovimientoOriginal, 1);
+    const formattedFechaNueva = format(fechaMovimientoModificada, 'dd-MM-yyyy');
     const queryMaterialOrigen = `
         SELECT id, cantidad, matricula, fechaUltimoEstado, bajoStock, idEstado, idEspacio, ultimoUsuarioId, idCategoria, nombre, ocupado, idDeposito 
         FROM Material 
@@ -2745,6 +3121,7 @@ app.post('/addMovements', (req, res) => {
         const idDepositoOrigen = materialOrigen.idDeposito;
 
         const cantidadMovidaNumero = Number(cantidadMovida);
+        const cantidadRecibidaNumero = Number(cantidadRecibida);
         const cantidadNumero = Number(cantidad);
 
         if (cantidadMovidaNumero > cantidadNumero) {
@@ -2752,7 +3129,7 @@ app.post('/addMovements', (req, res) => {
             return;
         }
 
-        const nuevaCantidadOrigen = cantidadNumero - cantidadMovidaNumero;
+        const nuevaCantidadOrigen = cantidadNumero - cantidadRecibidaNumero;
         const nuevoEstadoOrigen = assignStatus(nuevaCantidadOrigen, bajoStock);
 
         const updateMaterialOrigenQuery = `
@@ -2784,69 +3161,113 @@ app.post('/addMovements', (req, res) => {
                         return;
                     }
 
-                    const insertMovementAndAudit = (idMaterialMovimiento) => {
-                        const insertMovementQuery = `
-                            INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento, confirmado, numero) 
-                            VALUES (?, ?, ?, ?, ?, ?, TRUE, ?)
+                    // Calcular el número disponible
+                    const getNumeroDisponibleQuery = `
+                        SELECT COALESCE(
+                            (SELECT MIN(t1.numero + 1)
+                            FROM movimiento t1
+                            LEFT JOIN movimiento t2 ON t1.numero + 1 = t2.numero
+                            WHERE t2.numero IS NULL),
+                            (SELECT MAX(numero) + 1 FROM movimiento),
+                            1
+                        ) AS numeroDisponible;
+                    `;
+
+                    db.query(getNumeroDisponibleQuery, (err, numeroResult) => {
+                        if (err) {
+                            console.error('Error al obtener el número disponible:', err);
+                            res.status(500).json({ error: 'Error al obtener el número disponible' });
+                            return;
+                        }
+
+                        const numero = numeroResult[0].numeroDisponible || 1;
+
+                        const insertMovementAndAudit = (idMaterialMovimiento) => {
+                            const isCantidadMenor = cantidadRecibidaNumero < cantidadMovidaNumero;
+                            const insertMovementQuery = `
+                            INSERT INTO movimiento (idUsuario, idMaterial, cantidad, idDepositoOrigen, idDepositoDestino, fechaMovimiento, confirmado, numero, isCantidadMenor) 
+                            VALUES (?, ?, ?, ?, ?, ?, TRUE, ?, ?)
                         `;
 
-                        db.query(insertMovementQuery, [idUsuario, idMaterialMovimiento, cantidadMovida, idDepositoOrigen, idDepositoDestino, fechaMovimiento, numero], (err) => {
-                            if (err) {
-                                if (err.code === 'ER_DUP_ENTRY') {
-                                    return res.status(400).json({ error: 'Ya existe un movimiento con el número de movimiento ingresado' });
-                                } else {
-                                    console.error('Error al agregar el movimiento:', err);
-                                    res.status(500).json({ error: 'Error al agregar el movimiento' });
-                                    return;
-                                }
-                            }
-                            // Registrar la confirmación del movimiento en la tabla de auditoría
-                            const comentario = `Movimiento confirmado con número: ${numero}`;
-                            db.query('INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)',
-                                [idUsuario, 'Confirmación de Movimiento', comentario], (err) => {
-                                    if (err) {
-                                        console.error('Error al registrar en auditoría:', err);
-                                        res.status(500).json({ error: 'Error al registrar en auditoría' });
+                            db.query(insertMovementQuery, [idUsuario, idMaterialMovimiento, cantidadRecibida, idDepositoOrigen, idDepositoDestino, fechaMovimiento, numero, isCantidadMenor], (err) => {
+                                if (err) {
+                                    if (err.code === 'ER_DUP_ENTRY') {
+                                        return res.status(400).json({ error: 'Ya existe un movimiento con el número de movimiento ingresado' });
+                                    } else {
+                                        console.error('Error al agregar el movimiento:', err);
+                                        res.status(500).json({ error: 'Error al agregar el movimiento' });
                                         return;
                                     }
-                                    res.status(200).json({ message: 'Movimiento registrado y material actualizado correctamente, auditoría registrada' });
+                                }
+                                const queryNombresDepositos = `
+                                SELECT id, nombre 
+                                FROM Deposito 
+                                WHERE id IN (?, ?)
+                                `;
+
+                                db.query(queryNombresDepositos, [idDepositoOrigen, idDepositoDestino], (err, depositosResult) => {
+                                    if (err) {
+                                        console.error('Error al obtener los nombres de los depósitos:', err);
+                                        res.status(500).json({ error: 'Error al obtener los nombres de los depósitos' });
+                                        return;
+                                    }
+
+                                    // Mapear los resultados para obtener los nombres
+                                    const depositoOrigen = depositosResult.find(dep => dep.id === idDepositoOrigen)?.nombre || 'Desconocido';
+                                    const depositoDestino = depositosResult.find(dep => dep.id === idDepositoDestino)?.nombre || 'Desconocido';
+
+                                    // Registrar la confirmación del movimiento en la tabla de auditoría
+                                    const comentario = `Movimiento recibido con número: ${numero}, Material Movido: ${materialOrigen.nombre},Cantidad Movida: ${cantidadMovida}, Cantidad Recibida: ${cantidadRecibida}, Fecha: ${formattedFechaNueva} Depósito Origen: ${depositoOrigen}, Depósito Destino: ${depositoDestino}`;
+                                    db.query('INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)',
+                                        [id_usuario, 'Recepción de Movimiento', comentario], (err) => {
+                                            if (err) {
+                                                console.error('Error al registrar en auditoría:', err);
+                                                res.status(500).json({ error: 'Error al registrar en auditoría' });
+                                                return;
+                                            }
+                                            // Enviar respuesta final con notificación adicional si la cantidad recibida es menor
+                                            const responseMessage = isCantidadMenor
+                                                ? 'Movimiento registrado con advertencia: Cantidad recibida menor a la cantidad movida'
+                                                : 'Movimiento registrado y material actualizado correctamente, auditoría registrada';
+                                            res.status(200).json({ message: responseMessage });
+                                        });
                                 });
-                        });
-                    };
+                            });
+                        };
 
-                    if (materialDestinoResult.length > 0) {
-                        const { id: idMaterialDestino, cantidad: cantidadDestino } = materialDestinoResult[0];
-                        const nuevaCantidadDestino = Number(cantidadDestino) + cantidadMovidaNumero;
-                        const nuevoEstadoDestino = assignStatus(nuevaCantidadDestino, bajoStock);
+                        if (materialDestinoResult.length > 0) {
+                            const { id: idMaterialDestino, cantidad: cantidadDestino } = materialDestinoResult[0];
+                            const nuevaCantidadDestino = Number(cantidadDestino) + cantidadMovidaNumero;
+                            const nuevoEstadoDestino = assignStatus(nuevaCantidadDestino, bajoStock);
 
-                        const updateMaterialDestinoQuery = `
+                            const updateMaterialDestinoQuery = `
                             UPDATE Material 
                             SET cantidad = ?, idEstado = ? 
                             WHERE id = ?
                         `;
 
-                        db.query(updateMaterialDestinoQuery, [nuevaCantidadDestino, nuevoEstadoDestino, idMaterialDestino], (err) => {
-                            if (err) {
-                                console.error('Error al actualizar el material en el depósito de destino:', err);
-                                res.status(500).json({ error: 'Error al actualizar el material en el depósito de destino' });
-                                return;
-                            }
-
-                            handleStockNotifications(nombre, nuevaCantidadDestino, bajoStock, (error) => {
-                                if (error) {
-                                    console.error('Error al manejar notificaciones de stock en destino:', error);
-                                    res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
+                            db.query(updateMaterialDestinoQuery, [nuevaCantidadDestino, nuevoEstadoDestino, idMaterialDestino], (err) => {
+                                if (err) {
+                                    console.error('Error al actualizar el material en el depósito de destino:', err);
+                                    res.status(500).json({ error: 'Error al actualizar el material en el depósito de destino' });
                                     return;
                                 }
 
-                                insertMovementAndAudit(idMaterialDestino);
+                                handleStockNotifications(nombre, nuevaCantidadDestino, bajoStock, (error) => {
+                                    if (error) {
+                                        console.error('Error al manejar notificaciones de stock en destino:', error);
+                                        res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
+                                        return;
+                                    }
+
+                                    insertMovementAndAudit(idMaterialDestino);
+                                });
                             });
-                        });
 
-                    } else {
-                        const nuevoEstadoDestino = assignStatus(cantidadMovidaNumero, bajoStock);
+                        } else {
+                            const nuevoEstadoDestino = assignStatus(cantidadRecibidaNumero, bajoStock);
 
-                        const insertMaterialDestinoQuery = `
+                            const insertMaterialDestinoQuery = `
                             INSERT INTO Material (
                                 cantidad, matricula, fechaUltimoEstado, bajoStock, idEstado, idEspacio, 
                                 ultimoUsuarioId, idCategoria, idDeposito, nombre, ocupado, fechaAlta
@@ -2854,44 +3275,44 @@ app.post('/addMovements', (req, res) => {
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
                         `;
 
-                        const valoresInsertMaterial = [
-                            cantidadMovidaNumero, matricula, fechaUltimoEstado, bajoStock,
-                            nuevoEstadoDestino, null, ultimoUsuarioId, idCategoria, idDepositoDestino, nombre, ocupado
-                        ];
+                            const valoresInsertMaterial = [
+                                cantidadRecibidaNumero, matricula, fechaUltimoEstado, bajoStock,
+                                nuevoEstadoDestino, null, ultimoUsuarioId, idCategoria, idDepositoDestino, nombre, ocupado
+                            ];
 
-                        db.query(insertMaterialDestinoQuery, valoresInsertMaterial, (err, result) => {
-                            if (err) {
-                                console.error('Error al crear el material en el depósito de destino:', err);
-                                res.status(500).json({ error: 'Error al crear el material en el depósito de destino' });
-                                return;
-                            }
-
-                            const idMaterialDestino = result.insertId;
-
-                            notifyNewMaterialCreation(nombre, idDepositoDestino, (error) => {
-                                if (error) {
-                                    console.error('Error al notificar la creación de nuevo material:', error);
-                                    res.status(500).json({ error: 'Error al notificar la creación de nuevo material' });
+                            db.query(insertMaterialDestinoQuery, valoresInsertMaterial, (err, result) => {
+                                if (err) {
+                                    console.error('Error al crear el material en el depósito de destino:', err);
+                                    res.status(500).json({ error: 'Error al crear el material en el depósito de destino' });
                                     return;
                                 }
 
-                                handleStockNotifications(nombre, cantidadMovidaNumero, bajoStock, (error) => {
+                                const idMaterialDestino = result.insertId;
+
+                                notifyNewMaterialCreation(nombre, idDepositoDestino, (error) => {
                                     if (error) {
-                                        console.error('Error al manejar notificaciones de stock en destino:', error);
-                                        res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
+                                        console.error('Error al notificar la creación de nuevo material:', error);
+                                        res.status(500).json({ error: 'Error al notificar la creación de nuevo material' });
                                         return;
                                     }
-                                    insertMovementAndAudit(idMaterialDestino);
+
+                                    handleStockNotifications(nombre, cantidadRecibidaNumero, bajoStock, (error) => {
+                                        if (error) {
+                                            console.error('Error al manejar notificaciones de stock en destino:', error);
+                                            res.status(500).json({ error: 'Error al manejar notificaciones de stock en destino' });
+                                            return;
+                                        }
+                                        insertMovementAndAudit(idMaterialDestino);
+                                    });
                                 });
                             });
-                        });
-                    }
+                        }
+                    });
                 });
             });
         });
     });
 });
-
 
 
 app.get('/movements/:id', async (req, res) => {
@@ -2927,11 +3348,15 @@ app.get('/movements/:id', async (req, res) => {
     });
 });
 
-app.put('/edit-movements/:id', async (req, res) => {
+app.put('/edit-movements/:id', authenticateToken, async (req, res) => {
     const id = req.params.id;
-    const { fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino, cantidad, numero } = req.body;
+    const id_usuario = req.user.id;
+    const { fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino, cantidad } = req.body;
+    const fechaMovimientoOriginal = new Date(fechaMovimiento);
+    const fechaMovimientoModificada = addDays(fechaMovimientoOriginal, 1);
+    const formattedFechaNueva = format(fechaMovimientoModificada, 'dd-MM-yyyy');
 
-    const cantidadNueva = Number(cantidad);  // La nueva cantidad movida
+    const cantidadNueva = Number(cantidad);
 
     try {
         // Iniciar la transacción
@@ -2939,7 +3364,7 @@ app.put('/edit-movements/:id', async (req, res) => {
 
         // Obtener el movimiento actual para comparar los cambios
         const queryMovimientoActual = `
-            SELECT idDepositoOrigen, idDepositoDestino, cantidad
+            SELECT idDepositoOrigen, idDepositoDestino, cantidad, numero
             FROM movimiento 
             WHERE id = ?
         `;
@@ -2963,10 +3388,8 @@ app.put('/edit-movements/:id', async (req, res) => {
         }
 
         const movimientoActual = resultMovimientoActual[0];
-        const { idDepositoOrigen: depositoOrigenAnterior, idDepositoDestino: depositoDestinoAnterior, cantidad: cantidadAnterior } = movimientoActual;
+        const { idDepositoOrigen: depositoOrigenAnterior, idDepositoDestino: depositoDestinoAnterior, cantidad: cantidadAnterior, numero } = movimientoActual;
         const cantidadAnteriorMovida = Number(cantidadAnterior);
-
-        // Calcular la diferencia entre la cantidad nueva y la cantidad anterior
         const diferenciaCantidad = cantidadNueva - cantidadAnteriorMovida;
 
         // Si cambió la cantidad movida o cambió el depósito de origen o destino, ajustamos los materiales correspondientes
@@ -3030,19 +3453,33 @@ app.put('/edit-movements/:id', async (req, res) => {
             }
         }
 
+        const queryNombresDepositos = `
+            SELECT 
+                (SELECT nombre FROM Deposito WHERE id = ?) AS nombreOrigen,
+                (SELECT nombre FROM Deposito WHERE id = ?) AS nombreDestino
+        `;
+        const nombresDepositos = await new Promise((resolve, reject) => {
+            db.query(queryNombresDepositos, [idDepositoOrigen, idDepositoDestino], (err, result) => {
+                if (err) return reject(err);
+                resolve(result[0]);
+            });
+        });
+
+        const { nombreOrigen, nombreDestino } = nombresDepositos;
+
         // Finalmente, actualizamos el movimiento
         const queryUpdateMovimiento = `
             UPDATE movimiento 
-            SET numero = ?, fechaMovimiento = ?, idMaterial = ?, idUsuario = ?, idDepositoOrigen = ?, idDepositoDestino = ?, cantidad = ?
+            SET fechaMovimiento = ?, idMaterial = ?, idUsuario = ?, idDepositoOrigen = ?, idDepositoDestino = ?, cantidad = ?
             WHERE id = ?
         `;
-        await db.query(queryUpdateMovimiento, [numero, fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino, cantidadNueva, id]);
+        await db.query(queryUpdateMovimiento, [fechaMovimiento, idMaterial, idUsuario, idDepositoOrigen, idDepositoDestino, cantidadNueva, id]);
 
         // Registrar la acción de edición en la tabla de auditoría
-        const comentario = `Movimiento editado con número: ${numero}`;
+        const comentario = `Movimiento editado con número: ${numero} Cantidad: ${cantidadNueva}, Depósito Origen: ${nombreOrigen}, Depósito Destino: ${nombreDestino}, Fecha: ${formattedFechaNueva}`;
         await db.query(
             'INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)',
-            [idUsuario, 'Edición de Movimiento', comentario]
+            [id_usuario, 'Edición de Movimiento', comentario]
         );
 
         // Confirmar la transacción
@@ -3059,24 +3496,92 @@ app.put('/edit-movements/:id', async (req, res) => {
 });
 
 // Endpoint para eliminar múltiples movimientos
-app.delete('/delete-movements', (req, res) => {
+app.delete('/delete-movements', authenticateToken, async (req, res) => {
     const { movementIds } = req.body; // Recibe los IDs de los movimientos a eliminar
+    const usuarioId = req.user.id; // Obtener el ID del usuario del token
 
     if (!movementIds || movementIds.length === 0) {
         return res.status(400).json({ message: 'No se proporcionaron movimientos para eliminar' });
     }
 
-    const placeholders = movementIds.map(() => '?').join(',');
-    const query = `DELETE FROM movimiento WHERE id IN (${placeholders})`;
+    try {
+        // Iniciar transacción
+        await new Promise((resolve, reject) => {
+            db.beginTransaction((err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
 
-    db.query(query, movementIds, (err, result) => {
-        if (err) {
-            console.error('Error eliminando movimientos:', err);
-            return res.status(500).json({ message: 'Error eliminando movimientos' });
+        // Obtener los números de los movimientos antes de eliminarlos
+        const movimientos = await new Promise((resolve, reject) => {
+            const placeholders = movementIds.map(() => '?').join(',');
+            const query = `SELECT id, numero FROM movimiento WHERE id IN (${placeholders})`;
+
+            db.query(query, movementIds, (err, results) => {
+                if (err) return reject(err);
+                resolve(results);
+            });
+        });
+
+        if (movimientos.length === 0) {
+            await new Promise((resolve, reject) => {
+                db.rollback((err) => {
+                    if (err) return reject(err);
+                    resolve();
+                });
+            });
+            return res.status(404).json({ message: 'No se encontraron movimientos para eliminar' });
         }
 
-        res.status(200).json({ message: 'Movimientos eliminados correctamente' });
-    });
+        // Eliminar los movimientos
+        await new Promise((resolve, reject) => {
+            const placeholders = movementIds.map(() => '?').join(',');
+            const query = `DELETE FROM movimiento WHERE id IN (${placeholders})`;
+
+            db.query(query, movementIds, (err, result) => {
+                if (err) return reject(err);
+                resolve(result);
+            });
+        });
+
+        // Insertar registros en la tabla de auditoría
+        for (const movimiento of movimientos) {
+            const comentario = `Movimiento eliminado número: ${movimiento.numero}`;
+            await new Promise((resolve, reject) => {
+                db.query(
+                    `INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, 'Eliminación de Movimiento', ?)`,
+                    [usuarioId, comentario],
+                    (err) => {
+                        if (err) return reject(err);
+                        resolve();
+                    }
+                );
+            });
+        }
+
+        // Confirmar transacción
+        await new Promise((resolve, reject) => {
+            db.commit((err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
+
+        res.status(200).json({ message: 'Movimientos eliminados correctamente y auditoría registrada' });
+    } catch (error) {
+        console.error('Error al eliminar movimientos:', error);
+
+        // Revertir transacción en caso de error
+        await new Promise((resolve, reject) => {
+            db.rollback((err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+        });
+
+        res.status(500).json({ message: 'Error eliminando movimientos', details: error.message });
+    }
 });
 
 
@@ -3097,6 +3602,36 @@ app.get('/materials-with-movements', (req, res) => {
 
         // Respondemos con los idMaterial y nombres
         res.status(200).json({ materiales: results });
+    });
+});
+
+app.get('/last-moved-material', (req, res) => {
+    const query = `
+        SELECT 
+            m.idMaterial AS materialId, 
+            mat.nombre AS materialNombre,
+            MAX(m.fechaMovimiento) AS ultimaFecha
+        FROM Movimiento m
+        LEFT JOIN Material mat ON m.idMaterial = mat.id
+        WHERE m.confirmado = TRUE
+        GROUP BY m.idMaterial
+        ORDER BY ultimaFecha DESC
+        LIMIT 1;
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error al obtener el último material movido:', err);
+            return res.status(500).json({ error: 'Error al obtener el último material movido' });
+        }
+
+        if (results.length === 0) {
+            // Devolvemos un estado 200 con un mensaje y datos nulos
+            return res.json({ message: 'No existen movimientos de material registrados', data: null });
+        }
+
+        // Devolvemos el resultado dentro de un objeto 'data' para consistencia
+        res.json({ data: results[0] });
     });
 });
 
@@ -3481,7 +4016,6 @@ app.delete('/delete-reports', (req, res) => {
 });
 
 
-
 // Endpoint para obtener la cantidad total de informes
 app.get('/total-reports', (req, res) => {
     const query = 'SELECT COUNT(*) AS total FROM Informe';
@@ -3497,7 +4031,7 @@ app.get('/audits', (req, res) => {
     const query = `
         SELECT Auditoria.id, Auditoria.fecha, Usuario.nombre AS nombre_usuario, Auditoria.tipo_accion, Auditoria.comentario
         FROM Auditoria
-        JOIN Usuario ON Auditoria.id_usuario = Usuario.id
+        LEFT JOIN Usuario ON Auditoria.id_usuario = Usuario.id
         ORDER BY Auditoria.fecha DESC
     `;
 
@@ -3510,28 +4044,20 @@ app.get('/audits', (req, res) => {
     });
 });
 
-app.delete('/delete-audits', (req, res) => {
-    const { auditIds } = req.body;
+app.post('/addAuditoria', authenticateToken, async (req, res) => {
+    const { tipo_accion, comentario } = req.body;
+    const id_usuario = req.user.id;
 
-    // Verificar que se envíen IDs de auditoría
-    if (!auditIds || auditIds.length === 0) {
-        return res.status(400).json({ error: 'No se proporcionaron auditorías para eliminar' });
+    try {
+        await db.query(
+            'INSERT INTO Auditoria (id_usuario, tipo_accion, comentario) VALUES (?, ?, ?)',
+            [id_usuario, tipo_accion, comentario]
+        );
+        res.status(201).json({ message: 'Auditoría registrada con éxito' });
+    } catch (error) {
+        console.error('Error al registrar auditoría:', error);
+        res.status(500).json({ error: 'Error al registrar auditoría' });
     }
-
-    // Convertir los IDs en una lista de placeholders para la consulta
-    const placeholders = auditIds.map(() => '?').join(',');
-
-    // Consulta para eliminar múltiples registros de auditoría
-    const deleteQuery = `DELETE FROM Auditoria WHERE id IN (${placeholders})`;
-
-    db.query(deleteQuery, auditIds, (err, result) => {
-        if (err) {
-            console.error('Error al eliminar auditorías:', err);
-            return res.status(500).json({ error: 'Error al eliminar auditorías' });
-        }
-
-        res.status(200).json({ message: 'Auditorías eliminadas correctamente' });
-    });
 });
 
 app.get('/total-audits', (req, res) => {

@@ -7,7 +7,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Input } from "@/components/Common/Input/Input";
 import axios from 'axios';
 
-const ReportForm = ({ onClose, notify }) => {
+const ReportForm = ({ onClose, notify, onReportUpdated }) => {
     const [formData, setFormData] = useState({
         tipo: '',
         fechaInicio: '',
@@ -70,6 +70,7 @@ const ReportForm = ({ onClose, notify }) => {
         const handleEscape = (event) => {
             if (event.key === "Escape") {
                 onClose();
+                onReportUpdated();
             }
         };
 
@@ -78,25 +79,6 @@ const ReportForm = ({ onClose, notify }) => {
             window.removeEventListener("keydown", handleEscape);
         };
     }, [onClose]);
-
-    const handleMultiSelectChange = (name, value) => {
-        setFormData((prevData) => {
-            const currentValues = prevData[name];
-            if (currentValues.includes(value)) {
-                // Si el valor ya está seleccionado, lo quitamos
-                return {
-                    ...prevData,
-                    [name]: currentValues.filter((val) => val !== value)
-                };
-            } else {
-                // Si no está seleccionado, lo agregamos
-                return {
-                    ...prevData,
-                    [name]: [...currentValues, value]
-                };
-            }
-        });
-    };
 
     const handleSelectChange = (name, value) => {
         setFormData((prevData) => ({
@@ -130,14 +112,11 @@ const ReportForm = ({ onClose, notify }) => {
                     'Content-Type': 'application/json'
                 }
             });
-            console.log('Response del informe generado:', response.data);
-            console.log("Datos enviados al backend:", reportDataToSend);
 
             if (response.status === 200) {
                 notify('success', "¡Informe generado con éxito!");
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
+                onClose();
+                onReportUpdated();
             } else {
                 throw new Error(response.data.mensaje || "Error al generar informe");
             }
@@ -174,12 +153,12 @@ const ReportForm = ({ onClose, notify }) => {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona el tipo de informe" />
                             </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de inventario general">Informe de inventario general</SelectItem>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de material por deposito">Informe de material por depósito</SelectItem>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de material por estado">Informe de material por estado</SelectItem>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de material por movimiento entre deposito">Informe de material por movimiento entre depósito</SelectItem>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Informe de salida de material">Informe de salida de material</SelectItem>
+                            <SelectContent className="bg-sipe-blue-light">
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de inventario general">Informe de inventario general</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de material por deposito">Informe de material por depósito</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de material por estado">Informe de material por estado</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de material por movimiento entre deposito">Informe de material por movimiento entre depósito</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Informe de salida de material">Informe de salida de material</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -194,10 +173,10 @@ const ReportForm = ({ onClose, notify }) => {
                             <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                 <SelectValue placeholder="Selecciona el tipo de gráfico" />
                             </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Area">Área</SelectItem>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Barra">Barra</SelectItem>
-                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" value="Torta">Torta</SelectItem>
+                            <SelectContent className="bg-sipe-blue-light">
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Area">Área</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Barra">Barra</SelectItem>
+                                <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" value="Torta">Torta</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -206,21 +185,25 @@ const ReportForm = ({ onClose, notify }) => {
                     {formData.tipo === 'Informe de material por deposito' && (
                         <div className="flex flex-col gap-4">
                             <Label className="text-sm font-medium">Depósito</Label>
-                            <Select
-                                value={formData.deposito}
-                                onValueChange={(value) => handleSelectChange('deposito', value)}
-                            >
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Selecciona un depósito" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {depositos.map(deposito => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={deposito.id} value={deposito.id}>
-                                            {deposito.nombre}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            {depositos.length === 0 ? (
+                                <div className="text-sipe-gray">No hay depósitos para seleccionar</div>
+                            ) : (
+                                <Select
+                                    value={formData.deposito}
+                                    onValueChange={(value) => handleSelectChange('deposito', value)}
+                                >
+                                    <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                        <SelectValue placeholder="Selecciona un depósito" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-sipe-blue-light">
+                                        {depositos.map(deposito => (
+                                            <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={deposito.id} value={deposito.id}>
+                                                {deposito.nombre}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
                     )}
 
@@ -235,9 +218,9 @@ const ReportForm = ({ onClose, notify }) => {
                                 <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
                                     <SelectValue placeholder="Selecciona un estado" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-sipe-blue-light">
                                     {estadosMaterial.map(estado => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={estado.id} value={estado.id}>{estado.descripcion}</SelectItem>
+                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm" key={estado.id} value={estado.id}>{estado.descripcion}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -248,24 +231,29 @@ const ReportForm = ({ onClose, notify }) => {
                     {formData.tipo === 'Informe de salida de material' && (
                         <div className="flex flex-col gap-4">
                             <Label className="text-sm font-medium">Material</Label>
-                            <Select
-                                value={formData.idMaterial}
-                                onValueChange={(value) => handleSelectChange('idMaterial', value)}
-                            >
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Selecciona un material" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {materialesConSalidas.map((material, index) => (
-                                        <SelectItem
-                                            className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg"
-                                            key={`${material.idMaterial}-${index}`}
-                                            value={material.idMaterial}>
-                                            {material.nombreMaterial} - {material.depositoNombre} - {material.ubicacionNombre}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            {materialesConSalidas.length === 0 ? (
+                                <div className="text-sipe-gray text-sm">No hay salidas para seleccionar</div>
+                            ) : (
+                                <Select
+                                    value={formData.idMaterial}
+                                    onValueChange={(value) => handleSelectChange('idMaterial', value)}
+                                >
+                                    <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                        <SelectValue placeholder="Selecciona un material" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-sipe-blue-light">
+                                        {materialesConSalidas.map((material, index) => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                key={`${material.idMaterial}-${index}`}
+                                                value={material.idMaterial}
+                                            >
+                                                {material.nombreMaterial} - {material.depositoNombre} - {material.ubicacionNombre}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
                     )}
 
@@ -273,19 +261,29 @@ const ReportForm = ({ onClose, notify }) => {
                     {formData.tipo === 'Informe de material por movimiento entre deposito' && (
                         <div className="flex flex-col gap-4">
                             <Label className="text-sm font-medium">Material</Label>
-                            <Select
-                                value={formData.idMaterial} // Usamos idMovimiento como FK para movimientos
-                                onValueChange={(value) => handleSelectChange('idMaterial', value)}
-                            >
-                                <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
-                                    <SelectValue placeholder="Selecciona un material" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {materialesConMovimientos.map(material => (
-                                        <SelectItem className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-lg" key={material.idMaterial} value={material.idMaterial}>{material.nombreMaterial} - {material.depositoNombre} - {material.ubicacionNombre} </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            {materialesConMovimientos.length === 0 ? (
+                                <div className="text-sipe-gray text-sm">No hay movimientos para seleccionar</div>
+                            ) : (
+                                <Select
+                                    value={formData.idMaterial}
+                                    onValueChange={(value) => handleSelectChange('idMaterial', value)}
+                                >
+                                    <SelectTrigger className="bg-sipe-blue-dark text-sipe-white border-sipe-white rounded-lg">
+                                        <SelectValue placeholder="Selecciona un material" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-sipe-blue-light">
+                                        {materialesConMovimientos.map(material => (
+                                            <SelectItem
+                                                className="bg-sipe-blue-light text-sipe-white border-sipe-white rounded-sm"
+                                                key={material.idMaterial}
+                                                value={material.idMaterial}
+                                            >
+                                                {material.nombreMaterial} - {material.depositoNombre} - {material.ubicacionNombre}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </div>
                     )}
 

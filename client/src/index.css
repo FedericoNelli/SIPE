@@ -50,4 +50,14 @@ root, html, body{
     margin: 0;
     padding: 0;
   }
+
+  input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 30px #1B2632 inset; 
+    -webkit-text-fill-color: #EEE9DF; 
+  }
+
+  input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 30px #1B2632 inset;
+    -webkit-text-fill-color: #EEE9DF; 
+  }
 }

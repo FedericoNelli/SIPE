@@ -16,7 +16,8 @@ function Aisle({ notify }) {
     const [selectedAisles, setSelectedAisles] = useState([]); // Estado para pasillos seleccionados
     const [isEditModalOpen, setIsEditModalOpen] = useState(false); // Estado para abrir/cerrar el modal de edición
 
-    useEffect(() => {
+
+    const handleAisleUpdate = () => {
         axios.get('http://localhost:8081/aisles')
             .then(response => {
                 setAisles(response.data);
@@ -24,6 +25,10 @@ function Aisle({ notify }) {
             .catch(error => {
                 console.error('Error fetching aisles:', error);
             });
+    };
+
+    useEffect(() => {
+        handleAisleUpdate();
     }, []);
 
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -59,6 +64,7 @@ function Aisle({ notify }) {
 
     const closeEditModal = () => {
         setIsEditModalOpen(false);
+        handleAisleUpdate();
     };
 
     const handleDeleteAisles = () => {
@@ -73,6 +79,7 @@ function Aisle({ notify }) {
                 setAisles(aisles.filter(aisle => !selectedAisles.includes(aisle.id)));
                 setSelectedAisles([]);
                 setIsDeleteMode(false);
+                handleAisleUpdate();
             })
             .catch(error => {
                 console.error('Error eliminando pasillos:', error);
@@ -80,15 +87,7 @@ function Aisle({ notify }) {
             });
     };
 
-    const handleAisleUpdate = () => {
-        axios.get('http://localhost:8081/aisles')
-            .then(response => {
-                setAisles(response.data);
-            })
-            .catch(error => {
-                console.error('Error fetching aisles:', error);
-            });
-    };
+    
 
     return (
         <div className="relative">
@@ -131,13 +130,19 @@ function Aisle({ notify }) {
                     </Pagination>
                 </div>
                 {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <AisleForm onClose={closeFormModal} notify={notify} />
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                        <AisleForm 
+                         onClose={closeFormModal} 
+                         notify={notify} 
+                         onAisleUpdated={handleAisleUpdate}/>
                     </div>
                 )}
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
-                        <AisleEditModal onClose={closeEditModal} onAisleUpdated={handleAisleUpdate} notify={notify} />
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                        <AisleEditModal 
+                         onClose={closeEditModal} 
+                         onAisleUpdated={handleAisleUpdate} 
+                         notify={notify} />
                     </div>
                 )}
             </div>

@@ -3,14 +3,14 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Button } from "@/components/Common/Button/Button";
 import axios from "axios";
 
-function ReportList({ reports, setReports, isDeleteMode, notify, fetchReportDetails }) {
-    const [selectedReports, setSelectedReports] = useState([]); // Para la eliminación múltiple
-    const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false); // Estado de confirmación
+function ReportList({ reports, setReports, isDeleteMode, notify, fetchReportDetails, onReportUpdated }) {
+    const [selectedReports, setSelectedReports] = useState([]);
+    const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false); 
 
     // Manejo de la selección de informes
     const handleRowClick = (report) => {
         if (!isDeleteMode) {
-            fetchReportDetails(report.id); // Llama a la función pasada desde el padre
+            fetchReportDetails(report.id);
         }
     };
 
@@ -20,7 +20,7 @@ function ReportList({ reports, setReports, isDeleteMode, notify, fetchReportDeta
             notify('error', 'No hay informes seleccionados para eliminar');
             return;
         }
-        setIsConfirmingDeletion(true); // Mostrar la confirmación
+        setIsConfirmingDeletion(true);
     };
 
     const confirmDelete = async () => {
@@ -31,12 +31,11 @@ function ReportList({ reports, setReports, isDeleteMode, notify, fetchReportDeta
             notify('success', 'Informes eliminados correctamente');
             setReports(prevReports => prevReports.filter(report => !selectedReports.includes(report.id)));
             setSelectedReports([]); // Limpiar la selección
-            window.location.reload();
+            onReportUpdated();
+            setIsConfirmingDeletion(false);
         } catch (error) {
             console.error('Error eliminando informes:', error);
             notify('error', 'Error al eliminar informes');
-        } finally {
-            setIsConfirmingDeletion(false);
         }
     };
 

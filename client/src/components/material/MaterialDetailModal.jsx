@@ -6,26 +6,28 @@ import { Button } from "@/components/Common/Button/Button";
 import { X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
-function MaterialDetailModal({ isOpen, onClose, selectedMaterial, notify }) {
+function MaterialDetailModal({ isOpen, onClose, selectedMaterial, notify, loadMaterials }) {
     const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isEditModalClosing, setIsEditModalClosing] = useState(false);
 
     const rol = localStorage.getItem('rol');
 
-    // Manejo del evento 'Escape' pero solo si el MaterialEditModal NO está abierto
     useEffect(() => {
         const handleEscape = (event) => {
-            if (event.key === 'Escape' && !isEditModalOpen) {
-                onClose();
+            if (event.key === 'Escape') {
+                if (!isEditModalOpen) {
+                    onClose();
+                }
+                loadMaterials();
             }
         };
-
         document.addEventListener('keydown', handleEscape);
         return () => {
             document.removeEventListener('keydown', handleEscape);
         };
-    }, [onClose, isEditModalOpen]);
+    }, [onClose, isEditModalOpen, loadMaterials]);
+
 
     const openConfirmDeleteModal = useCallback(() => {
         setIsConfirmDeleteOpen(true);
@@ -40,19 +42,34 @@ function MaterialDetailModal({ isOpen, onClose, selectedMaterial, notify }) {
             return;
         }
         try {
-            const response = await axios.delete(`http://localhost:8081/materials/delete/${selectedMaterial.id}`);
+            // Obtener el token del usuario almacenado en localStorage
+            const token = localStorage.getItem('token');
+            if (!token) {
+                notify('error', 'No se encontró un token de autenticación');
+                return;
+            }
+            // Realizar la solicitud DELETE con el token en los headers
+            const response = await axios.delete(
+                `http://localhost:8081/materials/delete/${selectedMaterial.id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
             onClose();
             notify('success', 'Material eliminado con éxito!');
-
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-
+            loadMaterials();
         } catch (error) {
             console.error('Error al eliminar el material:', error);
-            notify('error', 'Error al eliminar el material');
+            if (error.response && error.response.data && error.response.data.error) {
+                notify('error', error.response.data.error)
+            } else {
+                notify('error', 'Error al eliminar el material');
+            }
         }
     }, [selectedMaterial, onClose]);
+
 
     const confirmDelete = useCallback(() => {
         handleDelete();
@@ -64,12 +81,9 @@ function MaterialDetailModal({ isOpen, onClose, selectedMaterial, notify }) {
         setIsEditModalClosing(false);
     };
 
-    const closeEditModal = () => {
-        setIsEditModalClosing(true);
-    };
-
     const handleEditModalClosed = () => {
         setIsEditModalOpen(false);
+        loadMaterials();
     };
 
     return (
@@ -104,7 +118,7 @@ function MaterialDetailModal({ isOpen, onClose, selectedMaterial, notify }) {
                                         />
                                     </div>
                                 ) : (
-                                    <div className="w-[20vw] h-[40vh] border rounded-2xl flex justify-center items-center">
+                                    <div className="w-[25vw] h-[40vh] border rounded-2xl flex justify-center items-center">
                                         <p>No hay imagen disponible</p>
                                     </div>
                                 )}
@@ -182,12 +196,11 @@ function MaterialDetailModal({ isOpen, onClose, selectedMaterial, notify }) {
                     <AnimatePresence>
                         {isConfirmDeleteOpen && (
                             <motion.div
-                                className="fixed inset-0 flex items-center justify-center z-50"
-                                onClick={closeConfirmDeleteModal}
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.8, opacity: 0 }}
-                                transition={{ duration: 0.15 }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 backdrop-blur-sm"
                             >
                                 <div className="bg-sipe-blue-light flex flex-col justify-center w-350 rounded-xl gap-6 p-4" onClick={(e) => e.stopPropagation()}>
                                     <p className="font-bold text-2xl text-center text-sipe-white">¿Estás seguro que querés borrar este material?</p>
@@ -205,6 +218,7 @@ function MaterialDetailModal({ isOpen, onClose, selectedMaterial, notify }) {
                             <MaterialEditModal
                                 isOpen={!isEditModalClosing}
                                 onClose={handleEditModalClosed}
+                                loadMaterials={loadMaterials}
                                 notify={notify}
                                 material={selectedMaterial}
                             />

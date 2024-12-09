@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Filter, Plus, Trash2, PenLine } from 'lucide-react';
+import { Filter, Plus, PenLine, X } from 'lucide-react';
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
 import MaterialExitList from '@/components/Exit/MaterialExitList';
@@ -63,10 +63,8 @@ function MaterialExit({ notify }) {
         if (filters.material) {
             // Descomponemos el valor de filters.material para obtener material, deposito y ubicación
             const [materialNombre, depositoNombre, ubicacionNombre] = filters.material.split(' - ');
-
             filtered = filtered.filter(exit => {
                 if (!exit.nombresMateriales) return false;
-
                 // Buscamos coincidencias exactas para nombre del material, depósito y ubicación
                 return exit.nombresMateriales.includes(materialNombre.trim()) &&
                     exit.depositoNombre === depositoNombre.trim() &&
@@ -77,7 +75,6 @@ function MaterialExit({ notify }) {
             const [day, month, year] = dateString.split('-');
             return `${year}-${month}-${day}`;
         };
-        
         if (filters.startDate) {
             filtered = filtered.filter(exit => {
                 const exitDateYMD = convertDateToYMD(exit.fechaSalida);
@@ -90,15 +87,9 @@ function MaterialExit({ notify }) {
                 return exitDateYMD <= filters.endDate;
             });
         }
-
         setFilteredExits(filtered);
         closeFilterModal();
     };
-
-
-
-
-
 
     const resetFilters = () => {
         setFilteredExits(materialExits);
@@ -136,24 +127,47 @@ function MaterialExit({ notify }) {
         closeEditModal();
     }
 
-    const handleDeleteExits = () => {
+    const handleCancelExits = () => {
         if (selectedExits.length === 0) {
-            notify('error', 'No hay salidas seleccionadas para eliminar');
+            notify('error', 'No hay salidas seleccionadas para anular');
             return;
         }
 
-        axios.delete('http://localhost:8081/delete-exits', { data: { exitIds: selectedExits } })
+        const nonAnulledExits = selectedExits.filter(exitId => {
+            const exit = materialExits.find(e => e.salidaId === exitId);
+            return exit && !exit.anulado;
+        });
+
+        if (nonAnulledExits.length === 0) {
+            notify('error', 'Todas las salidas seleccionadas ya están anuladas');
+            return;
+        }
+
+        const token = localStorage.getItem('token'); // Obtener el token almacenado en el navegador
+        const cancelPromises = nonAnulledExits.map((exitId) =>
+            axios.put(
+                `http://localhost:8081/canceled-exit/${exitId}`,
+                {}, // No hay cuerpo en la solicitud
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`, // Incluir el token en el encabezado
+                    },
+                }
+            )
+        );
+        Promise.all(cancelPromises)
             .then(() => {
-                notify('success', 'Salidas eliminadas correctamente');
+                notify('success', 'Salidas anuladas correctamente');
                 setSelectedExits([]);
                 setIsDeleteMode(false);
-                refreshMaterialExits();
+                loadMaterialExits(); // Recargar la lista de salidas
             })
-            .catch(error => {
-                console.error('Error eliminando salidas:', error);
-                notify('error', 'Error al eliminar salidas');
+            .catch((error) => {
+                console.error('Error anulando salidas:', error);
+                notify('error', 'Error al anular salidas');
             });
     };
+
 
     const toggleDeleteMode = () => {
         setIsDeleteMode(!isDeleteMode);
@@ -195,17 +209,17 @@ function MaterialExit({ notify }) {
                         <h3 className="text-md font-thin">Listado completo de salidas</h3>
                     </div>
                     <div className="flex flex-row gap-4 text-sipe-white">
-                    {userRole === 'Administrador' && (
-                        <>
-                            <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR</Button>
-                            <Button onClick={openEditModal} variant="sipemodalalt"> <PenLine /> EDITAR</Button>
-                            <Button onClick={toggleDeleteMode} variant="sipemodalalt2"> <Trash2 /> {isDeleteMode ? 'CANCELAR ELIMINACIÓN' : ' ELIMINAR '}</Button>
+                        {userRole === 'Administrador' && (
+                            <>
+                                <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR</Button>
+                                <Button onClick={openEditModal} variant="sipemodalalt"> <PenLine /> EDITAR</Button>
+                                <Button onClick={toggleDeleteMode} variant="sipemodalalt2"> <X /> {isDeleteMode ? 'CANCELAR ANULACIÓN' : ' ANULAR '}</Button>
                             </>
                         )}
-                        <Button onClick={openFilterModal} variant="secondary" className="bg-sipe-gray bg-opacity-50 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
+                        <Button onClick={openFilterModal} variant="sipebuttonalt3" className="bg-sipe-gray bg-opacity-80 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2">
                             <Filter /> FILTRAR
                         </Button>
-                        
+
                     </div>
                 </div>
 
@@ -214,7 +228,7 @@ function MaterialExit({ notify }) {
                     isDeleteMode={isDeleteMode}
                     selectedExits={selectedExits}
                     setSelectedExits={setSelectedExits}
-                    handleDeleteExits={handleDeleteExits}
+                    handleCancelExits={handleCancelExits}
                 />
 
                 {/* Paginación */}
@@ -243,7 +257,7 @@ function MaterialExit({ notify }) {
                             className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
                         >
                             <motion.div
-                                className="w-[600px] max-w-full h-auto shadow-xl bg-sipe-blue-dark rounded-2xl p-6 relative"
+                                className="w-[600px] max-w-full h-auto shadow-xl bg-sipe-blue-dark rounded-2xl 2xl:p-2 relative"
                                 onClick={(e) => e.stopPropagation()}
                                 initial={{ scale: 0.95, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}

@@ -40,13 +40,14 @@ function Movement({ notify }) {
     const loadMovements = () => {
         axios.get('http://localhost:8081/movements')
             .then(response => {
-                setMovements(response.data);
-                setFilteredMovements(response.data);
+                setMovements(response.data); // Usar los movimientos directamente
+                setFilteredMovements(response.data); // Filtrar movimientos actualizados
             })
             .catch(error => {
                 notify('error', 'Error al cargar movimientos', error);
             });
     };
+
 
     const loadMaterialsWithMovements = () => {
         axios.get('http://localhost:8081/materials-with-movements')
@@ -95,10 +96,6 @@ function Movement({ notify }) {
         setFilteredMovements(filtered);
         closeFilterModal();
     };
-
-
-
-
 
     const resetFilters = () => {
         setFilteredMovements(movements);
@@ -160,8 +157,39 @@ function Movement({ notify }) {
 
     // Función para remover un movimiento pendiente
     const removePendingMovement = (movementToRemove) => {
+        const token = localStorage.getItem('token'); // Obtener el token del usuario logueado
+        const comentario = `Movimiento ${movementToRemove.numero} no fue confirmado`;
+
+        // Llamar al endpoint de auditoría
+        axios.post(
+            'http://localhost:8081/addAuditoria',
+            {
+                tipo_accion: 'Movimiento no confirmado',
+                comentario,
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`, // Pasar el token en los headers
+                    'Content-Type': 'application/json',
+                },
+            }
+        )
+            .then(() => {
+                notify('success', error.response.data.message);
+            })
+            .catch(error => {
+                console.error('Error al registrar auditoría:', error);
+                if (error.response && error.response.data && error.response.data.error) {
+                    notify('error', error.response.data.error)
+                } else {
+                    notify('error', `Error al registrar auditoría para el movimiento ${movementToRemove.numero}`);
+                }
+            });
+
+        // Remover el movimiento de los movimientos pendientes
         setPendingMovements(pendingMovements.filter(movement => movement !== movementToRemove));
     };
+
 
     const closeConfirmModal = () => {
         setIsConfirmModalOpen(false);
@@ -179,18 +207,32 @@ function Movement({ notify }) {
             return;
         }
 
-        axios.delete('http://localhost:8081/delete-movements', { data: { movementIds: selectedMovements } })
+        const token = localStorage.getItem('token'); // Obtener el token del localStorage
+
+        if (!token) {
+            notify('error', 'Usuario no autenticado. Por favor, inicia sesión.');
+            return;
+        }
+
+        axios.delete('http://localhost:8081/delete-movements', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            data: { movementIds: selectedMovements }
+        })
             .then(() => {
                 notify('success', 'Movimientos eliminados correctamente');
                 setMovements(movements.filter(movement => !selectedMovements.includes(movement.id)));
                 setSelectedMovements([]);
                 setIsDeleteMode(false);
+                loadMovements();
             })
             .catch(error => {
                 console.error('Error eliminando movimientos:', error);
                 notify('error', 'Error al eliminar movimientos');
             });
     };
+
 
     const addPendingMovement = (newMovement) => {
         const updatedPendingMovements = [...pendingMovements, newMovement];
@@ -211,7 +253,7 @@ function Movement({ notify }) {
                     <div className="flex flex-row gap-4 text-sipe-white">
                         <Button onClick={openFormModal} variant="sipemodal"> <Plus /> AÑADIR </Button>
                         <Button onClick={openEditModal} variant="sipemodalalt"> <PenLine /> EDITAR</Button>
-                        <Button onClick={openFilterModal} variant="secondary" className="bg-sipe-gray bg-opacity-50 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
+                        <Button onClick={openFilterModal} variant="sipebuttonalt3" className="bg-sipe-gray bg-opacity-50 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
                             <Filter /> FILTRAR
                         </Button>
                         <Button onClick={toggleDeleteMode} variant="sipemodalalt2">
@@ -243,16 +285,17 @@ function Movement({ notify }) {
                     </Pagination>
                 </div>
                 {isFormModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <MovementForm
                             onClose={closeFormModal}
                             addPendingMovement={addPendingMovement}
+                            onMovementUpdated={loadMovements}
                             notify={notify}
                         />
                     </div>
                 )}
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <MovementEditModal
                             onClose={closeEditModal}
                             onMovementUpdated={handleMovementUpdated}
@@ -261,11 +304,12 @@ function Movement({ notify }) {
                     </div>
                 )}
                 {isConfirmModalOpen && selectedMovement && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <MovementConfirmModal
                             movement={selectedMovement}
                             onClose={closeConfirmModal}
                             notify={notify}
+                            onMovementUpdated={loadMovements}
                             onMovementConfirmed={() => {
                                 closeConfirmModal();
                                 setPendingMovements(pendingMovements.filter(m => m !== selectedMovement));

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Input } from "@/components/Common/Input/Input";
 import { Button } from "@/components/Common/Button/Button";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/Common/Pagination/Pagination";
-import { Search, Filter, ArrowBigRight, Plus } from 'lucide-react';
+import { Search, Filter, ArrowBigRight, Plus, X } from 'lucide-react';
 import { AnimatePresence, motion } from "framer-motion";
 import MaterialForm from '@/components/Material/MaterialForm';
 import MaterialList from '@/components/Material/MaterialList';
@@ -35,7 +35,7 @@ function Material({ notify }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(10);
 
-    useEffect(() => {
+    const loadMaterials = () => {
         axios.get('http://localhost:8081/materials')
             .then(response => {
                 setMaterials(response.data);
@@ -44,6 +44,12 @@ function Material({ notify }) {
             .catch(error => {
                 console.error('Error fetching materials:', error);
             });
+    }
+
+
+    useEffect(() => {
+
+        loadMaterials();
 
         axios.get('http://localhost:8081/deposit-locations')
             .then(response => setAvailableLocations(response.data))
@@ -123,6 +129,7 @@ function Material({ notify }) {
     const closeDetailModal = () => {
         setIsDetailModalOpen(false);
         setMaterialDetail(null);
+        loadMaterials();
     };
 
     const handleFilterChange = (e) => {
@@ -186,17 +193,18 @@ function Material({ notify }) {
                             </Button>
                         )}
                             <>
-                                <Button onClick={openFilterModal} variant="secondary" className="bg-sipe-gray bg-opacity-50 text-sipe-white border border-sipe-white/20 font-semibold px-2 py-2 flex items-center gap-2 ">
+                                <Button onClick={openFilterModal} variant="sipebuttonalt3" className="bg-sipe-gray bg-opacity-80 text-sipe-white border border-sipe-gray/20 font-semibold px-2 py-2 flex items-center gap-2 ">
                                     <Filter /> FILTRAR
                                 </Button>
-                                <Button onClick={openModalSearch} variant="secondary" className="bg-transparent border border-sipe-white/20 text-sipe-white font-semibold px-2 py-2 flex items-center gap-2">
+                                <Button onClick={openModalSearch} variant="sipebuttonalt3" className="bg-sipe-gray bg-opacity-30 text-sipe-white border border-sipe-gray/20 font-semibold px-2 py-2 flex items-center gap-2">
                                     <Search /> BUSCAR
                                 </Button>
                             </>
                     </div>
                 </div>
-                <MaterialList 
+                <MaterialList
                     materials={currentMaterials}
+                    loadMaterials={loadMaterials}
                     notify={notify}
                 />
 
@@ -216,11 +224,11 @@ function Material({ notify }) {
 
                 {/* Modal de búsqueda */}
                 {isModalOpen && (
-                    <div className="fixed inset-0 bg-sipe-white bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50">
                         <div className="bg-sipe-blue-dark rounded-lg p-6 w-full max-w-4xl">
                             <div className="flex justify-between items-center">
                                 <h2 className="text-lg font-bold text-sipe-white">Buscar material</h2>
-                                <button onClick={closeModalSearch} className="text-gray-300">X</button>
+                                <button onClick={closeModalSearch} className="text-gray-300"><X /></button>
                             </div>
                             <Input
                                 type="text"
@@ -270,14 +278,14 @@ function Material({ notify }) {
                             className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50"
                         >
                             <motion.div
-                                className="w-[600px] max-w-full h-auto shadow-xl bg-sipe-blue-dark rounded-2xl p-6 relative"
+                                className="w-[600px] max-w-full h-auto shadow-xl bg-sipe-blue-dark rounded-2xl 2xl:p-2 relative"
                                 onClick={(e) => e.stopPropagation()}
                                 initial={{ scale: 0.95, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.95, opacity: 0 }}
                                 transition={{ duration: 0.3 }}
                             >
-                                <MaterialForm onClose={closeFormModal} notify={notify} />
+                                <MaterialForm onClose={closeFormModal} notify={notify} loadMaterials={loadMaterials} />
                             </motion.div>
                         </motion.div>
                     )}
@@ -287,6 +295,7 @@ function Material({ notify }) {
                     {isDetailModalOpen && materialDetail && (
                         <MaterialDetailModal
                             isOpen={isDetailModalOpen}
+                            loadMaterials={loadMaterials}
                             onClose={closeDetailModal}
                             selectedMaterial={materialDetail}
                             notify={notify}
